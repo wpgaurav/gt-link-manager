@@ -1,0 +1,33 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GT Link Manager 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-10 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Codex\n"
+"X-Domain: gt-link-manager\n"
+
+#: gt-link-manager.php
+msgid "GT Links"
+msgstr ""
+
+#: includes/class-gt-link-admin.php
+msgid "Add New"
+msgstr ""
+
+#: includes/class-gt-link-admin.php
+msgid "Categories"
+msgstr ""
+
+#: includes/class-gt-link-admin.php
+msgid "Settings"
+msgstr ""
+
+#: includes/class-gt-link-admin.php
+msgid "Import / Export"
+msgstr ""

@@ -1,0 +1,35 @@
+# Development
+.git
+.github
+.gitignore
+.distignore
+
+# Build tools
+node_modules/
+package.json
+package-lock.json
+build.sh
+
+# Block source (compiled to build/)
+blocks/*/src/
+blocks/*/package.json
+blocks/*/package-lock.json
+blocks/*/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+CLAUDE.md
+.claude/
+
+# Misc
+*.zip
+build-release/
+docs/
