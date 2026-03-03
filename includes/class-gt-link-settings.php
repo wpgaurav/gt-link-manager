@@ -53,10 +53,10 @@ class GT_Link_Settings {
 
 		$settings = wp_parse_args( $stored, self::defaults() );
 
-		$settings['base_prefix'] = $this->sanitize_prefix( (string) $settings['base_prefix'] );
+		$settings['base_prefix']           = $this->sanitize_prefix( (string) $settings['base_prefix'] );
 		$settings['default_redirect_type'] = $this->sanitize_redirect_type( (int) $settings['default_redirect_type'] );
-		$settings['default_noindex'] = (int) ! empty( $settings['default_noindex'] );
-		$settings['default_rel'] = $this->sanitize_rel_array( $settings['default_rel'] );
+		$settings['default_noindex']       = (int) ! empty( $settings['default_noindex'] );
+		$settings['default_rel']           = $this->sanitize_rel_array( $settings['default_rel'] );
 
 		/**
 		 * Filter effective plugin settings.

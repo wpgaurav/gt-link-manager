@@ -33,7 +33,7 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes } ) {
 	const [ loading, setLoading ] = useState( false );
 	const [ error, setError ] = useState( '' );
 	const queryInputRef = useRef( null );
-	const anchorRef = useRef( null );
+	const [ popoverAnchor, setPopoverAnchor ] = useState( null );
 
 	useEffect( () => {
 		if ( ! isOpen ) {
@@ -136,7 +136,10 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes } ) {
 		}
 
 		if ( event && event.currentTarget ) {
-			anchorRef.current = event.currentTarget;
+			const rect = event.currentTarget.getBoundingClientRect();
+			setPopoverAnchor( {
+				getBoundingClientRect: () => rect,
+			} );
 		}
 
 		const sel = getSelectedText();
@@ -198,7 +201,7 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes } ) {
 			h(
 				Popover,
 				{
-					anchor: anchorRef.current,
+					anchor: popoverAnchor,
 					onClose: () => setIsOpen( false ),
 					placement: 'bottom-start',
 					focusOnMount: false,

@@ -144,13 +144,13 @@ class GT_Link_Redirect {
 			return sanitize_title( $slug );
 		}
 
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		if ( '' === $request_uri ) {
 			return '';
 		}
 
-		$path   = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
-		$prefix = trim( $this->settings->prefix(), '/' );
+		$path      = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
+		$prefix    = trim( $this->settings->prefix(), '/' );
 		$home_path = trim( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ), '/' );
 
 		// Support WordPress installs in subdirectories like /blog.

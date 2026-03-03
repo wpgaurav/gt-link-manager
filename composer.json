@@ -1,0 +1,21 @@
+{
+    "name": "antigravity/gt-link-manager",
+    "description": "GT Link Manager WordPress plugin",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Gaurav Tiwari",
+            "email": "gaurav@gauravtiwari.org"
+        }
+    ],
+    "require-dev": {
+        "wp-coding-standards/wpcs": "^3.0",
+        "phpcompatibility/phpcompatibility-wp": "*"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

@@ -39,6 +39,7 @@ require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-activator.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-deactivator.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-db.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-redirect.php';
+require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-admin-pages.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-admin.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-rest-api.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-block-editor.php';
@@ -51,8 +52,6 @@ register_deactivation_hook( GT_LINK_MANAGER_FILE, array( 'GT_Link_Deactivator', 
  * Bootstrap plugin services.
  */
 function gt_link_manager_bootstrap(): void {
-	load_plugin_textdomain( 'gt-link-manager', false, dirname( plugin_basename( GT_LINK_MANAGER_FILE ) ) . '/languages' );
-
 	// Run schema migrations when DB version is behind plugin version.
 	if ( is_admin() ) {
 		GT_Link_Activator::maybe_upgrade();

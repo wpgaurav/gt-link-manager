@@ -2,7 +2,7 @@
 Contributors: gauravtiwari
 Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 8.0
 Stable tag: 1.2.3
 License: GPLv2 or later

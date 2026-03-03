@@ -2,6 +2,9 @@
 /**
  * Database access layer.
  *
+ * Uses custom tables for link storage. All direct database queries
+ * are intentional — this plugin does not use CPTs.
+ *
  * @package GTLinkManager
  */
 
@@ -53,12 +56,12 @@ class GT_Link_DB {
 
 		global $wpdb;
 
-		$sql = $wpdb->prepare(
-			'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE slug = %s LIMIT 1',
-			$slug
-		);
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$sql = $wpdb->prepare( 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE slug = %s LIMIT 1", $slug );
 
-		$row = $wpdb->get_row( $sql, ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$row  = $wpdb->get_row( $sql, ARRAY_A );
 		$link = is_array( $row ) ? $this->normalize_link_row( $row ) : null;
 
 		$ttl = (int) apply_filters( 'gt_link_manager_cache_ttl', 0, $slug, $link );
@@ -76,6 +79,7 @@ class GT_Link_DB {
 		$insert = $this->normalize_link_for_write( $data );
 		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%s' );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$result = $wpdb->insert( self::links_table(), $insert, $format );
 		if ( false === $result ) {
 			return 0;
@@ -110,6 +114,7 @@ class GT_Link_DB {
 		$update = $this->normalize_link_for_write( $data );
 		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%s' );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->update(
 			self::links_table(),
 			$update,
@@ -150,6 +155,7 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->update(
 			self::links_table(),
 			array( 'trashed_at' => current_time( 'mysql' ) ),
@@ -175,9 +181,13 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
+
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$result = $wpdb->query(
 			$wpdb->prepare(
-				'UPDATE ' . self::links_table() . ' SET trashed_at = NULL WHERE id = %d',
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET trashed_at = NULL WHERE id = %d",
 				$id
 			)
 		);
@@ -208,6 +218,7 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->delete( self::links_table(), array( 'id' => $id ), array( '%d' ) );
 
 		if ( false === $result || 0 === $result ) {
@@ -235,6 +246,7 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->update(
 			self::links_table(),
 			array( 'is_active' => $active ? 1 : 0 ),
@@ -260,11 +272,12 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
-		$sql = $wpdb->prepare(
-			'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE id = %d LIMIT 1',
-			$id
-		);
 
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$sql = $wpdb->prepare( 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE id = %d LIMIT 1", $id );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $wpdb->get_row( $sql, ARRAY_A );
 		return is_array( $row ) ? $this->normalize_link_row( $row ) : null;
 	}
@@ -285,22 +298,26 @@ class GT_Link_DB {
 	public function search_links( string $search = '', int $limit = 20 ): array {
 		global $wpdb;
 
+		$table = self::links_table();
 		$limit = max( 1, min( 100, $limit ) );
-		$sql   = 'SELECT id, name, slug, rel FROM ' . self::links_table() . ' WHERE trashed_at IS NULL AND is_active = 1';
-		$args  = array();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql  = "SELECT id, name, slug, rel FROM {$table} WHERE trashed_at IS NULL AND is_active = 1";
+		$args = array();
 
 		$search = sanitize_text_field( $search );
 		if ( '' !== $search ) {
-			$like = '%' . $wpdb->esc_like( $search ) . '%';
-			$sql .= ' AND (name LIKE %s OR slug LIKE %s)';
+			$like   = '%' . $wpdb->esc_like( $search ) . '%';
+			$sql   .= ' AND (name LIKE %s OR slug LIKE %s)';
 			$args[] = $like;
 			$args[] = $like;
 		}
 
-		$sql    .= ' ORDER BY name ASC LIMIT %d';
+		$sql   .= ' ORDER BY name ASC LIMIT %d';
 		$args[] = $limit;
-		$sql    = $wpdb->prepare( $sql, $args );
-		$rows   = $wpdb->get_results( $sql, ARRAY_A );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$sql = $wpdb->prepare( $sql, $args );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows = $wpdb->get_results( $sql, ARRAY_A );
 
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -327,16 +344,20 @@ class GT_Link_DB {
 	public function count_links( array $filters = array() ): int {
 		global $wpdb;
 
-		$sql    = 'SELECT COUNT(*) FROM ' . self::links_table() . ' WHERE 1=1';
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql    = "SELECT COUNT(*) FROM {$table} WHERE 1=1";
 		$params = array();
 
 		$this->apply_status_filters( $sql, $params, $filters );
 		$this->apply_common_filters( $sql, $params, $filters );
 
 		if ( ! empty( $params ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$sql = $wpdb->prepare( $sql, $params );
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		return (int) $wpdb->get_var( $sql );
 	}
 
@@ -361,17 +382,21 @@ class GT_Link_DB {
 		$per_page        = max( 1, $per_page );
 		$offset          = ( $page - 1 ) * $per_page;
 
-		$sql    = 'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE 1=1';
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql    = 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE 1=1";
 		$params = array();
 
 		$this->apply_status_filters( $sql, $params, $filters );
 		$this->apply_common_filters( $sql, $params, $filters );
 
-		$sql .= " ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+		$sql     .= " ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
 		$params[] = $per_page;
 		$params[] = $offset;
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$sql = $wpdb->prepare( $sql, $params );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $wpdb->get_results( $sql, ARRAY_A );
 
 		if ( ! is_array( $rows ) ) {
@@ -389,16 +414,20 @@ class GT_Link_DB {
 	public function list_links_for_export( array $filters = array() ): array {
 		global $wpdb;
 
-		$sql    = 'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE trashed_at IS NULL';
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql    = 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE trashed_at IS NULL";
 		$params = array();
 
 		$this->apply_common_filters( $sql, $params, $filters );
 
 		$sql .= ' ORDER BY id DESC';
 		if ( ! empty( $params ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$sql = $wpdb->prepare( $sql, $params );
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $wpdb->get_results( $sql, ARRAY_A );
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -442,20 +471,20 @@ class GT_Link_DB {
 		global $wpdb;
 
 		if ( ! empty( $filters['search'] ) ) {
-			$search = '%' . $wpdb->esc_like( sanitize_text_field( (string) $filters['search'] ) ) . '%';
-			$sql   .= ' AND (name LIKE %s OR slug LIKE %s OR url LIKE %s)';
+			$search   = '%' . $wpdb->esc_like( sanitize_text_field( (string) $filters['search'] ) ) . '%';
+			$sql     .= ' AND (name LIKE %s OR slug LIKE %s OR url LIKE %s)';
 			$params[] = $search;
 			$params[] = $search;
 			$params[] = $search;
 		}
 
 		if ( ! empty( $filters['category_id'] ) ) {
-			$sql .= ' AND category_id = %d';
+			$sql     .= ' AND category_id = %d';
 			$params[] = absint( $filters['category_id'] );
 		}
 
 		if ( ! empty( $filters['redirect_type'] ) ) {
-			$sql .= ' AND redirect_type = %d';
+			$sql     .= ' AND redirect_type = %d';
 			$params[] = (int) $filters['redirect_type'];
 		}
 
@@ -474,8 +503,9 @@ class GT_Link_DB {
 	public function get_categories(): array {
 		global $wpdb;
 
-		$sql  = 'SELECT id, name, slug, description, parent_id, count FROM ' . self::categories_table() . ' ORDER BY name ASC';
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
+		$table = self::categories_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows = $wpdb->get_results( "SELECT id, name, slug, description, parent_id, count FROM {$table} ORDER BY name ASC", ARRAY_A );
 
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -483,11 +513,11 @@ class GT_Link_DB {
 
 		return array_map(
 			static function ( array $row ): array {
-				$row['id']        = (int) $row['id'];
-				$row['parent_id'] = (int) $row['parent_id'];
-				$row['count']     = (int) $row['count'];
-				$row['name']      = sanitize_text_field( (string) $row['name'] );
-				$row['slug']      = sanitize_title( (string) $row['slug'] );
+				$row['id']          = (int) $row['id'];
+				$row['parent_id']   = (int) $row['parent_id'];
+				$row['count']       = (int) $row['count'];
+				$row['name']        = sanitize_text_field( (string) $row['name'] );
+				$row['slug']        = sanitize_title( (string) $row['slug'] );
 				$row['description'] = sanitize_textarea_field( (string) $row['description'] );
 				return $row;
 			},
@@ -504,10 +534,14 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
-		$sql = $wpdb->prepare(
-			'SELECT id, name, slug, description, parent_id, count FROM ' . self::categories_table() . ' WHERE id = %d LIMIT 1',
+
+		$table = self::categories_table();
+		$sql   = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT id, name, slug, description, parent_id, count FROM {$table} WHERE id = %d LIMIT 1",
 			$id
 		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $wpdb->get_row( $sql, ARRAY_A );
 
 		if ( ! is_array( $row ) ) {
@@ -541,6 +575,7 @@ class GT_Link_DB {
 			$insert['slug'] = sanitize_title( $insert['name'] );
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$result = $wpdb->insert(
 			self::categories_table(),
 			$insert,
@@ -575,6 +610,7 @@ class GT_Link_DB {
 			$update['slug'] = sanitize_title( $update['name'] );
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->update(
 			self::categories_table(),
 			$update,
@@ -593,6 +629,7 @@ class GT_Link_DB {
 
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			self::links_table(),
 			array( 'category_id' => 0 ),
@@ -601,6 +638,7 @@ class GT_Link_DB {
 			array( '%d' )
 		);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			self::categories_table(),
 			array( 'parent_id' => 0 ),
@@ -609,6 +647,7 @@ class GT_Link_DB {
 			array( '%d' )
 		);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->delete( self::categories_table(), array( 'id' => $id ), array( '%d' ) );
 		return false !== $result && $result > 0;
 	}
@@ -689,9 +728,13 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
+
+		$table = self::categories_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->query(
 			$wpdb->prepare(
-				'UPDATE ' . self::categories_table() . ' SET count = count + 1 WHERE id = %d',
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET count = count + 1 WHERE id = %d",
 				$category_id
 			)
 		);
@@ -703,9 +746,13 @@ class GT_Link_DB {
 		}
 
 		global $wpdb;
+
+		$table = self::categories_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->query(
 			$wpdb->prepare(
-				'UPDATE ' . self::categories_table() . ' SET count = GREATEST(count - 1, 0) WHERE id = %d',
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET count = GREATEST(count - 1, 0) WHERE id = %d",
 				$category_id
 			)
 		);

@@ -1,6 +1,7 @@
 *.zip
 *.DS_Store
 node_modules/
+vendor/
 .playwright-mcp/
 /graphics/
 /product-description.md

@@ -38,13 +38,13 @@ class GT_Link_REST_API {
 					'callback'            => array( $this, 'get_links' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
 					'args'                => array(
-						'search'        => array(
+						'search'      => array(
 							'type'              => 'string',
 							'required'          => false,
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'page'          => array(
+						'page'        => array(
 							'type'              => 'integer',
 							'required'          => false,
 							'default'           => 1,
@@ -53,7 +53,7 @@ class GT_Link_REST_API {
 								return (int) $value >= 1;
 							},
 						),
-						'per_page'      => array(
+						'per_page'    => array(
 							'type'              => 'integer',
 							'required'          => false,
 							'default'           => 20,
@@ -62,26 +62,26 @@ class GT_Link_REST_API {
 								return -1 === $int || ( $int >= 1 && $int <= 200 );
 							},
 						),
-						'category_id'   => array(
+						'category_id' => array(
 							'type'              => 'integer',
 							'required'          => false,
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
-						'status'        => array(
+						'status'      => array(
 							'type'              => 'string',
 							'required'          => false,
 							'default'           => '',
 							'enum'              => array( '', 'active', 'inactive', 'trash' ),
 							'sanitize_callback' => 'sanitize_key',
 						),
-						'orderby'       => array(
+						'orderby'     => array(
 							'type'              => 'string',
 							'required'          => false,
 							'default'           => 'id',
 							'sanitize_callback' => 'sanitize_key',
 						),
-						'order'         => array(
+						'order'       => array(
 							'type'              => 'string',
 							'required'          => false,
 							'default'           => 'DESC',
@@ -177,10 +177,10 @@ class GT_Link_REST_API {
 						'sanitize_callback' => 'absint',
 					),
 					'mode'        => array(
-						'type'              => 'string',
-						'required'          => false,
-						'default'           => 'move',
-						'enum'              => array( 'move', 'copy' ),
+						'type'     => 'string',
+						'required' => false,
+						'default'  => 'move',
+						'enum'     => array( 'move', 'copy' ),
 					),
 				),
 			)
@@ -385,7 +385,12 @@ class GT_Link_REST_API {
 			if ( ! $ok ) {
 				return new WP_Error( 'gt_link_delete_failed', __( 'Could not delete link.', 'gt-link-manager' ), array( 'status' => 500 ) );
 			}
-			return rest_ensure_response( array( 'deleted' => true, 'id' => $id ) );
+			return rest_ensure_response(
+				array(
+					'deleted' => true,
+					'id'      => $id,
+				)
+			);
 		}
 
 		$ok = $this->db->trash_link( $id );
@@ -393,7 +398,12 @@ class GT_Link_REST_API {
 			return new WP_Error( 'gt_link_trash_failed', __( 'Could not trash link.', 'gt-link-manager' ), array( 'status' => 500 ) );
 		}
 
-		return rest_ensure_response( array( 'trashed' => true, 'id' => $id ) );
+		return rest_ensure_response(
+			array(
+				'trashed' => true,
+				'id'      => $id,
+			)
+		);
 	}
 
 	/**
@@ -592,7 +602,12 @@ class GT_Link_REST_API {
 			return new WP_Error( 'gt_category_delete_failed', __( 'Could not delete category.', 'gt-link-manager' ), array( 'status' => 500 ) );
 		}
 
-		return rest_ensure_response( array( 'deleted' => true, 'id' => $id ) );
+		return rest_ensure_response(
+			array(
+				'deleted' => true,
+				'id'      => $id,
+			)
+		);
 	}
 
 	/**
@@ -754,21 +769,21 @@ class GT_Link_REST_API {
 				'sanitize_callback' => 'esc_url_raw',
 			),
 			'redirect_type' => array(
-				'type'              => 'integer',
-				'required'          => false,
-				'default'           => 301,
-				'enum'              => array( 301, 302, 307 ),
+				'type'     => 'integer',
+				'required' => false,
+				'default'  => 301,
+				'enum'     => array( 301, 302, 307 ),
 			),
 			'rel'           => array(
-				'type'              => array( 'string', 'array' ),
-				'required'          => false,
-				'default'           => '',
+				'type'     => array( 'string', 'array' ),
+				'required' => false,
+				'default'  => '',
 			),
 			'noindex'       => array(
-				'type'              => 'integer',
-				'required'          => false,
-				'default'           => 0,
-				'enum'              => array( 0, 1 ),
+				'type'     => 'integer',
+				'required' => false,
+				'default'  => 0,
+				'enum'     => array( 0, 1 ),
 			),
 			'category_id'   => array(
 				'type'              => 'integer',
@@ -789,10 +804,10 @@ class GT_Link_REST_API {
 				'sanitize_callback' => 'sanitize_textarea_field',
 			),
 			'is_active'     => array(
-				'type'              => 'integer',
-				'required'          => false,
-				'default'           => 1,
-				'enum'              => array( 0, 1 ),
+				'type'     => 'integer',
+				'required' => false,
+				'default'  => 1,
+				'enum'     => array( 0, 1 ),
 			),
 		);
 	}

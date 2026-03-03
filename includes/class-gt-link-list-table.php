@@ -115,36 +115,36 @@ class GT_Link_List_Table extends WP_List_Table {
 	 * @return array<string, string>
 	 */
 	protected function get_views(): array {
-		$base_url  = admin_url( 'admin.php?page=gt-links' );
-		$all       = $this->db->count_links( array() );
-		$active    = $this->db->count_links( array( 'status' => 'active' ) );
-		$inactive  = $this->db->count_links( array( 'status' => 'inactive' ) );
-		$trash     = $this->db->count_links( array( 'trashed' => true ) );
+		$base_url = admin_url( 'admin.php?page=gt-links' );
+		$all      = $this->db->count_links( array() );
+		$active   = $this->db->count_links( array( 'status' => 'active' ) );
+		$inactive = $this->db->count_links( array( 'status' => 'inactive' ) );
+		$trash    = $this->db->count_links( array( 'trashed' => true ) );
 
 		$views = array();
 
-		$class = '' === $this->view ? 'current' : '';
+		$class        = '' === $this->view ? 'current' : '';
 		$views['all'] = '<a href="' . esc_url( $base_url ) . '" class="' . $class . '">' . sprintf(
 			/* translators: %s: number of links */
 			esc_html__( 'All %s', 'gt-link-manager' ),
 			'<span class="count">(' . $all . ')</span>'
 		) . '</a>';
 
-		$class = 'active' === $this->view ? 'current' : '';
+		$class           = 'active' === $this->view ? 'current' : '';
 		$views['active'] = '<a href="' . esc_url( add_query_arg( 'link_status', 'active', $base_url ) ) . '" class="' . $class . '">' . sprintf(
 			/* translators: %s: number of links */
 			esc_html__( 'Active %s', 'gt-link-manager' ),
 			'<span class="count">(' . $active . ')</span>'
 		) . '</a>';
 
-		$class = 'inactive' === $this->view ? 'current' : '';
+		$class             = 'inactive' === $this->view ? 'current' : '';
 		$views['inactive'] = '<a href="' . esc_url( add_query_arg( 'link_status', 'inactive', $base_url ) ) . '" class="' . $class . '">' . sprintf(
 			/* translators: %s: number of links */
 			esc_html__( 'Inactive %s', 'gt-link-manager' ),
 			'<span class="count">(' . $inactive . ')</span>'
 		) . '</a>';
 
-		$class = 'trash' === $this->view ? 'current' : '';
+		$class          = 'trash' === $this->view ? 'current' : '';
 		$views['trash'] = '<a href="' . esc_url( add_query_arg( 'link_status', 'trash', $base_url ) ) . '" class="' . $class . '">' . sprintf(
 			/* translators: %s: number of links */
 			esc_html__( 'Trash %s', 'gt-link-manager' ),
@@ -228,7 +228,7 @@ class GT_Link_List_Table extends WP_List_Table {
 			'gt_link_trash_' . (int) $item['id']
 		);
 
-		$is_active = ! empty( $item['is_active'] );
+		$is_active     = ! empty( $item['is_active'] );
 		$toggle_action = $is_active ? 'deactivate' : 'activate';
 		$toggle_label  = $is_active ? esc_html__( 'Deactivate', 'gt-link-manager' ) : esc_html__( 'Activate', 'gt-link-manager' );
 		$toggle_url    = wp_nonce_url(

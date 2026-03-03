@@ -29,6 +29,11 @@ Thumbs.db
 CLAUDE.md
 .claude/
 
+# QA
+phpcs.xml.dist
+composer.lock
+vendor/
+
 # Misc
 *.zip
 build-release/
