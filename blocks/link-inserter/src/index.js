@@ -1,4 +1,8 @@
-import { registerFormatType, applyFormat } from '@wordpress/rich-text';
+import {
+	registerFormatType,
+	applyFormat,
+	useAnchor,
+} from '@wordpress/rich-text';
 import { RichTextToolbarButton } from '@wordpress/block-editor';
 import {
 	Popover,
@@ -26,14 +30,23 @@ const FORMAT_TYPE_SETTINGS = {
 	className: 'gt-link',
 };
 
-function LinkInserterEdit( { value, onChange, isActive, activeAttributes } ) {
+function LinkInserterEdit( {
+	value,
+	onChange,
+	isActive,
+	activeAttributes,
+	contentRef,
+} ) {
+	const popoverAnchor = useAnchor( {
+		editableContentElement: contentRef?.current,
+		settings: FORMAT_TYPE_SETTINGS,
+	} );
 	const [ isOpen, setIsOpen ] = useState( false );
 	const [ query, setQuery ] = useState( '' );
 	const [ results, setResults ] = useState( [] );
 	const [ loading, setLoading ] = useState( false );
 	const [ error, setError ] = useState( '' );
 	const queryInputRef = useRef( null );
-	const [ popoverAnchor, setPopoverAnchor ] = useState( null );
 
 	useEffect( () => {
 		if ( ! isOpen ) {
@@ -133,13 +146,6 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes } ) {
 		if ( isOpen ) {
 			setIsOpen( false );
 			return;
-		}
-
-		if ( event && event.currentTarget ) {
-			const rect = event.currentTarget.getBoundingClientRect();
-			setPopoverAnchor( {
-				getBoundingClientRect: () => rect,
-			} );
 		}
 
 		const sel = getSelectedText();

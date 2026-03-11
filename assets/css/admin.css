@@ -2,7 +2,8 @@ body.toplevel_page_gt-links,
 body.gt-links_page_gt-links-edit,
 body.gt-links_page_gt-links-categories,
 body.gt-links_page_gt-links-settings,
-body.gt-links_page_gt-links-import-export {
+body.gt-links_page_gt-links-import-export,
+body.gt-links_page_gt-links-license {
 	--gtlm-bg: #f4f7fb;
 	--gtlm-card: #ffffff;
 	--gtlm-border: #d9e2ec;
@@ -19,7 +20,8 @@ body.toplevel_page_gt-links #wpcontent,
 body.gt-links_page_gt-links-edit #wpcontent,
 body.gt-links_page_gt-links-categories #wpcontent,
 body.gt-links_page_gt-links-settings #wpcontent,
-body.gt-links_page_gt-links-import-export #wpcontent {
+body.gt-links_page_gt-links-import-export #wpcontent,
+body.gt-links_page_gt-links-license #wpcontent {
 	background: var(--gtlm-bg);
 }
 
@@ -27,7 +29,8 @@ body.toplevel_page_gt-links .wrap,
 body.gt-links_page_gt-links-edit .wrap,
 body.gt-links_page_gt-links-categories .wrap,
 body.gt-links_page_gt-links-settings .wrap,
-body.gt-links_page_gt-links-import-export .wrap {
+body.gt-links_page_gt-links-import-export .wrap,
+body.gt-links_page_gt-links-license .wrap {
 	max-width: 1260px;
 	padding-bottom: 20px;
 }
@@ -36,7 +39,8 @@ body.toplevel_page_gt-links .wrap h1,
 body.gt-links_page_gt-links-edit .wrap h1,
 body.gt-links_page_gt-links-categories .wrap h1,
 body.gt-links_page_gt-links-settings .wrap h1,
-body.gt-links_page_gt-links-import-export .wrap h1 {
+body.gt-links_page_gt-links-import-export .wrap h1,
+body.gt-links_page_gt-links-license .wrap h1 {
 	color: var(--gtlm-text);
 	font-weight: 700;
 	letter-spacing: 0.1px;
@@ -47,7 +51,8 @@ body.toplevel_page_gt-links .wrap > p,
 body.gt-links_page_gt-links-edit .wrap > p,
 body.gt-links_page_gt-links-categories .wrap > p,
 body.gt-links_page_gt-links-settings .wrap > p,
-body.gt-links_page_gt-links-import-export .wrap > p {
+body.gt-links_page_gt-links-import-export .wrap > p,
+body.gt-links_page_gt-links-license .wrap > p {
 	color: var(--gtlm-muted);
 	max-width: 840px;
 }
@@ -56,7 +61,8 @@ body.toplevel_page_gt-links .form-table,
 body.gt-links_page_gt-links-edit .form-table,
 body.gt-links_page_gt-links-categories .form-table,
 body.gt-links_page_gt-links-settings .form-table,
-body.gt-links_page_gt-links-import-export .form-table {
+body.gt-links_page_gt-links-import-export .form-table,
+body.gt-links_page_gt-links-license .form-table {
 	background: var(--gtlm-card);
 	border: 1px solid var(--gtlm-border);
 	border-radius: var(--gtlm-radius);
@@ -69,7 +75,8 @@ body.toplevel_page_gt-links .form-table th,
 body.gt-links_page_gt-links-edit .form-table th,
 body.gt-links_page_gt-links-categories .form-table th,
 body.gt-links_page_gt-links-settings .form-table th,
-body.gt-links_page_gt-links-import-export .form-table th {
+body.gt-links_page_gt-links-import-export .form-table th,
+body.gt-links_page_gt-links-license .form-table th {
 	color: var(--gtlm-text);
 	font-weight: 600;
 	width: 230px;
@@ -80,7 +87,8 @@ body.toplevel_page_gt-links .form-table td,
 body.gt-links_page_gt-links-edit .form-table td,
 body.gt-links_page_gt-links-categories .form-table td,
 body.gt-links_page_gt-links-settings .form-table td,
-body.gt-links_page_gt-links-import-export .form-table td {
+body.gt-links_page_gt-links-import-export .form-table td,
+body.gt-links_page_gt-links-license .form-table td {
 	color: var(--gtlm-muted);
 	padding: 12px 10px;
 }
@@ -109,7 +117,12 @@ body.gt-links_page_gt-links-import-export .form-table input[type="text"],
 body.gt-links_page_gt-links-import-export .form-table input[type="url"],
 body.gt-links_page_gt-links-import-export .form-table input[type="number"],
 body.gt-links_page_gt-links-import-export .form-table select,
-body.gt-links_page_gt-links-import-export .form-table textarea {
+body.gt-links_page_gt-links-import-export .form-table textarea,
+body.gt-links_page_gt-links-license .form-table input[type="text"],
+body.gt-links_page_gt-links-license .form-table input[type="url"],
+body.gt-links_page_gt-links-license .form-table input[type="number"],
+body.gt-links_page_gt-links-license .form-table select,
+body.gt-links_page_gt-links-license .form-table textarea {
 	border-color: #c9d6e2;
 	min-height: 36px;
 	border-radius: 6px;
@@ -119,7 +132,8 @@ body.toplevel_page_gt-links .button-primary,
 body.gt-links_page_gt-links-edit .button-primary,
 body.gt-links_page_gt-links-categories .button-primary,
 body.gt-links_page_gt-links-settings .button-primary,
-body.gt-links_page_gt-links-import-export .button-primary {
+body.gt-links_page_gt-links-import-export .button-primary,
+body.gt-links_page_gt-links-license .button-primary {
 	background: var(--wp-admin-theme-color, #2271b1);
 	border-color: var(--wp-admin-theme-color, #2271b1);
 }
@@ -128,7 +142,8 @@ body.toplevel_page_gt-links .button-primary:hover,
 body.gt-links_page_gt-links-edit .button-primary:hover,
 body.gt-links_page_gt-links-categories .button-primary:hover,
 body.gt-links_page_gt-links-settings .button-primary:hover,
-body.gt-links_page_gt-links-import-export .button-primary:hover {
+body.gt-links_page_gt-links-import-export .button-primary:hover,
+body.gt-links_page_gt-links-license .button-primary:hover {
 	background: var(--wp-admin-theme-color-darker-10, #135e96);
 	border-color: var(--wp-admin-theme-color-darker-10, #135e96);
 }
@@ -305,10 +320,79 @@ body.toplevel_page_gt-links .wrap .button,
 body.gt-links_page_gt-links-edit .wrap .button,
 body.gt-links_page_gt-links-categories .wrap .button,
 body.gt-links_page_gt-links-settings .wrap .button,
-body.gt-links_page_gt-links-import-export .wrap .button {
+body.gt-links_page_gt-links-import-export .wrap .button,
+body.gt-links_page_gt-links-license .wrap .button {
 	min-height: 34px;
 	line-height: 32px;
 	border-radius: 6px;
+}
+
+/* License page */
+.gtlm-license-card {
+	background: var(--gtlm-card);
+	border: 1px solid var(--gtlm-border);
+	border-radius: var(--gtlm-radius);
+	padding: 20px 24px;
+	max-width: 600px;
+	margin-top: 20px;
+}
+
+.gtlm-license-card h2 {
+	margin-top: 0;
+	color: var(--gtlm-text);
+	font-weight: 600;
+}
+
+.gtlm-license-status {
+	padding: 12px 16px;
+	border-radius: 6px;
+	margin-bottom: 16px;
+}
+
+.gtlm-license-status--active {
+	background: var(--gtlm-success-bg);
+	border: 1px solid #bbf7d0;
+	color: var(--gtlm-success-text);
+}
+
+.gtlm-license-status--expired {
+	background: #fffbeb;
+	border: 1px solid #fde68a;
+	color: #92400e;
+}
+
+.gtlm-update-notice {
+	padding: 10px 12px;
+	border-radius: 6px;
+	margin-top: 8px;
+}
+
+.gtlm-update-notice--available {
+	background: #eff6ff;
+	border: 1px solid #bfdbfe;
+	color: #1e40af;
+}
+
+.gtlm-update-notice--current {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	color: var(--gtlm-muted);
+}
+
+.gtlm-license-key {
+	font-size: 14px;
+	padding: 4px 8px;
+	background: #f8fafc;
+	border: 1px solid var(--gtlm-border);
+	border-radius: 4px;
+}
+
+.gtlm-license-card .regular-text {
+	margin-top: 4px;
+}
+
+.gtlm-license-card hr {
+	border-color: var(--gtlm-border);
 }
 
 @media (max-width: 782px) {
@@ -316,7 +400,8 @@ body.gt-links_page_gt-links-import-export .wrap .button {
 	body.gt-links_page_gt-links-edit .form-table th,
 	body.gt-links_page_gt-links-categories .form-table th,
 	body.gt-links_page_gt-links-settings .form-table th,
-	body.gt-links_page_gt-links-import-export .form-table th {
+	body.gt-links_page_gt-links-import-export .form-table th,
+	body.gt-links_page_gt-links-license .form-table th {
 		width: auto;
 	}
 

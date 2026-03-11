@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.2.3
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,22 @@ The plugin checks request URI early and loads the matching slug from a unique in
 5. Settings with diagnostics
 
 == Changelog ==
+
+= 1.3.1 =
+* Block editor: aligned GT Link popover anchoring with core rich text behavior using selection-based anchor.
+
+= 1.3.0 =
+* Refactored admin into separate actions and rendering classes for maintainability.
+* Added Pretty Links CSV import preset alongside Generic and LinkCentral.
+* Improved input sanitization on redirect URI parsing.
+* Added PHPCS configuration and Composer dev tooling.
+* Added uninstall.php for clean plugin removal (drops tables and options).
+* Improved build.sh with .distignore support and critical file verification.
+* Improved release workflow with version verification, checksums, and distribution validation.
+* Block editor popover anchor now uses bounding rect snapshot for reliable positioning.
+* Button primary color now follows WordPress admin theme color.
+* Lowered PHP requirement from 8.2 to 8.0.
+* Tested up to WordPress 6.9.
 
 = 1.2.3 =
 * Fixed release packaging bug that accidentally removed `blocks/link-inserter/build/*` from zip assets.
@@ -151,6 +167,12 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.3.1 =
+Fixes GT Link toolbar popover alignment in the block editor to match core behavior.
+
+= 1.3.0 =
+Admin refactor, Pretty Links import preset, improved sanitization, build tooling, and PHP 8.0 support.
 
 = 1.2.3 =
 Fixes release packaging so the GT Link block editor toolbar assets are included in update zips.

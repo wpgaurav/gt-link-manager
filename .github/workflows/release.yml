@@ -126,6 +126,7 @@ jobs:
             "includes/class-gt-link-db.php" \
             "includes/class-gt-link-redirect.php" \
             "includes/class-gt-link-admin.php" \
+            "includes/class-gt-link-admin-pages.php" \
             "includes/class-gt-link-rest-api.php" \
             "includes/class-gt-link-block-editor.php" \
             "includes/class-gt-link-import.php" \
