@@ -9,14 +9,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Admin_Pages {
-	private GT_Link_DB $db;
+class GTLM_Admin_Pages {
+	private GTLM_DB $db;
 
-	private GT_Link_Settings $settings;
+	private GTLM_Settings $settings;
 
-	private GT_Link_Import $importer;
+	private GTLM_Import $importer;
 
-	public function __construct( GT_Link_DB $db, GT_Link_Settings $settings, GT_Link_Import $importer ) {
+	public function __construct( GTLM_DB $db, GTLM_Settings $settings, GTLM_Import $importer ) {
 		$this->db       = $db;
 		$this->settings = $settings;
 		$this->importer = $importer;
@@ -27,7 +27,7 @@ class GT_Link_Admin_Pages {
 			wp_die( esc_html__( 'You are not allowed to access this page.', 'gt-link-manager' ) );
 		}
 
-		require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-list-table.php';
+		require_once GTLM_PATH . 'includes/class-gt-link-list-table.php';
 
 		$view        = isset( $_GET['link_status'] ) ? sanitize_key( (string) wp_unslash( $_GET['link_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$valid_views = array( 'active', 'inactive', 'trash' );
@@ -36,19 +36,19 @@ class GT_Link_Admin_Pages {
 		}
 
 		$categories = $this->db->get_categories();
-		$table      = new GT_Link_List_Table( $this->db, $categories, $this->settings->prefix(), $view );
+		$table      = new GTLM_List_Table( $this->db, $categories, $this->settings->prefix(), $view );
 		$table->prepare_items();
 
 		echo '<div class="wrap">';
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'GT Links', 'gt-link-manager' ) . '</h1>';
-		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=gt-links-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add New', 'gt-link-manager' ) . '</a>';
+		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add New', 'gt-link-manager' ) . '</a>';
 		$this->render_notice();
 		echo '<form method="get">';
-		echo '<input type="hidden" name="page" value="gt-links" />';
+		echo '<input type="hidden" name="page" value="gtlm-links" />';
 		if ( '' !== $view ) {
 			echo '<input type="hidden" name="link_status" value="' . esc_attr( $view ) . '" />';
 		}
-		$table->search_box( esc_html__( 'Search links', 'gt-link-manager' ), 'gt-links-search' );
+		$table->search_box( esc_html__( 'Search links', 'gt-link-manager' ), 'gtlm-links-search' );
 		$table->display();
 		echo '</form>';
 		echo '</div>';
@@ -80,9 +80,10 @@ class GT_Link_Admin_Pages {
 		echo '<div class="wrap">';
 		echo '<h1>' . esc_html( $link_id > 0 ? __( 'Edit Link', 'gt-link-manager' ) : __( 'Add New Link', 'gt-link-manager' ) ) . '</h1>';
 		$this->render_notice();
+		echo '<div class="gtlm-card">';
 		echo '<form method="post" action="">';
-		wp_nonce_field( 'gt_link_save' );
-		echo '<input type="hidden" name="gt_link_action" value="save_link" />';
+		wp_nonce_field( 'gtlm_link_save' );
+		echo '<input type="hidden" name="gtlm_action" value="save_link" />';
 		echo '<input type="hidden" name="link_id" value="' . (int) $link_id . '" />';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		$this->render_text_field( 'name', __( 'Link Name', 'gt-link-manager' ), (string) $form['name'], true );
@@ -103,7 +104,9 @@ class GT_Link_Admin_Pages {
 
 		submit_button( __( 'Save Link', 'gt-link-manager' ), 'primary', 'save_link' );
 		submit_button( __( 'Save & Add Another', 'gt-link-manager' ), 'secondary', 'save_add_another', false );
-		echo '</form></div>';
+		echo '</form>';
+		echo '</div>';
+		echo '</div>';
 	}
 
 	public function render_categories_page(): void {
@@ -127,10 +130,12 @@ class GT_Link_Admin_Pages {
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'Link Categories', 'gt-link-manager' ) . '</h1>';
 		$this->render_notice();
+
+		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html( $editing_id > 0 ? __( 'Edit Category', 'gt-link-manager' ) : __( 'Add Category', 'gt-link-manager' ) ) . '</h2>';
 		echo '<form method="post" action="">';
-		wp_nonce_field( 'gt_link_category_save' );
-		echo '<input type="hidden" name="gt_category_action" value="save_category" />';
+		wp_nonce_field( 'gtlm_category_save' );
+		echo '<input type="hidden" name="gtlm_category_action" value="save_category" />';
 		echo '<input type="hidden" name="category_id" value="' . (int) $category_form['id'] . '" />';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		$this->render_text_field( 'name', __( 'Name', 'gt-link-manager' ), (string) $category_form['name'], true );
@@ -140,8 +145,10 @@ class GT_Link_Admin_Pages {
 		echo '</tbody></table>';
 		submit_button( __( 'Save Category', 'gt-link-manager' ) );
 		echo '</form>';
+		echo '</div>';
 
-		echo '<hr /><h2>' . esc_html__( 'All Categories', 'gt-link-manager' ) . '</h2>';
+		echo '<div class="gtlm-card">';
+		echo '<h2>' . esc_html__( 'All Categories', 'gt-link-manager' ) . '</h2>';
 		echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Slug', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Parent', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Count', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Actions', 'gt-link-manager' ) . '</th></tr></thead><tbody>';
 
 		if ( empty( $categories ) ) {
@@ -151,7 +158,7 @@ class GT_Link_Admin_Pages {
 		foreach ( $categories as $category ) {
 			$edit_url   = add_query_arg(
 				array(
-					'page' => 'gt-links-categories',
+					'page' => 'gtlm-links-categories',
 					'edit' => (int) $category['id'],
 				),
 				admin_url( 'admin.php' )
@@ -159,19 +166,21 @@ class GT_Link_Admin_Pages {
 			$delete_url = wp_nonce_url(
 				add_query_arg(
 					array(
-						'page'        => 'gt-links-categories',
+						'page'        => 'gtlm-links-categories',
 						'action'      => 'delete',
 						'category_id' => (int) $category['id'],
 					),
 					admin_url( 'admin.php' )
 				),
-				'gt_link_category_delete_' . (int) $category['id']
+				'gtlm_category_delete_' . (int) $category['id']
 			);
 
 			echo '<tr><td>' . esc_html( (string) $category['name'] ) . '</td><td><code>' . esc_html( (string) $category['slug'] ) . '</code></td><td>' . esc_html( $this->category_name_by_id( $categories, (int) $category['parent_id'] ) ) . '</td><td>' . (int) $category['count'] . '</td><td><a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'gt-link-manager' ) . '</a> | <a href="' . esc_url( $delete_url ) . '">' . esc_html__( 'Delete', 'gt-link-manager' ) . '</a></td></tr>';
 		}
 
-		echo '</tbody></table></div>';
+		echo '</tbody></table>';
+		echo '</div>';
+		echo '</div>';
 	}
 
 	public function render_settings_page(): void {
@@ -180,13 +189,16 @@ class GT_Link_Admin_Pages {
 		}
 
 		$settings    = $this->settings->all();
-		$diagnostics = get_option( 'gt_link_manager_diagnostics', array() );
+		$diagnostics = get_option( 'gtlm_diagnostics', array() );
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'GT Links Settings', 'gt-link-manager' ) . '</h1>';
 		$this->render_notice();
+
+		echo '<div class="gtlm-card">';
+		echo '<h2>' . esc_html__( 'General', 'gt-link-manager' ) . '</h2>';
 		echo '<form method="post" action="">';
-		wp_nonce_field( 'gt_link_settings_save' );
-		echo '<input type="hidden" name="gt_settings_action" value="save_settings" />';
+		wp_nonce_field( 'gtlm_settings_save' );
+		echo '<input type="hidden" name="gtlm_settings_action" value="save_settings" />';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		$this->render_text_field( 'base_prefix', __( 'Base Prefix', 'gt-link-manager' ), (string) $settings['base_prefix'], true );
 		$this->render_redirect_type_field( (int) $settings['default_redirect_type'], 'default_redirect_type', __( 'Default Redirect Type', 'gt-link-manager' ) );
@@ -195,23 +207,28 @@ class GT_Link_Admin_Pages {
 		echo '</tbody></table>';
 		submit_button( __( 'Save Settings', 'gt-link-manager' ) );
 		echo '</form>';
+		echo '</div>';
 
+		echo '<div class="gtlm-card">';
+		echo '<h2>' . esc_html__( 'Tools', 'gt-link-manager' ) . '</h2>';
 		echo '<div class="gtlm-settings-actions">';
 
 		echo '<form method="post" action="" style="display:inline-block;">';
-		wp_nonce_field( 'gt_link_settings_save' );
-		echo '<input type="hidden" name="gt_settings_action" value="flush_permalinks" />';
+		wp_nonce_field( 'gtlm_settings_save' );
+		echo '<input type="hidden" name="gtlm_settings_action" value="flush_permalinks" />';
 		echo '<button type="submit" class="button">' . esc_html__( 'Flush Permalinks', 'gt-link-manager' ) . '</button>';
 		echo '</form>';
 
 		echo '<form method="post" action="" style="display:inline-block;">';
-		wp_nonce_field( 'gt_link_settings_save' );
-		echo '<input type="hidden" name="gt_settings_action" value="run_diagnostics" />';
+		wp_nonce_field( 'gtlm_settings_save' );
+		echo '<input type="hidden" name="gtlm_settings_action" value="run_diagnostics" />';
 		echo '<button type="submit" class="button">' . esc_html__( 'Run Diagnostics', 'gt-link-manager' ) . '</button>';
 		echo '</form>';
 
 		echo '</div>';
+		echo '</div>';
 
+		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html__( 'Diagnostics', 'gt-link-manager' ) . '</h2>';
 		if ( ! is_array( $diagnostics ) || empty( $diagnostics ) ) {
 			echo '<p>' . esc_html__( 'No diagnostics run yet.', 'gt-link-manager' ) . '</p>';
@@ -219,19 +236,18 @@ class GT_Link_Admin_Pages {
 			$loopback = $diagnostics['loopback_ok'] ?? null;
 			$label    = is_bool( $loopback ) ? ( $loopback ? __( 'OK', 'gt-link-manager' ) : __( 'Failed', 'gt-link-manager' ) ) : __( 'Skipped', 'gt-link-manager' );
 
-			echo '<div class="gtlm-diagnostics-card">';
 			echo '<table class="gtlm-diagnostics-table"><tbody>';
 			echo '<tr><th>' . esc_html__( 'Checked At', 'gt-link-manager' ) . '</th><td>' . esc_html( (string) ( $diagnostics['checked_at'] ?? '-' ) ) . '</td></tr>';
 			echo '<tr><th>' . esc_html__( 'Prefix', 'gt-link-manager' ) . '</th><td><code>' . esc_html( (string) ( $diagnostics['prefix'] ?? '-' ) ) . '</code></td></tr>';
-			echo '<tr><th>' . esc_html__( 'Tables', 'gt-link-manager' ) . '</th><td>' . ( ! empty( $diagnostics['tables_ok'] ) ? '<span class="gt-link-status gt-link-status--active">' . esc_html__( 'OK', 'gt-link-manager' ) . '</span>' : '<span class="gt-link-status gt-link-status--inactive">' . esc_html__( 'Failed', 'gt-link-manager' ) . '</span>' ) . '</td></tr>';
-			echo '<tr><th>' . esc_html__( 'Rewrite Rule', 'gt-link-manager' ) . '</th><td>' . ( ! empty( $diagnostics['rewrite_ok'] ) ? '<span class="gt-link-status gt-link-status--active">' . esc_html__( 'OK', 'gt-link-manager' ) . '</span>' : '<span class="gt-link-status gt-link-status--inactive">' . esc_html__( 'Missing', 'gt-link-manager' ) . '</span>' ) . '</td></tr>';
-			echo '<tr><th>' . esc_html__( 'Runtime Redirect', 'gt-link-manager' ) . '</th><td>' . ( true === $loopback ? '<span class="gt-link-status gt-link-status--active">' . esc_html( $label ) . '</span>' : '<span class="gt-link-status gt-link-status--inactive">' . esc_html( $label ) . '</span>' ) . '</td></tr>';
+			echo '<tr><th>' . esc_html__( 'Tables', 'gt-link-manager' ) . '</th><td>' . ( ! empty( $diagnostics['tables_ok'] ) ? '<span class="gtlm-status gtlm-status--active">' . esc_html__( 'OK', 'gt-link-manager' ) . '</span>' : '<span class="gtlm-status gtlm-status--inactive">' . esc_html__( 'Failed', 'gt-link-manager' ) . '</span>' ) . '</td></tr>';
+			echo '<tr><th>' . esc_html__( 'Rewrite Rule', 'gt-link-manager' ) . '</th><td>' . ( ! empty( $diagnostics['rewrite_ok'] ) ? '<span class="gtlm-status gtlm-status--active">' . esc_html__( 'OK', 'gt-link-manager' ) . '</span>' : '<span class="gtlm-status gtlm-status--inactive">' . esc_html__( 'Missing', 'gt-link-manager' ) . '</span>' ) . '</td></tr>';
+			echo '<tr><th>' . esc_html__( 'Runtime Redirect', 'gt-link-manager' ) . '</th><td>' . ( true === $loopback ? '<span class="gtlm-status gtlm-status--active">' . esc_html( $label ) . '</span>' : '<span class="gtlm-status gtlm-status--inactive">' . esc_html( $label ) . '</span>' ) . '</td></tr>';
 			if ( ! empty( $diagnostics['message'] ) ) {
 				echo '<tr><th>' . esc_html__( 'Details', 'gt-link-manager' ) . '</th><td>' . esc_html( (string) $diagnostics['message'] ) . '</td></tr>';
 			}
 			echo '</tbody></table>';
-			echo '</div>';
 		}
+		echo '</div>';
 		echo '</div>';
 	}
 
@@ -378,6 +394,6 @@ class GT_Link_Admin_Pages {
 	}
 
 	private function links_capability( string $context ): string {
-		return (string) apply_filters( 'gt_link_manager_capabilities', 'edit_posts', $context );
+		return (string) apply_filters( 'gtlm_capabilities', 'edit_posts', $context );
 	}
 }

@@ -95,7 +95,7 @@
 			message.textContent = '';
 			spinner.classList.add('is-active');
 
-			formData.append('action', 'gt_link_quick_edit');
+			formData.append('action', 'gtlm_quick_edit');
 			formData.append('nonce', window.gtlmAdmin.quickEditNonce);
 			formData.append('link_id', data.linkId);
 			formData.append('url', urlInput.value);
@@ -139,7 +139,7 @@
 	}
 
 	document.addEventListener('click', function (event) {
-		var quickLink = event.target.closest('.gt-link-quick-edit');
+		var quickLink = event.target.closest('.gtlm-quick-edit');
 		if (quickLink) {
 			event.preventDefault();
 			var tr = quickLink.closest('tr');
@@ -154,7 +154,7 @@
 			return;
 		}
 
-		var copyLink = event.target.closest('.gt-link-copy-url');
+		var copyLink = event.target.closest('.gtlm-copy-url');
 		if (copyLink) {
 			event.preventDefault();
 			var copyUrl = copyLink.getAttribute('data-copy-url') || '';

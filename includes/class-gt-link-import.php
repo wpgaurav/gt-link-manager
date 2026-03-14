@@ -9,14 +9,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Import {
-	private GT_Link_DB $db;
+class GTLM_Import {
+	private GTLM_DB $db;
 
-	private GT_Link_Settings $settings;
+	private GTLM_Settings $settings;
 
-	private const PREVIEW_TRANSIENT_PREFIX = 'gt_link_import_preview_';
+	private const PREVIEW_TRANSIENT_PREFIX = 'gtlm_import_preview_';
 
-	public function __construct( GT_Link_DB $db, GT_Link_Settings $settings ) {
+	public function __construct( GTLM_DB $db, GTLM_Settings $settings ) {
 		$this->db       = $db;
 		$this->settings = $settings;
 	}
@@ -27,24 +27,24 @@ class GT_Link_Import {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( 'gt-links-import-export' !== $page ) {
+		if ( 'gtlm-links-import-export' !== $page ) {
 			return;
 		}
 
-		if ( ! current_user_can( (string) apply_filters( 'gt_link_manager_capabilities', 'edit_posts', 'import_export' ) ) ) {
+		if ( ! current_user_can( (string) apply_filters( 'gtlm_capabilities', 'edit_posts', 'import_export' ) ) ) {
 			return;
 		}
 
-		if ( ! isset( $_POST['gt_import_export_action'] ) ) {
+		if ( ! isset( $_POST['gtlm_import_export_action'] ) || ! isset( $_POST['_wpnonce'] ) ) {
 			return;
 		}
 
-		$action = sanitize_key( (string) wp_unslash( $_POST['gt_import_export_action'] ) );
+		check_admin_referer( 'gtlm_import_export' );
+
+		$action = sanitize_key( (string) wp_unslash( $_POST['gtlm_import_export_action'] ) );
 		if ( ! in_array( $action, array( 'preview_csv', 'import_csv', 'export_csv' ), true ) ) {
 			return;
 		}
-
-		check_admin_referer( 'gt_link_import_export' );
 
 		if ( 'export_csv' === $action ) {
 			$this->export_csv();
@@ -62,10 +62,8 @@ class GT_Link_Import {
 
 		echo '<div class="wrap">';
 		echo '<h1>' . esc_html__( 'Import / Export', 'gt-link-manager' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Import links from CSV or export links with optional filters.', 'gt-link-manager' ) . '</p>';
 
 		$this->render_export_form();
-		echo '<hr />';
 
 		if ( is_array( $preview ) ) {
 			$this->render_import_mapping_form( $preview );
@@ -79,10 +77,11 @@ class GT_Link_Import {
 	private function render_export_form(): void {
 		$categories = $this->db->get_categories();
 
+		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html__( 'Export', 'gt-link-manager' ) . '</h2>';
 		echo '<form method="post" action="">';
-		wp_nonce_field( 'gt_link_import_export' );
-		echo '<input type="hidden" name="gt_import_export_action" value="export_csv" />';
+		wp_nonce_field( 'gtlm_import_export' );
+		echo '<input type="hidden" name="gtlm_import_export_action" value="export_csv" />';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		echo '<tr><th scope="row"><label for="export_search">' . esc_html__( 'Search', 'gt-link-manager' ) . '</label></th><td><input type="text" class="regular-text" name="export_search" id="export_search" value="" /></td></tr>';
 
@@ -97,13 +96,15 @@ class GT_Link_Import {
 		echo '</tbody></table>';
 		submit_button( esc_html__( 'Export CSV', 'gt-link-manager' ), 'secondary' );
 		echo '</form>';
+		echo '</div>';
 	}
 
 	private function render_import_upload_form(): void {
+		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html__( 'Import (Step 1: Upload & Preview)', 'gt-link-manager' ) . '</h2>';
 		echo '<form method="post" action="" enctype="multipart/form-data" id="gtlm-import-form">';
-		wp_nonce_field( 'gt_link_import_export' );
-		echo '<input type="hidden" name="gt_import_export_action" value="preview_csv" />';
+		wp_nonce_field( 'gtlm_import_export' );
+		echo '<input type="hidden" name="gtlm_import_export_action" value="preview_csv" />';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		echo '<tr><th scope="row"><label for="gt-import-file">' . esc_html__( 'CSV File', 'gt-link-manager' ) . '</label></th><td><input type="file" name="import_file" id="gt-import-file" accept=".csv,text/csv" required /></td></tr>';
 		echo '<tr><th scope="row">' . esc_html__( 'Preset', 'gt-link-manager' ) . '</th><td><label><input type="radio" name="preset" value="generic" checked /> ' . esc_html__( 'Generic', 'gt-link-manager' ) . '</label><br /><label><input type="radio" name="preset" value="linkcentral" /> ' . esc_html__( 'LinkCentral', 'gt-link-manager' ) . '</label><br /><label><input type="radio" name="preset" value="prettylinks" /> ' . esc_html__( 'Pretty Links', 'gt-link-manager' ) . '</label></td></tr>';
@@ -111,6 +112,7 @@ class GT_Link_Import {
 		submit_button( esc_html__( 'Preview CSV', 'gt-link-manager' ) );
 		echo '<div id="gtlm-import-progress-wrap" style="display:none;"><p>' . esc_html__( 'Processing file...', 'gt-link-manager' ) . '</p><progress id="gtlm-import-progress"></progress></div>';
 		echo '</form>';
+		echo '</div>';
 	}
 
 	/**
@@ -121,6 +123,7 @@ class GT_Link_Import {
 		$rows   = isset( $preview['rows'] ) && is_array( $preview['rows'] ) ? $preview['rows'] : array();
 		$preset = isset( $preview['preset'] ) ? sanitize_key( (string) $preview['preset'] ) : 'generic';
 
+		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html__( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Map CSV columns to GT Link fields, then import.', 'gt-link-manager' ) . '</p>';
 
@@ -156,8 +159,8 @@ class GT_Link_Import {
 		);
 
 		echo '<form method="post" action="" id="gtlm-import-form">';
-		wp_nonce_field( 'gt_link_import_export' );
-		echo '<input type="hidden" name="gt_import_export_action" value="import_csv" />';
+		wp_nonce_field( 'gtlm_import_export' );
+		echo '<input type="hidden" name="gtlm_import_export_action" value="import_csv" />';
 		echo '<input type="hidden" name="preview_token" value="' . esc_attr( (string) $preview['token'] ) . '" />';
 		echo '<input type="hidden" name="preset" value="' . esc_attr( $preset ) . '" />';
 
@@ -183,6 +186,7 @@ class GT_Link_Import {
 		submit_button( esc_html__( 'Run Import', 'gt-link-manager' ) );
 		echo '<div id="gtlm-import-progress-wrap" style="display:none;"><p>' . esc_html__( 'Import in progress...', 'gt-link-manager' ) . '</p><progress id="gtlm-import-progress"></progress></div>';
 		echo '</form>';
+		echo '</div>';
 	}
 
 	private function export_csv(): void {
@@ -198,7 +202,7 @@ class GT_Link_Import {
 
 		nocache_headers();
 		header( 'Content-Type: text/csv; charset=utf-8' );
-		header( 'Content-Disposition: attachment; filename=gt-links-' . gmdate( 'Y-m-d-His' ) . '.csv' );
+		header( 'Content-Disposition: attachment; filename=gtlm-links-' . gmdate( 'Y-m-d-His' ) . '.csv' );
 
 		$output = fopen( 'php://output', 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		if ( false === $output ) {
@@ -555,7 +559,7 @@ class GT_Link_Import {
 			}
 		}
 
-		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php?page=gt-links-import-export' ) ) );
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php?page=gtlm-links-import-export' ) ) );
 		exit;
 	}
 }

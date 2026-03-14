@@ -9,17 +9,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Redirect {
-	private GT_Link_DB $db;
+class GTLM_Redirect {
+	private GTLM_DB $db;
 
-	private GT_Link_Settings $settings;
+	private GTLM_Settings $settings;
 
-	public static function init( GT_Link_DB $db, GT_Link_Settings $settings ): void {
+	public static function init( GTLM_DB $db, GTLM_Settings $settings ): void {
 		$instance = new self( $db, $settings );
 		$instance->hooks();
 	}
 
-	private function __construct( GT_Link_DB $db, GT_Link_Settings $settings ) {
+	private function __construct( GTLM_DB $db, GTLM_Settings $settings ) {
 		$this->db       = $db;
 		$this->settings = $settings;
 	}
@@ -28,7 +28,7 @@ class GT_Link_Redirect {
 		add_action( 'init', array( $this, 'register_rewrite_rules' ), 1 );
 		add_filter( 'query_vars', array( $this, 'register_query_var' ) );
 		add_action( 'init', array( $this, 'maybe_redirect' ), 0 );
-		add_action( 'gt_link_manager_settings_saved', array( $this, 'on_settings_saved' ), 10, 1 );
+		add_action( 'gtlm_settings_saved', array( $this, 'on_settings_saved' ), 10, 1 );
 	}
 
 	/**
@@ -36,15 +36,15 @@ class GT_Link_Redirect {
 	 * @return array<int, string>
 	 */
 	public function register_query_var( array $vars ): array {
-		$vars[] = 'gt_link_slug';
+		$vars[] = 'gtlm_slug';
 		return $vars;
 	}
 
 	public function register_rewrite_rules(): void {
 		$prefix = preg_quote( $this->settings->prefix(), '/' );
 
-		add_rewrite_tag( '%gt_link_slug%', '([^&]+)' );
-		add_rewrite_rule( '^' . $prefix . '/([^/]+)/?$', 'index.php?gt_link_slug=$matches[1]', 'top' );
+		add_rewrite_tag( '%gtlm_slug%', '([^&]+)' );
+		add_rewrite_rule( '^' . $prefix . '/([^/]+)/?$', 'index.php?gtlm_slug=$matches[1]', 'top' );
 	}
 
 	/**
@@ -70,8 +70,8 @@ class GT_Link_Redirect {
 			return;
 		}
 
-		$target_url = (string) apply_filters( 'gt_link_manager_redirect_url', $link['url'], $link, $slug );
-		$status     = (int) apply_filters( 'gt_link_manager_redirect_code', (int) $link['redirect_type'], $link, $slug );
+		$target_url = (string) apply_filters( 'gtlm_redirect_url', $link['url'], $link, $slug );
+		$status     = (int) apply_filters( 'gtlm_redirect_code', (int) $link['redirect_type'], $link, $slug );
 		$status     = in_array( $status, array( 301, 302, 307 ), true ) ? $status : 301;
 
 		$target_url = trim( $target_url );
@@ -90,7 +90,7 @@ class GT_Link_Redirect {
 		}
 
 		$rel_values = $this->parse_rel( (string) ( $link['rel'] ?? '' ) );
-		$rel_values = (array) apply_filters( 'gt_link_manager_rel_attributes', $rel_values, $link, $slug );
+		$rel_values = (array) apply_filters( 'gtlm_rel_attributes', $rel_values, $link, $slug );
 
 		$headers = array(
 			'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
@@ -109,9 +109,9 @@ class GT_Link_Redirect {
 		 *
 		 * @param array<string, string> $headers Headers.
 		 */
-		$headers = (array) apply_filters( 'gt_link_manager_headers', $headers, $link, $slug );
+		$headers = (array) apply_filters( 'gtlm_headers', $headers, $link, $slug );
 
-		do_action( 'gt_link_manager_before_redirect', $link, $target_url, $status, $headers );
+		do_action( 'gtlm_before_redirect', $link, $target_url, $status, $headers );
 
 		foreach ( $headers as $name => $value ) {
 			if ( '' !== $name && '' !== $value ) {
@@ -134,12 +134,12 @@ class GT_Link_Redirect {
 		flush_rewrite_rules();
 
 		if ( function_exists( 'wp_cache_flush_group' ) ) {
-			wp_cache_flush_group( GT_Link_DB::CACHE_GROUP );
+			wp_cache_flush_group( GTLM_DB::CACHE_GROUP );
 		}
 	}
 
 	private function extract_slug_from_request(): string {
-		$slug = get_query_var( 'gt_link_slug', '' );
+		$slug = get_query_var( 'gtlm_slug', '' );
 		if ( is_string( $slug ) && '' !== $slug ) {
 			return sanitize_title( $slug );
 		}

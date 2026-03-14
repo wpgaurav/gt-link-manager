@@ -9,21 +9,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Activator {
+class GTLM_Activator {
 	/**
 	 * Run activation tasks.
 	 */
 	public static function activate(): void {
 		self::create_tables();
 
-		if ( false === get_option( 'gt_link_manager_settings', false ) ) {
-			update_option( 'gt_link_manager_settings', GT_Link_Settings::defaults(), false );
+		if ( false === get_option( 'gtlm_settings', false ) ) {
+			update_option( 'gtlm_settings', GTLM_Settings::defaults(), false );
 		}
 
 		self::register_rewrite_rules();
 		flush_rewrite_rules();
 
-		do_action( 'gt_link_manager_activated' );
+		do_action( 'gtlm_activated' );
 	}
 
 	/**
@@ -35,8 +35,8 @@ class GT_Link_Activator {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		$charset_collate = $wpdb->get_charset_collate();
-		$links_table     = GT_Link_DB::links_table();
-		$cats_table      = GT_Link_DB::categories_table();
+		$links_table     = GTLM_DB::links_table();
+		$cats_table      = GTLM_DB::categories_table();
 
 		$sql_links = "CREATE TABLE {$links_table} (
 			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -85,9 +85,9 @@ class GT_Link_Activator {
 	 * requiring a manual deactivate → reactivate cycle.
 	 */
 	public static function maybe_upgrade(): void {
-		$stored = get_option( 'gt_link_manager_db_version', '0' );
+		$stored = get_option( 'gtlm_db_version', '0' );
 
-		if ( version_compare( $stored, GT_LINK_MANAGER_VERSION, '>=' ) ) {
+		if ( version_compare( $stored, GTLM_VERSION, '>=' ) ) {
 			return;
 		}
 
@@ -97,7 +97,7 @@ class GT_Link_Activator {
 		// Backfill: existing rows created before 1.1.9 have NULL is_active.
 		// They should be treated as active.
 		global $wpdb;
-		$table = GT_Link_DB::links_table();
+		$table = GTLM_DB::links_table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->query(
@@ -108,17 +108,17 @@ class GT_Link_Activator {
 			)
 		);
 
-		update_option( 'gt_link_manager_db_version', GT_LINK_MANAGER_VERSION, true );
+		update_option( 'gtlm_db_version', GTLM_VERSION, true );
 	}
 
 	/**
 	 * Register rewrite rules at activation time.
 	 */
 	public static function register_rewrite_rules(): void {
-		$settings = GT_Link_Settings::get_instance();
+		$settings = GTLM_Settings::get_instance();
 		$prefix   = preg_quote( $settings->prefix(), '/' );
 
-		add_rewrite_tag( '%gt_link_slug%', '([^&]+)' );
-		add_rewrite_rule( '^' . $prefix . '/([^/]+)/?$', 'index.php?gt_link_slug=$matches[1]', 'top' );
+		add_rewrite_tag( '%gtlm_slug%', '([^&]+)' );
+		add_rewrite_rule( '^' . $prefix . '/([^/]+)/?$', 'index.php?gtlm_slug=$matches[1]', 'top' );
 	}
 }

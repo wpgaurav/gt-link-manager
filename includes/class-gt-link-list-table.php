@@ -13,8 +13,8 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 	require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 }
 
-class GT_Link_List_Table extends WP_List_Table {
-	private GT_Link_DB $db;
+class GTLM_List_Table extends WP_List_Table {
+	private GTLM_DB $db;
 
 	private string $prefix;
 
@@ -31,7 +31,7 @@ class GT_Link_List_Table extends WP_List_Table {
 	/**
 	 * @param array<int, array<string, mixed>> $categories Categories.
 	 */
-	public function __construct( GT_Link_DB $db, array $categories, string $prefix, string $view = '' ) {
+	public function __construct( GTLM_DB $db, array $categories, string $prefix, string $view = '' ) {
 		$this->db         = $db;
 		$this->categories = $categories;
 		$this->prefix     = sanitize_title_with_dashes( $prefix );
@@ -39,8 +39,8 @@ class GT_Link_List_Table extends WP_List_Table {
 
 		parent::__construct(
 			array(
-				'singular' => 'gt_link',
-				'plural'   => 'gt_links',
+				'singular' => 'gtlm_link',
+				'plural'   => 'gtlm_links',
 				'ajax'     => false,
 			)
 		);
@@ -63,7 +63,7 @@ class GT_Link_List_Table extends WP_List_Table {
 			'created_at'    => esc_html__( 'Created', 'gt-link-manager' ),
 		);
 
-		return (array) apply_filters( 'gt_link_manager_link_columns', $columns );
+		return (array) apply_filters( 'gtlm_link_columns', $columns );
 	}
 
 	/**
@@ -115,7 +115,7 @@ class GT_Link_List_Table extends WP_List_Table {
 	 * @return array<string, string>
 	 */
 	protected function get_views(): array {
-		$base_url = admin_url( 'admin.php?page=gt-links' );
+		$base_url = admin_url( 'admin.php?page=gtlm-links' );
 		$all      = $this->db->count_links( array() );
 		$active   = $this->db->count_links( array( 'status' => 'active' ) );
 		$inactive = $this->db->count_links( array( 'status' => 'inactive' ) );
@@ -175,7 +175,7 @@ class GT_Link_List_Table extends WP_List_Table {
 	protected function column_name( $item ): string {
 		$edit_url = add_query_arg(
 			array(
-				'page'    => 'gt-links-edit',
+				'page'    => 'gtlm-links-edit',
 				'link_id' => (int) $item['id'],
 			),
 			admin_url( 'admin.php' )
@@ -187,25 +187,25 @@ class GT_Link_List_Table extends WP_List_Table {
 			$restore_url = wp_nonce_url(
 				add_query_arg(
 					array(
-						'page'   => 'gt-links',
+						'page'   => 'gtlm-links',
 						'action' => 'restore',
 						'link'   => (int) $item['id'],
 					),
 					admin_url( 'admin.php' )
 				),
-				'gt_link_restore_' . (int) $item['id']
+				'gtlm_restore_' . (int) $item['id']
 			);
 
 			$delete_url = wp_nonce_url(
 				add_query_arg(
 					array(
-						'page'   => 'gt-links',
+						'page'   => 'gtlm-links',
 						'action' => 'permanent_delete',
 						'link'   => (int) $item['id'],
 					),
 					admin_url( 'admin.php' )
 				),
-				'gt_link_permanent_delete_' . (int) $item['id']
+				'gtlm_permanent_delete_' . (int) $item['id']
 			);
 
 			$actions = array(
@@ -219,13 +219,13 @@ class GT_Link_List_Table extends WP_List_Table {
 		$trash_url = wp_nonce_url(
 			add_query_arg(
 				array(
-					'page'   => 'gt-links',
+					'page'   => 'gtlm-links',
 					'action' => 'trash',
 					'link'   => (int) $item['id'],
 				),
 				admin_url( 'admin.php' )
 			),
-			'gt_link_trash_' . (int) $item['id']
+			'gtlm_trash_' . (int) $item['id']
 		);
 
 		$is_active     = ! empty( $item['is_active'] );
@@ -234,7 +234,7 @@ class GT_Link_List_Table extends WP_List_Table {
 		$toggle_url    = wp_nonce_url(
 			add_query_arg(
 				array(
-					'page'   => 'gt-links',
+					'page'   => 'gtlm-links',
 					'action' => $toggle_action,
 					'link'   => (int) $item['id'],
 				),
@@ -245,8 +245,8 @@ class GT_Link_List_Table extends WP_List_Table {
 
 		$actions = array(
 			'edit'       => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'gt-link-manager' ) . '</a>',
-			'quick_edit' => '<a href="#" class="gt-link-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
-			'copy_url'   => '<a href="#" class="gt-link-copy-url" data-copy-url="' . esc_attr( $branded_url ) . '">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</a>',
+			'quick_edit' => '<a href="#" class="gtlm-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
+			'copy_url'   => '<a href="#" class="gtlm-copy-url" data-copy-url="' . esc_attr( $branded_url ) . '">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</a>',
 			'toggle'     => '<a href="' . esc_url( $toggle_url ) . '">' . $toggle_label . '</a>',
 			'trash'      => '<a href="' . esc_url( $trash_url ) . '">' . esc_html__( 'Trash', 'gt-link-manager' ) . '</a>',
 			'view'       => '<a href="' . esc_url( $branded_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View', 'gt-link-manager' ) . '</a>',
@@ -276,10 +276,10 @@ class GT_Link_List_Table extends WP_List_Table {
 	 */
 	protected function column_status( $item ): string {
 		if ( ! empty( $item['is_active'] ) ) {
-			return '<span class="gt-link-status gt-link-status--active">' . esc_html__( 'Active', 'gt-link-manager' ) . '</span>';
+			return '<span class="gtlm-status gtlm-status--active">' . esc_html__( 'Active', 'gt-link-manager' ) . '</span>';
 		}
 
-		return '<span class="gt-link-status gt-link-status--inactive">' . esc_html__( 'Inactive', 'gt-link-manager' ) . '</span>';
+		return '<span class="gtlm-status gtlm-status--inactive">' . esc_html__( 'Inactive', 'gt-link-manager' ) . '</span>';
 	}
 
 	/**
@@ -358,7 +358,7 @@ class GT_Link_List_Table extends WP_List_Table {
 	public function prepare_items(): void {
 		$this->process_bulk_action();
 
-		$per_page     = $this->get_items_per_page( 'gt_links_per_page', 20 );
+		$per_page     = $this->get_items_per_page( 'gtlm_links_per_page', 20 );
 		$current_page = $this->get_pagenum();
 		$search       = isset( $_REQUEST['s'] ) ? sanitize_text_field( (string) wp_unslash( $_REQUEST['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$orderby      = isset( $_REQUEST['orderby'] ) ? sanitize_key( (string) wp_unslash( $_REQUEST['orderby'] ) ) : 'id'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended

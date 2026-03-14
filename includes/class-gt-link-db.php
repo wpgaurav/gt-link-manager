@@ -12,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_DB {
-	public const CACHE_GROUP = 'gt_links';
+class GTLM_DB {
+	public const CACHE_GROUP = 'gtlm_links';
 
 	/**
 	 * Column list used in SELECT statements.
@@ -25,7 +25,7 @@ class GT_Link_DB {
 	 */
 	public static function links_table(): string {
 		global $wpdb;
-		return $wpdb->prefix . 'gt_links';
+		return $wpdb->prefix . 'gtlm_links';
 	}
 
 	/**
@@ -33,7 +33,7 @@ class GT_Link_DB {
 	 */
 	public static function categories_table(): string {
 		global $wpdb;
-		return $wpdb->prefix . 'gt_link_categories';
+		return $wpdb->prefix . 'gtlm_categories';
 	}
 
 	/**
@@ -64,7 +64,7 @@ class GT_Link_DB {
 		$row  = $wpdb->get_row( $sql, ARRAY_A );
 		$link = is_array( $row ) ? $this->normalize_link_row( $row ) : null;
 
-		$ttl = (int) apply_filters( 'gt_link_manager_cache_ttl', 0, $slug, $link );
+		$ttl = (int) apply_filters( 'gtlm_cache_ttl', 0, $slug, $link );
 		wp_cache_set( $cache_key, $link, self::CACHE_GROUP, max( 0, $ttl ) );
 
 		return $link;
@@ -90,7 +90,7 @@ class GT_Link_DB {
 		if ( $link_id > 0 ) {
 			$this->maybe_increment_category_count( (int) $insert['category_id'] );
 			$this->delete_slug_cache( (string) $insert['slug'] );
-			do_action( 'gt_link_manager_after_save', $link_id, $insert );
+			do_action( 'gtlm_after_save', $link_id, $insert );
 		}
 
 		return $link_id;
@@ -137,7 +137,7 @@ class GT_Link_DB {
 		$this->delete_slug_cache( (string) $existing['slug'] );
 		$this->delete_slug_cache( (string) $update['slug'] );
 
-		do_action( 'gt_link_manager_after_save', $id, $update );
+		do_action( 'gtlm_after_save', $id, $update );
 		return true;
 	}
 
@@ -227,7 +227,7 @@ class GT_Link_DB {
 
 		$this->delete_slug_cache( (string) $link['slug'] );
 		$this->maybe_decrement_category_count( (int) ( $link['category_id'] ?? 0 ) );
-		do_action( 'gt_link_manager_after_delete', $id, $link );
+		do_action( 'gtlm_after_delete', $id, $link );
 
 		return true;
 	}
@@ -390,7 +390,9 @@ class GT_Link_DB {
 		$this->apply_status_filters( $sql, $params, $filters );
 		$this->apply_common_filters( $sql, $params, $filters );
 
-		$sql     .= " ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $order is validated to ASC/DESC above.
+		$sql     .= " ORDER BY %i {$order} LIMIT %d OFFSET %d";
+		$params[] = $orderby;
 		$params[] = $per_page;
 		$params[] = $offset;
 

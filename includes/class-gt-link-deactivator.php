@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Deactivator {
+class GTLM_Deactivator {
 	/**
 	 * Run deactivation tasks.
 	 */

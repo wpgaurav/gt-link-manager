@@ -27,7 +27,7 @@ const FORMAT_NAME = 'gt-link-manager/link-inserter';
 const FORMAT_TYPE_SETTINGS = {
 	title: __( 'GT Link', 'gt-link-manager' ),
 	tagName: 'span',
-	className: 'gt-link',
+	className: 'gtlm-link',
 };
 
 function LinkInserterEdit( {

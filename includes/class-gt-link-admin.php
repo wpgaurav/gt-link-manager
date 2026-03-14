@@ -9,25 +9,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Admin {
-	private GT_Link_DB $db;
+class GTLM_Admin {
+	private GTLM_DB $db;
 
-	private GT_Link_Settings $settings;
+	private GTLM_Settings $settings;
 
-	private GT_Link_Import $importer;
+	private GTLM_Import $importer;
 
-	private GT_Link_Admin_Pages $pages;
+	private GTLM_Admin_Pages $pages;
 
-	public static function init( GT_Link_DB $db, GT_Link_Settings $settings ): void {
+	public static function init( GTLM_DB $db, GTLM_Settings $settings ): void {
 		$instance = new self( $db, $settings );
 		$instance->hooks();
 	}
 
-	private function __construct( GT_Link_DB $db, GT_Link_Settings $settings ) {
+	private function __construct( GTLM_DB $db, GTLM_Settings $settings ) {
 		$this->db       = $db;
 		$this->settings = $settings;
-		$this->importer = new GT_Link_Import( $db, $settings );
-		$this->pages    = new GT_Link_Admin_Pages( $db, $settings, $this->importer );
+		$this->importer = new GTLM_Import( $db, $settings );
+		$this->pages    = new GTLM_Admin_Pages( $db, $settings, $this->importer );
 	}
 
 	private function hooks(): void {
@@ -39,7 +39,7 @@ class GT_Link_Admin {
 		add_action( 'admin_init', array( $this, 'handle_actions' ) );
 		add_filter( 'set-screen-option', array( $this, 'set_screen_option' ), 10, 3 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'wp_ajax_gt_link_quick_edit', array( $this, 'ajax_quick_edit' ) );
+		add_action( 'wp_ajax_gtlm_quick_edit', array( $this, 'ajax_quick_edit' ) );
 	}
 
 	/**
@@ -49,7 +49,7 @@ class GT_Link_Admin {
 	 * @return mixed
 	 */
 	public function set_screen_option( $status, $option, $value ) {
-		if ( 'gt_links_per_page' === $option ) {
+		if ( 'gtlm_links_per_page' === $option ) {
 			return max( 1, min( 200, absint( $value ) ) );
 		}
 
@@ -63,7 +63,7 @@ class GT_Link_Admin {
 			esc_html__( 'GT Links', 'gt-link-manager' ),
 			esc_html__( 'GT Links', 'gt-link-manager' ),
 			$capability,
-			'gt-links',
+			'gtlm-links',
 			array( $this->pages, 'render_links_page' ),
 			'dashicons-admin-links',
 			26
@@ -73,11 +73,11 @@ class GT_Link_Admin {
 			add_action( 'load-' . $hook, array( $this, 'add_links_screen_options' ) );
 		}
 
-		add_submenu_page( 'gt-links', esc_html__( 'All Links', 'gt-link-manager' ), esc_html__( 'All Links', 'gt-link-manager' ), $capability, 'gt-links', array( $this->pages, 'render_links_page' ) );
-		add_submenu_page( 'gt-links', esc_html__( 'Add New', 'gt-link-manager' ), esc_html__( 'Add New', 'gt-link-manager' ), $capability, 'gt-links-edit', array( $this->pages, 'render_edit_page' ) );
-		add_submenu_page( 'gt-links', esc_html__( 'Categories', 'gt-link-manager' ), esc_html__( 'Categories', 'gt-link-manager' ), $capability, 'gt-links-categories', array( $this->pages, 'render_categories_page' ) );
-		add_submenu_page( 'gt-links', esc_html__( 'Settings', 'gt-link-manager' ), esc_html__( 'Settings', 'gt-link-manager' ), 'manage_options', 'gt-links-settings', array( $this->pages, 'render_settings_page' ) );
-		add_submenu_page( 'gt-links', esc_html__( 'Import / Export', 'gt-link-manager' ), esc_html__( 'Import / Export', 'gt-link-manager' ), $capability, 'gt-links-import-export', array( $this->pages, 'render_import_export_page' ) );
+		add_submenu_page( 'gtlm-links', esc_html__( 'All Links', 'gt-link-manager' ), esc_html__( 'All Links', 'gt-link-manager' ), $capability, 'gtlm-links', array( $this->pages, 'render_links_page' ) );
+		add_submenu_page( 'gtlm-links', esc_html__( 'Add New', 'gt-link-manager' ), esc_html__( 'Add New', 'gt-link-manager' ), $capability, 'gtlm-links-edit', array( $this->pages, 'render_edit_page' ) );
+		add_submenu_page( 'gtlm-links', esc_html__( 'Categories', 'gt-link-manager' ), esc_html__( 'Categories', 'gt-link-manager' ), $capability, 'gtlm-links-categories', array( $this->pages, 'render_categories_page' ) );
+		add_submenu_page( 'gtlm-links', esc_html__( 'Settings', 'gt-link-manager' ), esc_html__( 'Settings', 'gt-link-manager' ), 'manage_options', 'gtlm-links-settings', array( $this->pages, 'render_settings_page' ) );
+		add_submenu_page( 'gtlm-links', esc_html__( 'Import / Export', 'gt-link-manager' ), esc_html__( 'Import / Export', 'gt-link-manager' ), $capability, 'gtlm-links-import-export', array( $this->pages, 'render_import_export_page' ) );
 	}
 
 	public function add_links_screen_options(): void {
@@ -86,7 +86,7 @@ class GT_Link_Admin {
 			array(
 				'label'   => esc_html__( 'Links per page', 'gt-link-manager' ),
 				'default' => 20,
-				'option'  => 'gt_links_per_page',
+				'option'  => 'gtlm_links_per_page',
 			)
 		);
 	}
@@ -97,22 +97,22 @@ class GT_Link_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gt-links', 'gt-links-edit', 'gt-links-categories', 'gt-links-settings', 'gt-links-import-export' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export' ), true ) ) {
 			return;
 		}
 
 		wp_enqueue_style(
 			'gt-link-manager-admin',
-			GT_LINK_MANAGER_URL . 'assets/css/admin.css',
+			GTLM_URL . 'assets/css/admin.css',
 			array(),
-			GT_LINK_MANAGER_VERSION
+			GTLM_VERSION
 		);
 
 		wp_enqueue_script(
 			'gt-link-manager-admin',
-			GT_LINK_MANAGER_URL . 'assets/js/admin.js',
+			GTLM_URL . 'assets/js/admin.js',
 			array(),
-			GT_LINK_MANAGER_VERSION,
+			GTLM_VERSION,
 			true
 		);
 
@@ -121,7 +121,7 @@ class GT_Link_Admin {
 			'gtlmAdmin',
 			array(
 				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
-				'quickEditNonce' => wp_create_nonce( 'gt_link_quick_edit' ),
+				'quickEditNonce' => wp_create_nonce( 'gtlm_quick_edit' ),
 				'prefix'         => $this->settings->prefix(),
 				'i18n'           => array(
 					'saved'      => __( 'Saved', 'gt-link-manager' ),
@@ -138,7 +138,7 @@ class GT_Link_Admin {
 			wp_send_json_error();
 		}
 
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( (string) wp_unslash( $_POST['nonce'] ) ), 'gt_link_quick_edit' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( (string) wp_unslash( $_POST['nonce'] ) ), 'gtlm_quick_edit' ) ) {
 			wp_send_json_error();
 		}
 
@@ -184,11 +184,11 @@ class GT_Link_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gt-links', 'gt-links-edit', 'gt-links-categories', 'gt-links-settings', 'gt-links-import-export' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export' ), true ) ) {
 			return;
 		}
 
-		if ( 'gt-links-import-export' === $page ) {
+		if ( 'gtlm-links-import-export' === $page ) {
 			$this->importer->handle_actions();
 			return;
 		}
@@ -197,19 +197,19 @@ class GT_Link_Admin {
 			return;
 		}
 
-		if ( 'gt-links' === $page ) {
+		if ( 'gtlm-links' === $page ) {
 			$this->handle_link_actions();
 		}
 
-		if ( 'gt-links-edit' === $page ) {
+		if ( 'gtlm-links-edit' === $page ) {
 			$this->handle_link_save_action();
 		}
 
-		if ( 'gt-links-categories' === $page ) {
+		if ( 'gtlm-links-categories' === $page ) {
 			$this->handle_category_actions();
 		}
 
-		if ( 'gt-links-settings' === $page && current_user_can( 'manage_options' ) ) {
+		if ( 'gtlm-links-settings' === $page && current_user_can( 'manage_options' ) ) {
 			$this->handle_settings_action();
 		}
 	}
@@ -233,7 +233,7 @@ class GT_Link_Admin {
 
 		check_admin_referer( 'gt_link_' . $action . '_' . $link_id );
 
-		$redirect_url = admin_url( 'admin.php?page=gt-links' );
+		$redirect_url = admin_url( 'admin.php?page=gtlm-links' );
 
 		switch ( $action ) {
 			case 'trash':
@@ -264,16 +264,16 @@ class GT_Link_Admin {
 	}
 
 	private function handle_link_save_action(): void {
-		if ( ! isset( $_POST['gt_link_action'] ) ) {
+		if ( ! isset( $_POST['gtlm_action'] ) ) {
 			return;
 		}
 
-		$action = sanitize_key( (string) wp_unslash( $_POST['gt_link_action'] ) );
+		$action = sanitize_key( (string) wp_unslash( $_POST['gtlm_action'] ) );
 		if ( 'save_link' !== $action ) {
 			return;
 		}
 
-		check_admin_referer( 'gt_link_save' );
+		check_admin_referer( 'gtlm_link_save' );
 
 		$data = array(
 			'name'          => sanitize_text_field( (string) wp_unslash( $_POST['name'] ?? '' ) ),
@@ -289,7 +289,7 @@ class GT_Link_Admin {
 		);
 
 		if ( '' === $data['name'] || '' === $data['url'] ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-edit' ), 'invalid' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' ), 'invalid' );
 		}
 
 		if ( '' === $data['slug'] ) {
@@ -313,14 +313,14 @@ class GT_Link_Admin {
 
 		$save_and_add = ! empty( $_POST['save_add_another'] );
 		if ( $ok && $save_and_add ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-edit' ), 'saved' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' ), 'saved' );
 		}
 
 		if ( $ok ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-edit&link_id=' . $link_id ), 'saved' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit&link_id=' . $link_id ), 'saved' );
 		}
 
-		$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-edit' . ( $link_id > 0 ? '&link_id=' . $link_id : '' ) ), 'save_failed' );
+		$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' . ( $link_id > 0 ? '&link_id=' . $link_id : '' ) ), 'save_failed' );
 	}
 
 	private function handle_category_actions(): void {
@@ -328,22 +328,22 @@ class GT_Link_Admin {
 			$action = sanitize_key( (string) wp_unslash( $_GET['action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$id     = absint( $_GET['category_id'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( 'delete' === $action && $id > 0 ) {
-				check_admin_referer( 'gt_link_category_delete_' . $id );
+				check_admin_referer( 'gtlm_category_delete_' . $id );
 				$ok = $this->db->delete_category( $id );
-				$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-categories' ), $ok ? 'category_deleted' : 'category_delete_failed' );
+				$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-categories' ), $ok ? 'category_deleted' : 'category_delete_failed' );
 			}
 		}
 
-		if ( ! isset( $_POST['gt_category_action'] ) ) {
+		if ( ! isset( $_POST['gtlm_category_action'] ) ) {
 			return;
 		}
 
-		$action = sanitize_key( (string) wp_unslash( $_POST['gt_category_action'] ) );
+		$action = sanitize_key( (string) wp_unslash( $_POST['gtlm_category_action'] ) );
 		if ( 'save_category' !== $action ) {
 			return;
 		}
 
-		check_admin_referer( 'gt_link_category_save' );
+		check_admin_referer( 'gtlm_category_save' );
 
 		$data = array(
 			'name'        => sanitize_text_field( (string) wp_unslash( $_POST['name'] ?? '' ) ),
@@ -353,36 +353,36 @@ class GT_Link_Admin {
 		);
 
 		if ( '' === $data['name'] ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-categories' ), 'invalid_category' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-categories' ), 'invalid_category' );
 		}
 
 		$category_id = absint( $_POST['category_id'] ?? 0 );
 		$ok          = $category_id > 0 ? $this->db->update_category( $category_id, $data ) : ( $this->db->insert_category( $data ) > 0 );
 
-		$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-categories' ), $ok ? 'category_saved' : 'category_save_failed' );
+		$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-categories' ), $ok ? 'category_saved' : 'category_save_failed' );
 	}
 
 	private function handle_settings_action(): void {
-		if ( ! isset( $_POST['gt_settings_action'] ) ) {
+		if ( ! isset( $_POST['gtlm_settings_action'] ) ) {
 			return;
 		}
 
-		$action = sanitize_key( (string) wp_unslash( $_POST['gt_settings_action'] ) );
+		$action = sanitize_key( (string) wp_unslash( $_POST['gtlm_settings_action'] ) );
 		if ( ! in_array( $action, array( 'save_settings', 'flush_permalinks', 'run_diagnostics' ), true ) ) {
 			return;
 		}
 
-		check_admin_referer( 'gt_link_settings_save' );
+		check_admin_referer( 'gtlm_settings_save' );
 
 		if ( 'flush_permalinks' === $action ) {
 			flush_rewrite_rules();
 			$this->db->flush_cache_group();
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-settings' ), 'permalinks_flushed' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-settings' ), 'permalinks_flushed' );
 		}
 
 		if ( 'run_diagnostics' === $action ) {
-			update_option( 'gt_link_manager_diagnostics', $this->run_diagnostics(), false );
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-settings' ), 'diagnostics_done' );
+			update_option( 'gtlm_diagnostics', $this->run_diagnostics(), false );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-settings' ), 'diagnostics_done' );
 		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by sanitize_rel_from_post().
@@ -401,7 +401,7 @@ class GT_Link_Admin {
 			flush_rewrite_rules();
 		}
 
-		$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links-settings' ), $saved ? 'settings_saved' : 'settings_unchanged' );
+		$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-settings' ), $saved ? 'settings_saved' : 'settings_unchanged' );
 	}
 
 	/**
@@ -419,8 +419,8 @@ class GT_Link_Admin {
 			$rule_match = isset( $rules[ $needle ] );
 		}
 
-		$table_links = GT_Link_DB::links_table();
-		$table_cats  = GT_Link_DB::categories_table();
+		$table_links = GTLM_DB::links_table();
+		$table_cats  = GTLM_DB::categories_table();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$links_exist = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_links ) ) === $table_links;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -490,7 +490,7 @@ class GT_Link_Admin {
 	}
 
 	private function links_capability( string $context ): string {
-		return (string) apply_filters( 'gt_link_manager_capabilities', 'edit_posts', $context );
+		return (string) apply_filters( 'gtlm_capabilities', 'edit_posts', $context );
 	}
 
 	private function redirect_with_notice( string $url, string $notice ): void {

@@ -28,6 +28,13 @@ Key features:
 - Block editor toolbar button to search links and insert them quickly
 - Extensible actions and filters for developers
 
+== Source Code ==
+
+The block editor assets (blocks/link-inserter/build/) are compiled from the source at blocks/link-inserter/src/ using @wordpress/scripts. The full source code is available in this plugin and on GitHub at https://github.com/wpgaurav/gt-link-manager.
+
+To build from source:
+`cd blocks/link-inserter && npm install && npm run build`
+
 == Installation ==
 
 1. Upload the plugin folder to `/wp-content/plugins/`.

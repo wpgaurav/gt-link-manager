@@ -1,9 +1,9 @@
-body.toplevel_page_gt-links,
-body.gt-links_page_gt-links-edit,
-body.gt-links_page_gt-links-categories,
-body.gt-links_page_gt-links-settings,
-body.gt-links_page_gt-links-import-export,
-body.gt-links_page_gt-links-license {
+body.toplevel_page_gtlm-links,
+body.gtlm-links_page_gtlm-links-edit,
+body.gtlm-links_page_gtlm-links-categories,
+body.gtlm-links_page_gtlm-links-settings,
+body.gtlm-links_page_gtlm-links-import-export,
+body.gtlm-links_page_gtlm-links-license {
 	--gtlm-bg: #f4f7fb;
 	--gtlm-card: #ffffff;
 	--gtlm-border: #d9e2ec;
@@ -16,53 +16,85 @@ body.gt-links_page_gt-links-license {
 	--gtlm-radius: 10px;
 }
 
-body.toplevel_page_gt-links #wpcontent,
-body.gt-links_page_gt-links-edit #wpcontent,
-body.gt-links_page_gt-links-categories #wpcontent,
-body.gt-links_page_gt-links-settings #wpcontent,
-body.gt-links_page_gt-links-import-export #wpcontent,
-body.gt-links_page_gt-links-license #wpcontent {
+body.toplevel_page_gtlm-links #wpcontent,
+body.gtlm-links_page_gtlm-links-edit #wpcontent,
+body.gtlm-links_page_gtlm-links-categories #wpcontent,
+body.gtlm-links_page_gtlm-links-settings #wpcontent,
+body.gtlm-links_page_gtlm-links-import-export #wpcontent,
+body.gtlm-links_page_gtlm-links-license #wpcontent {
 	background: var(--gtlm-bg);
 }
 
-body.toplevel_page_gt-links .wrap,
-body.gt-links_page_gt-links-edit .wrap,
-body.gt-links_page_gt-links-categories .wrap,
-body.gt-links_page_gt-links-settings .wrap,
-body.gt-links_page_gt-links-import-export .wrap,
-body.gt-links_page_gt-links-license .wrap {
+body.toplevel_page_gtlm-links .wrap,
+body.gtlm-links_page_gtlm-links-edit .wrap,
+body.gtlm-links_page_gtlm-links-categories .wrap,
+body.gtlm-links_page_gtlm-links-settings .wrap,
+body.gtlm-links_page_gtlm-links-import-export .wrap,
+body.gtlm-links_page_gtlm-links-license .wrap {
 	max-width: 1260px;
 	padding-bottom: 20px;
 }
 
-body.toplevel_page_gt-links .wrap h1,
-body.gt-links_page_gt-links-edit .wrap h1,
-body.gt-links_page_gt-links-categories .wrap h1,
-body.gt-links_page_gt-links-settings .wrap h1,
-body.gt-links_page_gt-links-import-export .wrap h1,
-body.gt-links_page_gt-links-license .wrap h1 {
+body.toplevel_page_gtlm-links .wrap h1,
+body.gtlm-links_page_gtlm-links-edit .wrap h1,
+body.gtlm-links_page_gtlm-links-categories .wrap h1,
+body.gtlm-links_page_gtlm-links-settings .wrap h1,
+body.gtlm-links_page_gtlm-links-import-export .wrap h1,
+body.gtlm-links_page_gtlm-links-license .wrap h1 {
 	color: var(--gtlm-text);
 	font-weight: 700;
 	letter-spacing: 0.1px;
 	margin-bottom: 14px;
 }
 
-body.toplevel_page_gt-links .wrap > p,
-body.gt-links_page_gt-links-edit .wrap > p,
-body.gt-links_page_gt-links-categories .wrap > p,
-body.gt-links_page_gt-links-settings .wrap > p,
-body.gt-links_page_gt-links-import-export .wrap > p,
-body.gt-links_page_gt-links-license .wrap > p {
+body.toplevel_page_gtlm-links .wrap > p,
+body.gtlm-links_page_gtlm-links-edit .wrap > p,
+body.gtlm-links_page_gtlm-links-categories .wrap > p,
+body.gtlm-links_page_gtlm-links-settings .wrap > p,
+body.gtlm-links_page_gtlm-links-import-export .wrap > p,
+body.gtlm-links_page_gtlm-links-license .wrap > p {
 	color: var(--gtlm-muted);
 	max-width: 840px;
 }
 
-body.toplevel_page_gt-links .form-table,
-body.gt-links_page_gt-links-edit .form-table,
-body.gt-links_page_gt-links-categories .form-table,
-body.gt-links_page_gt-links-settings .form-table,
-body.gt-links_page_gt-links-import-export .form-table,
-body.gt-links_page_gt-links-license .form-table {
+/* Reusable card */
+.gtlm-card {
+	background: var(--gtlm-card);
+	border: 1px solid var(--gtlm-border);
+	border-radius: var(--gtlm-radius);
+	padding: 20px 24px;
+	margin-top: 16px;
+	margin-bottom: 16px;
+}
+
+.gtlm-card > h2:first-child {
+	margin-top: 0;
+	padding-top: 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--gtlm-text);
+}
+
+.gtlm-card > p:first-of-type {
+	margin-top: 4px;
+}
+
+.gtlm-card .form-table {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.gtlm-card .submit {
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+body.toplevel_page_gtlm-links .form-table,
+body.gtlm-links_page_gtlm-links-edit .form-table,
+body.gtlm-links_page_gtlm-links-categories .form-table,
+body.gtlm-links_page_gtlm-links-settings .form-table,
+body.gtlm-links_page_gtlm-links-import-export .form-table,
+body.gtlm-links_page_gtlm-links-license .form-table {
 	background: var(--gtlm-card);
 	border: 1px solid var(--gtlm-border);
 	border-radius: var(--gtlm-radius);
@@ -71,86 +103,99 @@ body.gt-links_page_gt-links-license .form-table {
 	margin-bottom: 12px;
 }
 
-body.toplevel_page_gt-links .form-table th,
-body.gt-links_page_gt-links-edit .form-table th,
-body.gt-links_page_gt-links-categories .form-table th,
-body.gt-links_page_gt-links-settings .form-table th,
-body.gt-links_page_gt-links-import-export .form-table th,
-body.gt-links_page_gt-links-license .form-table th {
+.gtlm-card .form-table {
+	border: none;
+	padding: 0;
+	border-radius: 0;
+}
+
+.gtlm-card .widefat {
+	border: 1px solid var(--gtlm-border);
+	border-radius: 8px;
+	overflow: hidden;
+	margin-top: 8px;
+}
+
+body.toplevel_page_gtlm-links .form-table th,
+body.gtlm-links_page_gtlm-links-edit .form-table th,
+body.gtlm-links_page_gtlm-links-categories .form-table th,
+body.gtlm-links_page_gtlm-links-settings .form-table th,
+body.gtlm-links_page_gtlm-links-import-export .form-table th,
+body.gtlm-links_page_gtlm-links-license .form-table th {
 	color: var(--gtlm-text);
 	font-weight: 600;
 	width: 230px;
 	padding: 12px 10px;
 }
 
-body.toplevel_page_gt-links .form-table td,
-body.gt-links_page_gt-links-edit .form-table td,
-body.gt-links_page_gt-links-categories .form-table td,
-body.gt-links_page_gt-links-settings .form-table td,
-body.gt-links_page_gt-links-import-export .form-table td,
-body.gt-links_page_gt-links-license .form-table td {
+body.toplevel_page_gtlm-links .form-table td,
+body.gtlm-links_page_gtlm-links-edit .form-table td,
+body.gtlm-links_page_gtlm-links-categories .form-table td,
+body.gtlm-links_page_gtlm-links-settings .form-table td,
+body.gtlm-links_page_gtlm-links-import-export .form-table td,
+body.gtlm-links_page_gtlm-links-license .form-table td {
 	color: var(--gtlm-muted);
 	padding: 12px 10px;
 }
 
-body.toplevel_page_gt-links .form-table input[type="text"],
-body.toplevel_page_gt-links .form-table input[type="url"],
-body.toplevel_page_gt-links .form-table input[type="number"],
-body.toplevel_page_gt-links .form-table select,
-body.toplevel_page_gt-links .form-table textarea,
-body.gt-links_page_gt-links-edit .form-table input[type="text"],
-body.gt-links_page_gt-links-edit .form-table input[type="url"],
-body.gt-links_page_gt-links-edit .form-table input[type="number"],
-body.gt-links_page_gt-links-edit .form-table select,
-body.gt-links_page_gt-links-edit .form-table textarea,
-body.gt-links_page_gt-links-categories .form-table input[type="text"],
-body.gt-links_page_gt-links-categories .form-table input[type="url"],
-body.gt-links_page_gt-links-categories .form-table input[type="number"],
-body.gt-links_page_gt-links-categories .form-table select,
-body.gt-links_page_gt-links-categories .form-table textarea,
-body.gt-links_page_gt-links-settings .form-table input[type="text"],
-body.gt-links_page_gt-links-settings .form-table input[type="url"],
-body.gt-links_page_gt-links-settings .form-table input[type="number"],
-body.gt-links_page_gt-links-settings .form-table select,
-body.gt-links_page_gt-links-settings .form-table textarea,
-body.gt-links_page_gt-links-import-export .form-table input[type="text"],
-body.gt-links_page_gt-links-import-export .form-table input[type="url"],
-body.gt-links_page_gt-links-import-export .form-table input[type="number"],
-body.gt-links_page_gt-links-import-export .form-table select,
-body.gt-links_page_gt-links-import-export .form-table textarea,
-body.gt-links_page_gt-links-license .form-table input[type="text"],
-body.gt-links_page_gt-links-license .form-table input[type="url"],
-body.gt-links_page_gt-links-license .form-table input[type="number"],
-body.gt-links_page_gt-links-license .form-table select,
-body.gt-links_page_gt-links-license .form-table textarea {
+body.toplevel_page_gtlm-links .form-table input[type="text"],
+body.toplevel_page_gtlm-links .form-table input[type="url"],
+body.toplevel_page_gtlm-links .form-table input[type="number"],
+body.toplevel_page_gtlm-links .form-table select,
+body.toplevel_page_gtlm-links .form-table textarea,
+body.gtlm-links_page_gtlm-links-edit .form-table input[type="text"],
+body.gtlm-links_page_gtlm-links-edit .form-table input[type="url"],
+body.gtlm-links_page_gtlm-links-edit .form-table input[type="number"],
+body.gtlm-links_page_gtlm-links-edit .form-table select,
+body.gtlm-links_page_gtlm-links-edit .form-table textarea,
+body.gtlm-links_page_gtlm-links-categories .form-table input[type="text"],
+body.gtlm-links_page_gtlm-links-categories .form-table input[type="url"],
+body.gtlm-links_page_gtlm-links-categories .form-table input[type="number"],
+body.gtlm-links_page_gtlm-links-categories .form-table select,
+body.gtlm-links_page_gtlm-links-categories .form-table textarea,
+body.gtlm-links_page_gtlm-links-settings .form-table input[type="text"],
+body.gtlm-links_page_gtlm-links-settings .form-table input[type="url"],
+body.gtlm-links_page_gtlm-links-settings .form-table input[type="number"],
+body.gtlm-links_page_gtlm-links-settings .form-table select,
+body.gtlm-links_page_gtlm-links-settings .form-table textarea,
+body.gtlm-links_page_gtlm-links-import-export .form-table input[type="text"],
+body.gtlm-links_page_gtlm-links-import-export .form-table input[type="url"],
+body.gtlm-links_page_gtlm-links-import-export .form-table input[type="number"],
+body.gtlm-links_page_gtlm-links-import-export .form-table select,
+body.gtlm-links_page_gtlm-links-import-export .form-table textarea,
+body.gtlm-links_page_gtlm-links-license .form-table input[type="text"],
+body.gtlm-links_page_gtlm-links-license .form-table input[type="url"],
+body.gtlm-links_page_gtlm-links-license .form-table input[type="number"],
+body.gtlm-links_page_gtlm-links-license .form-table select,
+body.gtlm-links_page_gtlm-links-license .form-table textarea {
 	border-color: #c9d6e2;
 	min-height: 36px;
 	border-radius: 6px;
 }
 
-body.toplevel_page_gt-links .button-primary,
-body.gt-links_page_gt-links-edit .button-primary,
-body.gt-links_page_gt-links-categories .button-primary,
-body.gt-links_page_gt-links-settings .button-primary,
-body.gt-links_page_gt-links-import-export .button-primary,
-body.gt-links_page_gt-links-license .button-primary {
+body.toplevel_page_gtlm-links .button-primary,
+body.gtlm-links_page_gtlm-links-edit .button-primary,
+body.gtlm-links_page_gtlm-links-categories .button-primary,
+body.gtlm-links_page_gtlm-links-settings .button-primary,
+body.gtlm-links_page_gtlm-links-import-export .button-primary,
+body.gtlm-links_page_gtlm-links-license .button-primary {
 	background: var(--wp-admin-theme-color, #2271b1);
 	border-color: var(--wp-admin-theme-color, #2271b1);
 }
 
-body.toplevel_page_gt-links .button-primary:hover,
-body.gt-links_page_gt-links-edit .button-primary:hover,
-body.gt-links_page_gt-links-categories .button-primary:hover,
-body.gt-links_page_gt-links-settings .button-primary:hover,
-body.gt-links_page_gt-links-import-export .button-primary:hover,
-body.gt-links_page_gt-links-license .button-primary:hover {
+body.toplevel_page_gtlm-links .button-primary:hover,
+body.gtlm-links_page_gtlm-links-edit .button-primary:hover,
+body.gtlm-links_page_gtlm-links-categories .button-primary:hover,
+body.gtlm-links_page_gtlm-links-settings .button-primary:hover,
+body.gtlm-links_page_gtlm-links-import-export .button-primary:hover,
+body.gtlm-links_page_gtlm-links-license .button-primary:hover {
 	background: var(--wp-admin-theme-color-darker-10, #135e96);
 	border-color: var(--wp-admin-theme-color-darker-10, #135e96);
 }
 
-body.toplevel_page_gt-links .wp-list-table,
-body.gt-links_page_gt-links-categories .widefat,
-body.gt-links_page_gt-links-import-export .widefat {
+body.toplevel_page_gtlm-links .wp-list-table,
+body.gtlm-links_page_gtlm-links-categories .widefat,
+body.gtlm-links_page_gtlm-links-import-export .widefat {
 	border: 1px solid var(--gtlm-border);
 	border-radius: var(--gtlm-radius);
 	overflow: hidden;
@@ -158,43 +203,43 @@ body.gt-links_page_gt-links-import-export .widefat {
 	margin-top: 10px;
 }
 
-body.toplevel_page_gt-links .wp-list-table thead th,
-body.gt-links_page_gt-links-categories .widefat thead th,
-body.gt-links_page_gt-links-import-export .widefat thead th {
+body.toplevel_page_gtlm-links .wp-list-table thead th,
+body.gtlm-links_page_gtlm-links-categories .widefat thead th,
+body.gtlm-links_page_gtlm-links-import-export .widefat thead th {
 	background: #f8fafc;
 	color: #334e68;
 	font-weight: 600;
 	border-bottom: 1px solid var(--gtlm-border);
 }
 
-body.toplevel_page_gt-links .wp-list-table tbody tr:hover,
-body.gt-links_page_gt-links-categories .widefat tbody tr:hover,
-body.gt-links_page_gt-links-import-export .widefat tbody tr:hover {
+body.toplevel_page_gtlm-links .wp-list-table tbody tr:hover,
+body.gtlm-links_page_gtlm-links-categories .widefat tbody tr:hover,
+body.gtlm-links_page_gtlm-links-import-export .widefat tbody tr:hover {
 	background: #f8fcff;
 }
 
-body.toplevel_page_gt-links .wp-list-table .column-name strong a {
+body.toplevel_page_gtlm-links .wp-list-table .column-name strong a {
 	color: #0b3558;
 }
 
-body.toplevel_page_gt-links .subsubsub,
-body.toplevel_page_gt-links .tablenav,
-body.gt-links_page_gt-links-import-export .tablenav {
+body.toplevel_page_gtlm-links .subsubsub,
+body.toplevel_page_gtlm-links .tablenav,
+body.gtlm-links_page_gtlm-links-import-export .tablenav {
 	color: var(--gtlm-muted);
 }
 
-body.toplevel_page_gt-links .tablenav,
-body.gt-links_page_gt-links-import-export .tablenav {
+body.toplevel_page_gtlm-links .tablenav,
+body.gtlm-links_page_gtlm-links-import-export .tablenav {
 	padding: 8px 0;
 }
 
-body.toplevel_page_gt-links .tablenav.top,
-body.gt-links_page_gt-links-import-export .tablenav.top {
+body.toplevel_page_gtlm-links .tablenav.top,
+body.gtlm-links_page_gtlm-links-import-export .tablenav.top {
 	margin-bottom: 6px;
 }
 
-body.toplevel_page_gt-links .tablenav.bottom,
-body.gt-links_page_gt-links-import-export .tablenav.bottom {
+body.toplevel_page_gtlm-links .tablenav.bottom,
+body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	margin-top: 6px;
 }
 
@@ -240,7 +285,7 @@ body.gt-links_page_gt-links-import-export .tablenav.bottom {
 	margin-right: 8px;
 }
 
-.gt-link-status {
+.gtlm-status {
 	display: inline-block;
 	padding: 2px 8px;
 	border-radius: 4px;
@@ -249,12 +294,12 @@ body.gt-links_page_gt-links-import-export .tablenav.bottom {
 	line-height: 1.6;
 }
 
-.gt-link-status--active {
+.gtlm-status--active {
 	background: var(--gtlm-success-bg);
 	color: var(--gtlm-success-text);
 }
 
-.gt-link-status--inactive {
+.gtlm-status--inactive {
 	background: #fef3c7;
 	color: #92400e;
 }
@@ -278,17 +323,6 @@ body.gt-links_page_gt-links-import-export .tablenav.bottom {
 	display: flex;
 	gap: 8px;
 	margin-top: 4px;
-	margin-bottom: 20px;
-}
-
-/* Settings page: diagnostics card */
-.gtlm-diagnostics-card {
-	background: var(--gtlm-card);
-	border: 1px solid var(--gtlm-border);
-	border-radius: var(--gtlm-radius);
-	padding: 4px 16px;
-	margin-top: 8px;
-	max-width: 640px;
 }
 
 .gtlm-diagnostics-table {
@@ -316,12 +350,12 @@ body.gt-links_page_gt-links-import-export .tablenav.bottom {
 	border-bottom: none;
 }
 
-body.toplevel_page_gt-links .wrap .button,
-body.gt-links_page_gt-links-edit .wrap .button,
-body.gt-links_page_gt-links-categories .wrap .button,
-body.gt-links_page_gt-links-settings .wrap .button,
-body.gt-links_page_gt-links-import-export .wrap .button,
-body.gt-links_page_gt-links-license .wrap .button {
+body.toplevel_page_gtlm-links .wrap .button,
+body.gtlm-links_page_gtlm-links-edit .wrap .button,
+body.gtlm-links_page_gtlm-links-categories .wrap .button,
+body.gtlm-links_page_gtlm-links-settings .wrap .button,
+body.gtlm-links_page_gtlm-links-import-export .wrap .button,
+body.gtlm-links_page_gtlm-links-license .wrap .button {
 	min-height: 34px;
 	line-height: 32px;
 	border-radius: 6px;
@@ -396,12 +430,12 @@ body.gt-links_page_gt-links-license .wrap .button {
 }
 
 @media (max-width: 782px) {
-	body.toplevel_page_gt-links .form-table th,
-	body.gt-links_page_gt-links-edit .form-table th,
-	body.gt-links_page_gt-links-categories .form-table th,
-	body.gt-links_page_gt-links-settings .form-table th,
-	body.gt-links_page_gt-links-import-export .form-table th,
-	body.gt-links_page_gt-links-license .form-table th {
+	body.toplevel_page_gtlm-links .form-table th,
+	body.gtlm-links_page_gtlm-links-edit .form-table th,
+	body.gtlm-links_page_gtlm-links-categories .form-table th,
+	body.gtlm-links_page_gtlm-links-settings .form-table th,
+	body.gtlm-links_page_gtlm-links-import-export .form-table th,
+	body.gtlm-links_page_gtlm-links-license .form-table th {
 		width: auto;
 	}
 

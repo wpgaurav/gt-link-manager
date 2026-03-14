@@ -9,15 +9,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Block_Editor {
-	private GT_Link_Settings $settings;
+class GTLM_Block_Editor {
+	private GTLM_Settings $settings;
 
-	public static function init( GT_Link_Settings $settings ): void {
+	public static function init( GTLM_Settings $settings ): void {
 		$instance = new self( $settings );
 		$instance->hooks();
 	}
 
-	private function __construct( GT_Link_Settings $settings ) {
+	private function __construct( GTLM_Settings $settings ) {
 		$this->settings = $settings;
 	}
 
@@ -26,8 +26,8 @@ class GT_Link_Block_Editor {
 	}
 
 	public function enqueue_assets(): void {
-		$build_dir  = GT_LINK_MANAGER_PATH . 'blocks/link-inserter/build/';
-		$build_url  = GT_LINK_MANAGER_URL . 'blocks/link-inserter/build/';
+		$build_dir  = GTLM_PATH . 'blocks/link-inserter/build/';
+		$build_url  = GTLM_URL . 'blocks/link-inserter/build/';
 		$asset_file = $build_dir . 'index.asset.php';
 
 		if ( ! file_exists( $build_dir . 'index.js' ) ) {

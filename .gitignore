@@ -5,3 +5,6 @@ vendor/
 .playwright-mcp/
 /graphics/
 /product-description.md
+/todebug.md
+build-release/
+composer.lock

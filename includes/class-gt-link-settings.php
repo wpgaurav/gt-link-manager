@@ -9,15 +9,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class GT_Link_Settings {
-	private const OPTION_KEY = 'gt_link_manager_settings';
+class GTLM_Settings {
+	private const OPTION_KEY = 'gtlm_settings';
 
-	private static ?GT_Link_Settings $instance = null;
+	private static ?GTLM_Settings $instance = null;
 
 	/**
 	 * Singleton instance.
 	 */
-	public static function get_instance(): GT_Link_Settings {
+	public static function get_instance(): GTLM_Settings {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -63,7 +63,7 @@ class GT_Link_Settings {
 		 *
 		 * @param array<string, mixed> $settings Settings.
 		 */
-		return (array) apply_filters( 'gt_link_manager_settings', $settings );
+		return (array) apply_filters( 'gtlm_settings', $settings );
 	}
 
 	/**
@@ -78,7 +78,7 @@ class GT_Link_Settings {
 		 *
 		 * @param string $prefix Prefix.
 		 */
-		$prefix = (string) apply_filters( 'gt_link_manager_prefix', $prefix );
+		$prefix = (string) apply_filters( 'gtlm_prefix', $prefix );
 
 		return $this->sanitize_prefix( $prefix );
 	}
@@ -99,7 +99,7 @@ class GT_Link_Settings {
 		$updated = update_option( self::OPTION_KEY, $next, false );
 
 		if ( $updated ) {
-			do_action( 'gt_link_manager_settings_saved', $next );
+			do_action( 'gtlm_settings_saved', $next );
 		}
 
 		return (bool) $updated;

@@ -30,10 +30,10 @@ Push a `v*` tag to trigger `.github/workflows/release.yml` — builds assets, cr
 ## Architecture
 
 ### Bootstrap flow
-`gt-link-manager.php` → `plugins_loaded` → `gt_link_manager_bootstrap()` which:
-1. Runs `GT_Link_Activator::maybe_upgrade()` on admin (DB migrations via `dbDelta`)
-2. Instantiates `GT_Link_Settings` (singleton), `GT_Link_DB`
-3. Initializes services: `GT_Link_Redirect`, `GT_Link_Admin`, `GT_Link_REST_API`, `GT_Link_Block_Editor`
+`gt-link-manager.php` → `plugins_loaded` → `gtlm_bootstrap()` which:
+1. Runs `GTLM_Activator::maybe_upgrade()` on admin (DB migrations via `dbDelta`)
+2. Instantiates `GTLM_Settings` (singleton), `GTLM_DB`
+3. Initializes services: `GTLM_Redirect`, `GTLM_Admin`, `GTLM_REST_API`, `GTLM_Block_Editor`
 
 All service classes use a static `init()` factory that takes dependencies, constructs privately, and registers hooks.
 
@@ -41,21 +41,21 @@ All service classes use a static `init()` factory that takes dependencies, const
 
 | Class | Role |
 |-------|------|
-| `GT_Link_DB` | Data access layer. All SQL lives here. Object cache per-slug with `gt_links` cache group. |
-| `GT_Link_Redirect` | Early redirect on `init` priority 0. Parses REQUEST_URI, looks up slug, sends Location header + exit. |
-| `GT_Link_Settings` | Singleton. Reads/writes `gt_link_manager_settings` option. Exposes `prefix()`. |
-| `GT_Link_Admin` | Admin menu pages, form handlers, AJAX quick edit. Renders all admin UI inline (no template files). |
-| `GT_Link_REST_API` | REST endpoints under `gt-link-manager/v1`. CRUD for links and categories. |
-| `GT_Link_Block_Editor` | Enqueues block editor script. Localizes `gtLinkManagerEditor` with REST path and prefix. |
-| `GT_Link_Import` | Two-step CSV import (preview → map columns → run) and filtered CSV export. |
-| `GT_Link_List_Table` | Extends `WP_List_Table`. Supports views: All, Active, Inactive, Trash. |
-| `GT_Link_Activator` | Creates tables via `dbDelta`. Runs `maybe_upgrade()` to migrate schema on version bump. |
+| `GTLM_DB` | Data access layer. All SQL lives here. Object cache per-slug with `gtlm_links` cache group. |
+| `GTLM_Redirect` | Early redirect on `init` priority 0. Parses REQUEST_URI, looks up slug, sends Location header + exit. |
+| `GTLM_Settings` | Singleton. Reads/writes `gtlm_settings` option. Exposes `prefix()`. |
+| `GTLM_Admin` | Admin menu pages, form handlers, AJAX quick edit. Renders all admin UI inline (no template files). |
+| `GTLM_REST_API` | REST endpoints under `gt-link-manager/v1`. CRUD for links and categories. |
+| `GTLM_Block_Editor` | Enqueues block editor script. Localizes `gtLinkManagerEditor` with REST path and prefix. |
+| `GTLM_Import` | Two-step CSV import (preview → map columns → run) and filtered CSV export. |
+| `GTLM_List_Table` | Extends `WP_List_Table`. Supports views: All, Active, Inactive, Trash. |
+| `GTLM_Activator` | Creates tables via `dbDelta`. Runs `maybe_upgrade()` to migrate schema on version bump. |
 
 ### Database tables
 
-**`{prefix}_gt_links`**: id, name, slug (UNIQUE), url, redirect_type, rel, noindex, is_active, category_id, tags, notes, trashed_at, created_at, updated_at
+**`{prefix}_gtlm_links`**: id, name, slug (UNIQUE), url, redirect_type, rel, noindex, is_active, category_id, tags, notes, trashed_at, created_at, updated_at
 
-**`{prefix}_gt_link_categories`**: id, name, slug (UNIQUE), description, parent_id, count
+**`{prefix}_gtlm_categories`**: id, name, slug (UNIQUE), description, parent_id, count
 
 ### REST API (`gt-link-manager/v1`)
 
@@ -69,7 +69,7 @@ All service classes use a static `init()` factory that takes dependencies, const
 | `/categories` | GET, POST |
 | `/categories/{id}` | PUT/PATCH, DELETE |
 
-Permission: `edit_posts` capability, filterable via `gt_link_manager_capabilities`.
+Permission: `edit_posts` capability, filterable via `gtlm_capabilities`.
 
 ### Block editor integration
 The link inserter registers a RichText format type (`gt-link-manager/link-inserter`) that adds a toolbar button. Clicking it opens a Popover that searches links via the REST API and inserts them as `core/link` formats. Source uses `createElement` (aliased as `h`), not JSX.
@@ -78,17 +78,17 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 
 | Hook | Type | Purpose |
 |------|------|---------|
-| `gt_link_manager_before_redirect` | action | Click tracking / logging |
-| `gt_link_manager_after_save` | action | Post-save processing |
-| `gt_link_manager_after_delete` | action | Post-delete cleanup |
-| `gt_link_manager_redirect_url` | filter | Modify target URL |
-| `gt_link_manager_redirect_code` | filter | Modify HTTP status code |
-| `gt_link_manager_rel_attributes` | filter | Modify rel values |
-| `gt_link_manager_headers` | filter | Modify redirect headers |
-| `gt_link_manager_settings` | filter | Override settings |
-| `gt_link_manager_prefix` | filter | Override URL prefix |
-| `gt_link_manager_capabilities` | filter | Override required capability |
-| `gt_link_manager_cache_ttl` | filter | Set object cache TTL |
+| `gtlm_before_redirect` | action | Click tracking / logging |
+| `gtlm_after_save` | action | Post-save processing |
+| `gtlm_after_delete` | action | Post-delete cleanup |
+| `gtlm_redirect_url` | filter | Modify target URL |
+| `gtlm_redirect_code` | filter | Modify HTTP status code |
+| `gtlm_rel_attributes` | filter | Modify rel values |
+| `gtlm_headers` | filter | Modify redirect headers |
+| `gtlm_settings` | filter | Override settings |
+| `gtlm_prefix` | filter | Override URL prefix |
+| `gtlm_capabilities` | filter | Override required capability |
+| `gtlm_cache_ttl` | filter | Set object cache TTL |
 
 ## Conventions
 
@@ -96,6 +96,7 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 - Tabs for indentation in PHP
 - All admin UI is rendered inline in PHP (no separate template files)
 - Soft delete: `trashed_at` column (NULL = not trashed). Hard delete requires explicit action.
-- All SQL in `GT_Link_DB` — other classes call DB methods, never write SQL directly
-- Version is maintained in two places: plugin header and `GT_LINK_MANAGER_VERSION` constant in `gt-link-manager.php`
-- DB migrations run automatically on admin load when `gt_link_manager_db_version` option < plugin version
+- All SQL in `GTLM_DB` — other classes call DB methods, never write SQL directly
+- Version is maintained in two places: plugin header and `GTLM_VERSION` constant in `gt-link-manager.php`
+- DB migrations run automatically on admin load when `gtlm_db_version` option < plugin version
+- Code prefix is `gtlm` (4+ chars) per wp.org plugin directory requirements
