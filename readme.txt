@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,15 @@ The plugin checks request URI early and loads the matching slug from a unique in
 5. Settings with diagnostics
 
 == Changelog ==
+
+= 1.4.0 =
+* Renamed internal code prefix from `gt_` to `gtlm_` (4+ characters) per WordPress.org guidelines.
+* Fixed nonce verification order in CSV import handler — nonce is now checked before reading POST data.
+* Fixed SQL injection vector — `$orderby` now uses `%i` identifier placeholder in prepared queries.
+* Added Source Code section to readme for compiled block editor assets.
+* Added card-based UI styling to all admin pages (edit link, categories, settings, import/export).
+* Settings page reorganized into General, Tools, and Diagnostics cards.
+* Clean uninstall now removes both old (`gt_`) and new (`gtlm_`) prefix options and tables.
 
 = 1.3.1 =
 * Block editor: aligned GT Link popover anchoring with core rich text behavior using selection-based anchor.
@@ -174,6 +183,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+Renamed internal prefix to `gtlm_` for wp.org compliance, fixed nonce and SQL safety issues, added card UI to admin pages.
 
 = 1.3.1 =
 Fixes GT Link toolbar popover alignment in the block editor to match core behavior.
