@@ -52,8 +52,6 @@ register_deactivation_hook( GTLM_FILE, array( 'GTLM_Deactivator', 'deactivate' )
  * Bootstrap plugin services.
  */
 function gtlm_bootstrap(): void {
-	load_plugin_textdomain( 'gt-link-manager', false, dirname( plugin_basename( GTLM_FILE ) ) . '/languages' );
-
 	// Run schema migrations when DB version is behind plugin version.
 	if ( is_admin() ) {
 		GTLM_Activator::maybe_upgrade();
