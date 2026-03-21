@@ -4,29 +4,53 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.4.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A fast, lightweight Pretty Links alternative with custom tables, early redirects, CSV import/export, and block editor integration.
+A fast, lightweight Pretty Links alternative with custom database tables, early redirects, CSV import/export, and block editor integration.
 
 == Description ==
 
-GT Link Manager helps you create branded short links on your WordPress site without CPT overhead.
+**GT Link Manager** is a high-performance branded link manager for WordPress. It stores links in **custom database tables** (not custom post types), resolves redirects early on `init`, and keeps your site fast — even with thousands of links.
 
-Key features:
+Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix is configurable).
 
-- Direct table lookup for redirect slugs
-- Early redirect execution on `init`
-- 301/302/307 redirect support
-- `rel` controls: `nofollow`, `sponsored`, `ugc`
-- Noindex header support (`X-Robots-Tag`)
-- Category and tag organization
-- Full admin list table with search, filters, sorting, bulk actions
-- Quick Edit without page reload
-- CSV import/export with LinkCentral-compatible preset
-- Block editor toolbar button to search links and insert them quickly
-- Extensible actions and filters for developers
+**[Official Page & Documentation](https://gauravtiwari.org/product/gt-link-manager/)**
+
+= Why GT Link Manager? =
+
+Most link management plugins use custom post types, which means every redirect loads the full WordPress template stack. GT Link Manager takes a different approach — it intercepts the request early, looks up the slug in a **UNIQUE-indexed database column**, sends the redirect header, and exits. No theme loading, no unnecessary queries.
+
+= Key Features =
+
+* **Fast direct redirects** — resolves links on `init` (priority 0) via direct DB lookup, no CPT overhead
+* **301, 302, and 307 redirects** — choose the right redirect type for SEO, temporary, or method-preserving redirects
+* **Rel attribute controls** — set `nofollow`, `sponsored`, and `ugc` per link for proper SEO attribution
+* **Noindex support** — sends `X-Robots-Tag: noindex` header to prevent search engines from indexing redirect URLs
+* **Categories and tags** — organize links into categories with parent/child hierarchy and free-form tags
+* **Full admin list table** — search, filter by category/status, sort by any column, and perform bulk actions
+* **Quick Edit** — update URL, slug, redirect type, rel, category, and status inline without leaving the list
+* **Activate / Deactivate** — disable a link without deleting it; inactive links stop redirecting but stay in the database
+* **Trash and restore** — soft-delete links to trash with the option to restore or permanently delete
+* **CSV import and export** — import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets
+* **Block editor integration** — a toolbar button lets you search your links and insert them directly into post content
+* **Branded URL preview** — see the full branded URL as you type, with one-click copy
+* **Click stats** — can be activated to track link clicks
+* **Developer-friendly** — actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
+
+= Developer Hooks =
+
+GT Link Manager provides a comprehensive set of hooks for customization:
+
+* `gtlm_before_redirect` — action fired before redirect (use for click tracking or logging)
+* `gtlm_redirect_url` — filter to modify the destination URL
+* `gtlm_redirect_code` — filter to modify the HTTP status code
+* `gtlm_rel_attributes` — filter to modify rel attribute values
+* `gtlm_headers` — filter to modify redirect response headers
+* `gtlm_prefix` — filter to override the URL prefix
+* `gtlm_capabilities` — filter to override the required user capability
+* `gtlm_cache_ttl` — filter to set object cache TTL for link lookups
 
 == Source Code ==
 
@@ -39,36 +63,55 @@ To build from source:
 
 1. Upload the plugin folder to `/wp-content/plugins/`.
 2. Activate it from **Plugins**.
-3. Go to **GT Links** in wp-admin.
-4. Create your first link and test it using your prefix (default: `/go/slug`).
+3. Go to **GT Links** in your wp-admin sidebar.
+4. Create your first link and test it using your prefix (default: **yoursite.com/go/your-slug**).
+
+You can change the prefix from **GT Links > Settings** at any time.
 
 == Frequently Asked Questions ==
 
 = Is this a Pretty Links replacement? =
 
-Yes. The focus is speed and simplicity for branded redirects.
+Yes. GT Link Manager is built for **speed and simplicity**. It uses custom database tables instead of custom post types, which means redirects resolve faster and don't pollute your posts table.
 
 = Does it track clicks? =
 
-Not in core yet. Use the `gt_link_manager_before_redirect` action to hook your own tracking.
+Click stats can be activated from settings. You can also use the `gtlm_before_redirect` action hook to integrate your own tracking or analytics.
 
-= Can I import from LinkCentral? =
+= Can I import from Pretty Links or LinkCentral? =
 
-Yes. Use **GT Links -> Import / Export**, choose the LinkCentral preset, preview, map columns, and import.
+Yes. Go to **GT Links > Import / Export**, choose the **Pretty Links** or **LinkCentral** preset, upload your CSV, preview the column mapping, and import. You can also use the **Generic** preset for custom CSV formats.
 
 = How are redirects resolved? =
 
-The plugin checks request URI early and loads the matching slug from a unique indexed column in a custom table.
+The plugin hooks into WordPress `init` at **priority 0** (before most plugins load). It parses the request URI, checks for your configured prefix, and looks up the slug in a **UNIQUE-indexed column** in a custom database table. If a match is found, it sends the redirect header and exits immediately — no theme or template loading.
+
+= Can I customize which users can manage links? =
+
+Yes. By default, any user with the `edit_posts` capability can manage links. Use the `gtlm_capabilities` filter to change this per context (e.g., require `manage_options` for settings but allow `edit_posts` for link creation).
+
+= What happens when I uninstall? =
+
+Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** — both database tables and plugin options. Deactivating the plugin preserves all data.
 
 == Screenshots ==
 
-1. All Links admin list with filters and bulk actions
-2. Add/Edit Link form with branded URL preview
-3. Categories manager
-4. Import/Export with preview and mapping
-5. Settings with diagnostics
+1. **All Links** — admin list with search, filters, status views, and bulk actions
+2. **Add/Edit Link** — form with branded URL preview, redirect type, rel attributes, and categories
+3. **Categories** — manage link categories with parent/child hierarchy
+4. **Settings** — configure prefix, defaults, flush permalinks, and run diagnostics
+5. **Import/Export** — CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.5.1 =
+* Fixed CSS custom properties not resolving on some admin pages — all values are now hardcoded.
+* Fixed form-table double-card styling when rendered inside a card container.
+* Improved edit form submit buttons layout — buttons now display in a single horizontal row.
+* Improved branded URL preview styling with distinct blue tint.
+* Added subtle row separators inside card form tables.
+* Added WordPress.org SVN deploy to release workflow.
+* Added plugin banner and icon assets for WordPress.org listing.
 
 = 1.4.0 =
 * Renamed internal code prefix from `gt_` to `gtlm_` (4+ characters) per WordPress.org guidelines.
@@ -172,17 +215,10 @@ The plugin checks request URI early and loads the matching slug from a unique in
 = 1.0.0 =
 * Initial release.
 
-= 0.1.0 =
-* Initial release
-* Custom DB schema with links and categories
-* Fast redirect handler with cache invalidation
-* Admin CRUD for links/categories/settings
-* Block editor link inserter format button
-* REST API endpoint for editor search
-* CSV import/export with preview, mapping, and duplicate handling
-* LinkCentral-compatible CSV preset
-
 == Upgrade Notice ==
+
+= 1.5.1 =
+Fixes admin CSS rendering issues (double card borders, stacked buttons) and adds WordPress.org plugin assets.
 
 = 1.4.0 =
 Renamed internal prefix to `gtlm_` for wp.org compliance, fixed nonce and SQL safety issues, added card UI to admin pages.
@@ -211,9 +247,6 @@ Fixes editor scroll jump when opening GT Link popover from the toolbar.
 = 1.1.6 =
 Full REST API pagination, args validation on all write endpoints, XSS fix in admin quick edit.
 
-= 1.1.5 =
-Maintenance release.
-
 = 1.1.4 =
 Positions link search popover near selected text instead of top-left corner.
 
@@ -234,6 +267,3 @@ Improves block editor toolbar behavior and redirect reliability.
 
 = 1.0.0 =
 Initial release.
-
-= 0.1.0 =
-Initial public release.

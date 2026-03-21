@@ -1,30 +1,25 @@
-body.toplevel_page_gtlm-links,
-body.gtlm-links_page_gtlm-links-edit,
-body.gtlm-links_page_gtlm-links-categories,
-body.gtlm-links_page_gtlm-links-settings,
-body.gtlm-links_page_gtlm-links-import-export,
-body.gtlm-links_page_gtlm-links-license {
-	--gtlm-bg: #f4f7fb;
-	--gtlm-card: #ffffff;
-	--gtlm-border: #d9e2ec;
-	--gtlm-text: #102a43;
-	--gtlm-muted: #627d98;
-	--gtlm-accent: #0ea5e9;
-	--gtlm-accent-dark: #0284c7;
-	--gtlm-success-bg: #ecfdf3;
-	--gtlm-success-text: #166534;
-	--gtlm-radius: 10px;
-}
+/* ═══════════════════════════════════════════════════════════════
+   GT Link Manager – Admin Styles
+   All values hardcoded (no CSS custom properties).
 
+   Palette:
+     bg:          #f4f7fb    card:       #ffffff
+     border:      #d9e2ec    text:       #102a43
+     muted:       #627d98    success-bg: #ecfdf3
+     success-txt: #166534    radius:     10px
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page background ─────────────────────────────────────────── */
 body.toplevel_page_gtlm-links #wpcontent,
 body.gtlm-links_page_gtlm-links-edit #wpcontent,
 body.gtlm-links_page_gtlm-links-categories #wpcontent,
 body.gtlm-links_page_gtlm-links-settings #wpcontent,
 body.gtlm-links_page_gtlm-links-import-export #wpcontent,
 body.gtlm-links_page_gtlm-links-license #wpcontent {
-	background: var(--gtlm-bg);
+	background: #f4f7fb;
 }
 
+/* ── Wrap ────────────────────────────────────────────────────── */
 body.toplevel_page_gtlm-links .wrap,
 body.gtlm-links_page_gtlm-links-edit .wrap,
 body.gtlm-links_page_gtlm-links-categories .wrap,
@@ -41,7 +36,7 @@ body.gtlm-links_page_gtlm-links-categories .wrap h1,
 body.gtlm-links_page_gtlm-links-settings .wrap h1,
 body.gtlm-links_page_gtlm-links-import-export .wrap h1,
 body.gtlm-links_page_gtlm-links-license .wrap h1 {
-	color: var(--gtlm-text);
+	color: #102a43;
 	font-weight: 700;
 	letter-spacing: 0.1px;
 	margin-bottom: 14px;
@@ -53,16 +48,16 @@ body.gtlm-links_page_gtlm-links-categories .wrap > p,
 body.gtlm-links_page_gtlm-links-settings .wrap > p,
 body.gtlm-links_page_gtlm-links-import-export .wrap > p,
 body.gtlm-links_page_gtlm-links-license .wrap > p {
-	color: var(--gtlm-muted);
+	color: #627d98;
 	max-width: 840px;
 }
 
-/* Reusable card */
+/* ── Card ────────────────────────────────────────────────────── */
 .gtlm-card {
-	background: var(--gtlm-card);
-	border: 1px solid var(--gtlm-border);
-	border-radius: var(--gtlm-radius);
-	padding: 20px 24px;
+	background: #ffffff;
+	border: 1px solid #d9e2ec;
+	border-radius: 10px;
+	padding: 24px 28px;
 	margin-top: 16px;
 	margin-bottom: 16px;
 }
@@ -72,16 +67,11 @@ body.gtlm-links_page_gtlm-links-license .wrap > p {
 	padding-top: 0;
 	font-size: 14px;
 	font-weight: 600;
-	color: var(--gtlm-text);
+	color: #102a43;
 }
 
 .gtlm-card > p:first-of-type {
 	margin-top: 4px;
-}
-
-.gtlm-card .form-table {
-	margin-top: 0;
-	margin-bottom: 0;
 }
 
 .gtlm-card .submit {
@@ -89,43 +79,73 @@ body.gtlm-links_page_gtlm-links-license .wrap > p {
 	padding-bottom: 0;
 }
 
+/* ── Submit buttons row ──────────────────────────────────────── */
+.gtlm-submit-row {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: center;
+	gap: 8px;
+	padding-top: 16px;
+	margin-top: 4px;
+	border-top: 1px solid #d9e2ec;
+}
+
+.gtlm-submit-row .button,
+.gtlm-submit-row input[type="submit"] {
+	margin: 0 !important;
+	float: none !important;
+}
+
+/* ── Form table (standalone, outside card) ───────────────────── */
 body.toplevel_page_gtlm-links .form-table,
 body.gtlm-links_page_gtlm-links-edit .form-table,
 body.gtlm-links_page_gtlm-links-categories .form-table,
 body.gtlm-links_page_gtlm-links-settings .form-table,
 body.gtlm-links_page_gtlm-links-import-export .form-table,
 body.gtlm-links_page_gtlm-links-license .form-table {
-	background: var(--gtlm-card);
-	border: 1px solid var(--gtlm-border);
-	border-radius: var(--gtlm-radius);
+	background: #ffffff;
+	border: 1px solid #d9e2ec;
+	border-radius: 10px;
 	padding: 16px 18px;
 	margin-top: 10px;
 	margin-bottom: 12px;
 }
 
-.gtlm-card .form-table {
+/* Form table inside card — strip the double card */
+body.toplevel_page_gtlm-links .gtlm-card .form-table,
+body.gtlm-links_page_gtlm-links-edit .gtlm-card .form-table,
+body.gtlm-links_page_gtlm-links-categories .gtlm-card .form-table,
+body.gtlm-links_page_gtlm-links-settings .gtlm-card .form-table,
+body.gtlm-links_page_gtlm-links-import-export .gtlm-card .form-table,
+body.gtlm-links_page_gtlm-links-license .gtlm-card .form-table {
+	background: none;
 	border: none;
 	padding: 0;
 	border-radius: 0;
+	margin: 0;
 }
 
+/* Widefat inside card */
 .gtlm-card .widefat {
-	border: 1px solid var(--gtlm-border);
+	border: 1px solid #d9e2ec;
 	border-radius: 8px;
 	overflow: hidden;
 	margin-top: 8px;
 }
 
+/* ── Form table cells ────────────────────────────────────────── */
 body.toplevel_page_gtlm-links .form-table th,
 body.gtlm-links_page_gtlm-links-edit .form-table th,
 body.gtlm-links_page_gtlm-links-categories .form-table th,
 body.gtlm-links_page_gtlm-links-settings .form-table th,
 body.gtlm-links_page_gtlm-links-import-export .form-table th,
 body.gtlm-links_page_gtlm-links-license .form-table th {
-	color: var(--gtlm-text);
+	color: #102a43;
 	font-weight: 600;
-	width: 230px;
-	padding: 12px 10px;
+	font-size: 13px;
+	width: 200px;
+	padding: 14px 10px 14px 0;
+	vertical-align: middle;
 }
 
 body.toplevel_page_gtlm-links .form-table td,
@@ -134,10 +154,17 @@ body.gtlm-links_page_gtlm-links-categories .form-table td,
 body.gtlm-links_page_gtlm-links-settings .form-table td,
 body.gtlm-links_page_gtlm-links-import-export .form-table td,
 body.gtlm-links_page_gtlm-links-license .form-table td {
-	color: var(--gtlm-muted);
-	padding: 12px 10px;
+	color: #627d98;
+	padding: 14px 10px;
 }
 
+/* Subtle row separator inside cards */
+.gtlm-card .form-table tr + tr th,
+.gtlm-card .form-table tr + tr td {
+	border-top: 1px solid #f0f4f8;
+}
+
+/* ── Form inputs ─────────────────────────────────────────────── */
 body.toplevel_page_gtlm-links .form-table input[type="text"],
 body.toplevel_page_gtlm-links .form-table input[type="url"],
 body.toplevel_page_gtlm-links .form-table input[type="number"],
@@ -173,6 +200,7 @@ body.gtlm-links_page_gtlm-links-license .form-table textarea {
 	border-radius: 6px;
 }
 
+/* ── Buttons ─────────────────────────────────────────────────── */
 body.toplevel_page_gtlm-links .button-primary,
 body.gtlm-links_page_gtlm-links-edit .button-primary,
 body.gtlm-links_page_gtlm-links-categories .button-primary,
@@ -193,13 +221,25 @@ body.gtlm-links_page_gtlm-links-license .button-primary:hover {
 	border-color: var(--wp-admin-theme-color-darker-10, #135e96);
 }
 
+body.toplevel_page_gtlm-links .wrap .button,
+body.gtlm-links_page_gtlm-links-edit .wrap .button,
+body.gtlm-links_page_gtlm-links-categories .wrap .button,
+body.gtlm-links_page_gtlm-links-settings .wrap .button,
+body.gtlm-links_page_gtlm-links-import-export .wrap .button,
+body.gtlm-links_page_gtlm-links-license .wrap .button {
+	min-height: 34px;
+	line-height: 32px;
+	border-radius: 6px;
+}
+
+/* ── List table ──────────────────────────────────────────────── */
 body.toplevel_page_gtlm-links .wp-list-table,
 body.gtlm-links_page_gtlm-links-categories .widefat,
 body.gtlm-links_page_gtlm-links-import-export .widefat {
-	border: 1px solid var(--gtlm-border);
-	border-radius: var(--gtlm-radius);
+	border: 1px solid #d9e2ec;
+	border-radius: 10px;
 	overflow: hidden;
-	background: var(--gtlm-card);
+	background: #ffffff;
 	margin-top: 10px;
 }
 
@@ -209,7 +249,7 @@ body.gtlm-links_page_gtlm-links-import-export .widefat thead th {
 	background: #f8fafc;
 	color: #334e68;
 	font-weight: 600;
-	border-bottom: 1px solid var(--gtlm-border);
+	border-bottom: 1px solid #d9e2ec;
 }
 
 body.toplevel_page_gtlm-links .wp-list-table tbody tr:hover,
@@ -225,7 +265,7 @@ body.toplevel_page_gtlm-links .wp-list-table .column-name strong a {
 body.toplevel_page_gtlm-links .subsubsub,
 body.toplevel_page_gtlm-links .tablenav,
 body.gtlm-links_page_gtlm-links-import-export .tablenav {
-	color: var(--gtlm-muted);
+	color: #627d98;
 }
 
 body.toplevel_page_gtlm-links .tablenav,
@@ -243,6 +283,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	margin-top: 6px;
 }
 
+/* ── Quick edit ──────────────────────────────────────────────── */
 .gtlm-quick-edit-row td {
 	background: #f8fafc;
 	border-top: 1px solid #dbe2ea;
@@ -251,10 +292,28 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 .gtlm-quick-edit-wrap {
 	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 10px 0;
+}
+
+.gtlm-qe-row {
+	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
 	gap: 12px;
-	padding: 10px 0;
+}
+
+.gtlm-qe-rel {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-weight: 500;
+	color: #334e68;
+}
+
+.gtlm-qe-rel label {
+	font-weight: normal;
 }
 
 .gtlm-quick-edit-wrap label {
@@ -270,21 +329,34 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	max-width: 100%;
 }
 
+.gtlm-quick-edit-wrap input.gtlm-quick-slug {
+	width: 180px;
+	max-width: 100%;
+}
+
 .gtlm-quick-message {
 	font-weight: 600;
 }
 
+/* ── Branded URL preview ─────────────────────────────────────── */
 #gtlm-branded-preview {
 	display: inline-block;
-	padding: 6px 10px;
-	background: #f8fafc;
-	border: 1px solid #dbe2ea;
+	padding: 7px 12px;
+	background: #f0f7ff;
+	border: 1px solid #bfdbfe;
 	border-radius: 6px;
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-	color: #334e68;
+	font-size: 13px;
+	color: #1e40af;
 	margin-right: 8px;
+	vertical-align: middle;
 }
 
+#gtlm-copy-preview {
+	vertical-align: middle;
+}
+
+/* ── Status badges ───────────────────────────────────────────── */
 .gtlm-status {
 	display: inline-block;
 	padding: 2px 8px;
@@ -295,8 +367,8 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 }
 
 .gtlm-status--active {
-	background: var(--gtlm-success-bg);
-	color: var(--gtlm-success-text);
+	background: #ecfdf3;
+	color: #166534;
 }
 
 .gtlm-status--inactive {
@@ -304,13 +376,14 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	color: #92400e;
 }
 
+/* ── Import progress ─────────────────────────────────────────── */
 #gtlm-import-progress-wrap {
 	margin-top: 12px;
 	padding: 10px 12px;
-	background: var(--gtlm-success-bg);
+	background: #ecfdf3;
 	border: 1px solid #bbf7d0;
 	border-radius: 8px;
-	color: var(--gtlm-success-text);
+	color: #166534;
 }
 
 #gtlm-import-progress {
@@ -318,13 +391,14 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	max-width: 100%;
 }
 
-/* Settings page: action buttons toolbar */
+/* ── Settings page tools toolbar ─────────────────────────────── */
 .gtlm-settings-actions {
 	display: flex;
 	gap: 8px;
 	margin-top: 4px;
 }
 
+/* ── Diagnostics table ───────────────────────────────────────── */
 .gtlm-diagnostics-table {
 	width: 100%;
 	border-collapse: collapse;
@@ -332,7 +406,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 .gtlm-diagnostics-table th {
 	text-align: left;
-	color: var(--gtlm-text);
+	color: #102a43;
 	font-weight: 600;
 	padding: 8px 12px 8px 0;
 	width: 160px;
@@ -340,7 +414,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 }
 
 .gtlm-diagnostics-table td {
-	color: var(--gtlm-muted);
+	color: #627d98;
 	padding: 8px 0;
 	border-bottom: 1px solid #f0f4f8;
 }
@@ -350,22 +424,11 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	border-bottom: none;
 }
 
-body.toplevel_page_gtlm-links .wrap .button,
-body.gtlm-links_page_gtlm-links-edit .wrap .button,
-body.gtlm-links_page_gtlm-links-categories .wrap .button,
-body.gtlm-links_page_gtlm-links-settings .wrap .button,
-body.gtlm-links_page_gtlm-links-import-export .wrap .button,
-body.gtlm-links_page_gtlm-links-license .wrap .button {
-	min-height: 34px;
-	line-height: 32px;
-	border-radius: 6px;
-}
-
-/* License page */
+/* ── License page ────────────────────────────────────────────── */
 .gtlm-license-card {
-	background: var(--gtlm-card);
-	border: 1px solid var(--gtlm-border);
-	border-radius: var(--gtlm-radius);
+	background: #ffffff;
+	border: 1px solid #d9e2ec;
+	border-radius: 10px;
 	padding: 20px 24px;
 	max-width: 600px;
 	margin-top: 20px;
@@ -373,7 +436,7 @@ body.gtlm-links_page_gtlm-links-license .wrap .button {
 
 .gtlm-license-card h2 {
 	margin-top: 0;
-	color: var(--gtlm-text);
+	color: #102a43;
 	font-weight: 600;
 }
 
@@ -384,9 +447,9 @@ body.gtlm-links_page_gtlm-links-license .wrap .button {
 }
 
 .gtlm-license-status--active {
-	background: var(--gtlm-success-bg);
+	background: #ecfdf3;
 	border: 1px solid #bbf7d0;
-	color: var(--gtlm-success-text);
+	color: #166534;
 }
 
 .gtlm-license-status--expired {
@@ -410,14 +473,14 @@ body.gtlm-links_page_gtlm-links-license .wrap .button {
 .gtlm-update-notice--current {
 	background: #f8fafc;
 	border: 1px solid #e2e8f0;
-	color: var(--gtlm-muted);
+	color: #627d98;
 }
 
 .gtlm-license-key {
 	font-size: 14px;
 	padding: 4px 8px;
 	background: #f8fafc;
-	border: 1px solid var(--gtlm-border);
+	border: 1px solid #d9e2ec;
 	border-radius: 4px;
 }
 
@@ -426,9 +489,36 @@ body.gtlm-links_page_gtlm-links-license .wrap .button {
 }
 
 .gtlm-license-card hr {
-	border-color: var(--gtlm-border);
+	border-color: #d9e2ec;
 }
 
+/* ── Row highlight after save ────────────────────────────────── */
+@keyframes gtlm-fade-highlight {
+	0% { background-color: #fff8e1; }
+	100% { background-color: transparent; }
+}
+
+.gtlm-highlight {
+	animation: gtlm-fade-highlight 2.4s ease-out;
+}
+
+/* ── Dashboard glance icon ───────────────────────────────────── */
+.gtlm-glance-links::before {
+	content: "\f103";
+	font-family: dashicons;
+}
+
+/* ── Form field inline labels (radio/checkbox groups) ────────── */
+.gtlm-card .form-table td label + label {
+	margin-left: 4px;
+}
+
+.gtlm-card .form-table input[type="radio"],
+.gtlm-card .form-table td > label > input[type="checkbox"] {
+	margin-right: 3px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 782px) {
 	body.toplevel_page_gtlm-links .form-table th,
 	body.gtlm-links_page_gtlm-links-edit .form-table th,
@@ -439,7 +529,12 @@ body.gtlm-links_page_gtlm-links-license .wrap .button {
 		width: auto;
 	}
 
-	.gtlm-quick-edit-wrap {
+	.gtlm-qe-row {
+		flex-direction: column;
 		align-items: flex-start;
+	}
+
+	.gtlm-submit-row {
+		flex-wrap: wrap;
 	}
 }

@@ -40,6 +40,9 @@ class GTLM_Admin {
 		add_filter( 'set-screen-option', array( $this, 'set_screen_option' ), 10, 3 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_gtlm_quick_edit', array( $this, 'ajax_quick_edit' ) );
+		add_action( 'admin_bar_menu', array( $this, 'admin_bar_new_link' ), 80 );
+		add_filter( 'dashboard_glance_items', array( $this, 'dashboard_glance_items' ) );
+		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
 	}
 
 	/**
@@ -81,6 +84,13 @@ class GTLM_Admin {
 	}
 
 	public function add_links_screen_options(): void {
+		require_once GTLM_PATH . 'includes/class-gt-link-list-table.php';
+
+		$screen = get_current_screen();
+		if ( $screen ) {
+			add_filter( 'manage_' . $screen->id . '_columns', array( 'GTLM_List_Table', 'define_columns' ) );
+		}
+
 		add_screen_option(
 			'per_page',
 			array(
@@ -116,6 +126,16 @@ class GTLM_Admin {
 			true
 		);
 
+		$categories_data = array();
+		if ( 'gtlm-links' === $page ) {
+			foreach ( $this->db->get_categories() as $cat ) {
+				$categories_data[] = array(
+					'id'   => (int) $cat['id'],
+					'name' => (string) $cat['name'],
+				);
+			}
+		}
+
 		wp_localize_script(
 			'gt-link-manager-admin',
 			'gtlmAdmin',
@@ -123,6 +143,8 @@ class GTLM_Admin {
 				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
 				'quickEditNonce' => wp_create_nonce( 'gtlm_quick_edit' ),
 				'prefix'         => $this->settings->prefix(),
+				'categories'     => $categories_data,
+				'highlight'      => isset( $_GET['highlight'] ) ? absint( $_GET['highlight'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				'i18n'           => array(
 					'saved'      => __( 'Saved', 'gt-link-manager' ),
 					'saveFailed' => __( 'Save failed', 'gt-link-manager' ),
@@ -155,25 +177,49 @@ class GTLM_Admin {
 			wp_send_json_error();
 		}
 
+		$updates = array(
+			'url'           => $url,
+			'redirect_type' => $redirect_type,
+		);
+
+		if ( isset( $_POST['slug'] ) ) {
+			$updates['slug'] = sanitize_title( (string) wp_unslash( $_POST['slug'] ) );
+			if ( '' === $updates['slug'] ) {
+				wp_send_json_error();
+			}
+		}
+
+		if ( isset( $_POST['rel'] ) ) {
+			$updates['rel'] = $this->sanitize_rel_from_post( wp_unslash( $_POST['rel'] ) );
+		}
+
+		if ( isset( $_POST['category_id'] ) ) {
+			$updates['category_id'] = absint( $_POST['category_id'] );
+		}
+
+		if ( isset( $_POST['is_active'] ) ) {
+			$updates['is_active'] = absint( $_POST['is_active'] ) ? 1 : 0;
+		}
+
 		$ok = $this->db->update_link(
 			$link_id,
-			array_merge(
-				$link,
-				array(
-					'url'           => $url,
-					'redirect_type' => $redirect_type,
-				)
-			)
+			array_merge( $link, $updates )
 		);
 
 		if ( ! $ok ) {
 			wp_send_json_error();
 		}
 
+		$updated_link = $this->db->get_link_by_id( $link_id );
+
 		wp_send_json_success(
 			array(
-				'url'           => $url,
-				'redirect_type' => $redirect_type,
+				'url'           => (string) ( $updated_link['url'] ?? $url ),
+				'redirect_type' => (int) ( $updated_link['redirect_type'] ?? $redirect_type ),
+				'slug'          => (string) ( $updated_link['slug'] ?? '' ),
+				'rel'           => (string) ( $updated_link['rel'] ?? '' ),
+				'category_id'   => (int) ( $updated_link['category_id'] ?? 0 ),
+				'is_active'     => (int) ( $updated_link['is_active'] ?? 1 ),
 			)
 		);
 	}
@@ -311,7 +357,13 @@ class GTLM_Admin {
 			$link_id = is_array( $created ) ? (int) $created['id'] : 0;
 		}
 
-		$save_and_add = ! empty( $_POST['save_add_another'] );
+		$save_and_add  = ! empty( $_POST['save_add_another'] );
+		$save_view_all = ! empty( $_POST['save_view_all'] );
+
+		if ( $ok && $save_view_all ) {
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links&highlight=' . $link_id ), 'saved' );
+		}
+
 		if ( $ok && $save_and_add ) {
 			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' ), 'saved' );
 		}
@@ -487,6 +539,62 @@ class GTLM_Admin {
 		}
 
 		return implode( ',', array_unique( $clean ) );
+	}
+
+	/**
+	 * Add "GT Link" under the admin bar's "+ New" menu.
+	 */
+	public function admin_bar_new_link( \WP_Admin_Bar $wp_admin_bar ): void {
+		if ( ! current_user_can( $this->links_capability( 'admin_bar' ) ) ) {
+			return;
+		}
+
+		$wp_admin_bar->add_node(
+			array(
+				'parent' => 'new-content',
+				'id'     => 'gtlm-new-link',
+				'title'  => __( 'GT Link', 'gt-link-manager' ),
+				'href'   => admin_url( 'admin.php?page=gtlm-links-edit' ),
+			)
+		);
+	}
+
+	/**
+	 * Add link count to the "At a Glance" dashboard widget.
+	 *
+	 * @param array<int, string> $items
+	 * @return array<int, string>
+	 */
+	public function dashboard_glance_items( array $items ): array {
+		if ( ! current_user_can( $this->links_capability( 'dashboard' ) ) ) {
+			return $items;
+		}
+
+		$count = $this->db->count_links( array( 'status' => 'active' ) );
+		$text  = sprintf(
+			/* translators: %s: number of links */
+			_n( '%s GT Link', '%s GT Links', $count, 'gt-link-manager' ),
+			number_format_i18n( $count )
+		);
+
+		$items[] = '<a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links' ) ) . '" class="gtlm-glance-links">' . esc_html( $text ) . '</a>';
+
+		return $items;
+	}
+
+	/**
+	 * Set default hidden columns for the links list table.
+	 *
+	 * @param array<int, string> $hidden
+	 * @param \WP_Screen         $screen
+	 * @return array<int, string>
+	 */
+	public function default_hidden_columns( array $hidden, \WP_Screen $screen ): array {
+		if ( 'toplevel_page_gtlm-links' === $screen->id ) {
+			$hidden = array_merge( $hidden, array( 'id', 'rel', 'tags' ) );
+		}
+
+		return $hidden;
 	}
 
 	private function links_capability( string $context ): string {

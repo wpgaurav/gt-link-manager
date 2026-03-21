@@ -47,10 +47,12 @@ class GTLM_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Column definitions shared between get_columns() and screen options registration.
+	 *
 	 * @return array<string, string>
 	 */
-	public function get_columns(): array {
-		$columns = array(
+	public static function define_columns(): array {
+		return array(
 			'cb'            => '<input type="checkbox" />',
 			'id'            => esc_html__( 'ID', 'gt-link-manager' ),
 			'name'          => esc_html__( 'Name', 'gt-link-manager' ),
@@ -60,10 +62,16 @@ class GTLM_List_Table extends WP_List_Table {
 			'rel'           => esc_html__( 'Rel', 'gt-link-manager' ),
 			'status'        => esc_html__( 'Status', 'gt-link-manager' ),
 			'category'      => esc_html__( 'Category', 'gt-link-manager' ),
+			'tags'          => esc_html__( 'Tags', 'gt-link-manager' ),
 			'created_at'    => esc_html__( 'Created', 'gt-link-manager' ),
 		);
+	}
 
-		return (array) apply_filters( 'gtlm_link_columns', $columns );
+	/**
+	 * @return array<string, string>
+	 */
+	public function get_columns(): array {
+		return (array) apply_filters( 'gtlm_link_columns', self::define_columns() );
 	}
 
 	/**
@@ -157,9 +165,11 @@ class GTLM_List_Table extends WP_List_Table {
 	public function no_items(): void {
 		if ( 'trash' === $this->view ) {
 			echo esc_html__( 'No links in the trash.', 'gt-link-manager' );
-		} else {
-			echo esc_html__( 'No links found.', 'gt-link-manager' );
+			return;
 		}
+
+		echo '<p>' . esc_html__( 'No links found.', 'gt-link-manager' ) . '</p>';
+		echo '<a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="button button-primary">' . esc_html__( 'Create your first link', 'gt-link-manager' ) . '</a>';
 	}
 
 	/**
@@ -245,7 +255,7 @@ class GTLM_List_Table extends WP_List_Table {
 
 		$actions = array(
 			'edit'       => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'gt-link-manager' ) . '</a>',
-			'quick_edit' => '<a href="#" class="gtlm-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
+			'quick_edit' => '<a href="#" class="gtlm-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '" data-slug="' . esc_attr( (string) $item['slug'] ) . '" data-rel="' . esc_attr( (string) $item['rel'] ) . '" data-category-id="' . (int) ( $item['category_id'] ?? 0 ) . '" data-is-active="' . (int) $item['is_active'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
 			'copy_url'   => '<a href="#" class="gtlm-copy-url" data-copy-url="' . esc_attr( $branded_url ) . '">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</a>',
 			'toggle'     => '<a href="' . esc_url( $toggle_url ) . '">' . $toggle_label . '</a>',
 			'trash'      => '<a href="' . esc_url( $trash_url ) . '">' . esc_html__( 'Trash', 'gt-link-manager' ) . '</a>',
@@ -303,6 +313,14 @@ class GTLM_List_Table extends WP_List_Table {
 	/**
 	 * @param array<string, mixed> $item Item.
 	 */
+	protected function column_tags( $item ): string {
+		$tags = trim( (string) ( $item['tags'] ?? '' ) );
+		return '' !== $tags ? esc_html( $tags ) : '&mdash;';
+	}
+
+	/**
+	 * @param array<string, mixed> $item Item.
+	 */
 	protected function column_default( $item, $column_name ): string {
 		if ( isset( $item[ $column_name ] ) ) {
 			return esc_html( (string) $item[ $column_name ] );
@@ -321,7 +339,23 @@ class GTLM_List_Table extends WP_List_Table {
 		$rel           = isset( $_GET['rel'] ) ? sanitize_key( (string) wp_unslash( $_GET['rel'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$bulk_category = isset( $_REQUEST['bulk_category_id'] ) ? absint( $_REQUEST['bulk_category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
+		$current_m = isset( $_GET['m'] ) ? absint( $_GET['m'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$months    = $this->db->get_link_months();
+
 		echo '<div class="alignleft actions">';
+
+		if ( ! empty( $months ) ) {
+			echo '<select name="m">';
+			echo '<option value="0">' . esc_html__( 'All dates', 'gt-link-manager' ) . '</option>';
+			global $wp_locale;
+			foreach ( $months as $m ) {
+				$val   = (int) $m['year'] * 100 + (int) $m['month'];
+				$label = $wp_locale->get_month( str_pad( (string) $m['month'], 2, '0', STR_PAD_LEFT ) ) . ' ' . (int) $m['year'];
+				echo '<option value="' . (int) $val . '" ' . selected( $current_m, $val, false ) . '>' . esc_html( $label ) . '</option>';
+			}
+			echo '</select>';
+		}
+
 		echo '<select name="category_id"><option value="0">' . esc_html__( 'All categories', 'gt-link-manager' ) . '</option>';
 		foreach ( $this->categories as $cat ) {
 			echo '<option value="' . (int) $cat['id'] . '" ' . selected( $category, (int) $cat['id'], false ) . '>' . esc_html( (string) $cat['name'] ) . '</option>';
@@ -374,6 +408,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'category_id'   => isset( $_REQUEST['category_id'] ) ? absint( $_REQUEST['category_id'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			'redirect_type' => isset( $_REQUEST['redirect_type'] ) ? absint( $_REQUEST['redirect_type'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			'rel'           => isset( $_REQUEST['rel'] ) ? sanitize_key( (string) wp_unslash( $_REQUEST['rel'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			'm'             => isset( $_REQUEST['m'] ) ? absint( $_REQUEST['m'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		);
 
 		// Apply view-based filtering.
@@ -387,8 +422,6 @@ class GTLM_List_Table extends WP_List_Table {
 
 		$total_items = $this->db->count_links( $filters );
 		$this->items = $this->db->list_links( $filters, $current_page, $per_page, $orderby, strtoupper( $order ) );
-
-		$this->_column_headers = array( $this->get_columns(), array(), $this->get_sortable_columns() );
 
 		$this->set_pagination_args(
 			array(

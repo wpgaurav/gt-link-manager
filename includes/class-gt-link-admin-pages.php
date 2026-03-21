@@ -102,8 +102,11 @@ class GTLM_Admin_Pages {
 		$this->render_textarea_field( 'notes', __( 'Notes', 'gt-link-manager' ), (string) $form['notes'] );
 		echo '</tbody></table>';
 
-		submit_button( __( 'Save Link', 'gt-link-manager' ), 'primary', 'save_link' );
+		echo '<div class="gtlm-submit-row">';
+		submit_button( __( 'Save Link', 'gt-link-manager' ), 'primary', 'save_link', false );
+		submit_button( __( 'Save & View All', 'gt-link-manager' ), 'secondary', 'save_view_all', false );
 		submit_button( __( 'Save & Add Another', 'gt-link-manager' ), 'secondary', 'save_add_another', false );
+		echo '</div>';
 		echo '</form>';
 		echo '</div>';
 		echo '</div>';

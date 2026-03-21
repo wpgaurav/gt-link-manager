@@ -497,6 +497,17 @@ class GTLM_DB {
 				$params[] = $rel_value;
 			}
 		}
+
+		if ( ! empty( $filters['m'] ) ) {
+			$m     = absint( $filters['m'] );
+			$year  = (int) ( $m / 100 );
+			$month = $m % 100;
+			if ( $year > 0 && $month > 0 && $month <= 12 ) {
+				$sql     .= ' AND YEAR(created_at) = %d AND MONTH(created_at) = %d';
+				$params[] = $year;
+				$params[] = $month;
+			}
+		}
 	}
 
 	/**
@@ -652,6 +663,33 @@ class GTLM_DB {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->delete( self::categories_table(), array( 'id' => $id ), array( '%d' ) );
 		return false !== $result && $result > 0;
+	}
+
+	/**
+	 * Get distinct year/month pairs for the date filter dropdown.
+	 *
+	 * @return array<int, array{year: int, month: int}>
+	 */
+	public function get_link_months(): array {
+		global $wpdb;
+
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows = $wpdb->get_results( "SELECT DISTINCT YEAR(created_at) AS year, MONTH(created_at) AS month FROM {$table} WHERE trashed_at IS NULL ORDER BY year DESC, month DESC", ARRAY_A );
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		return array_map(
+			static function ( array $row ): array {
+				return array(
+					'year'  => (int) $row['year'],
+					'month' => (int) $row['month'],
+				);
+			},
+			$rows
+		);
 	}
 
 	public function flush_cache_group(): void {

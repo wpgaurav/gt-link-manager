@@ -14,92 +14,150 @@
 		}
 	}
 
+	function el(tag, attrs, children) {
+		var node = document.createElement(tag);
+		if (attrs) {
+			Object.keys(attrs).forEach(function (key) {
+				if (key === 'className') {
+					node.className = attrs[key];
+				} else if (key === 'textContent') {
+					node.textContent = attrs[key];
+				} else {
+					node.setAttribute(key, attrs[key]);
+				}
+			});
+		}
+		if (children) {
+			children.forEach(function (child) {
+				if (typeof child === 'string') {
+					node.appendChild(document.createTextNode(child));
+				} else if (child) {
+					node.appendChild(child);
+				}
+			});
+		}
+		return node;
+	}
+
 	function buildQuickEditRow(tr, data) {
 		removeQuickEditor();
 
 		var colCount = tr.children.length;
-		var quickTr = document.createElement('tr');
-		quickTr.className = 'gtlm-quick-edit-row inline-edit-row';
+		var quickTr = el('tr', { className: 'gtlm-quick-edit-row inline-edit-row' });
+		var td = el('td', { colspan: colCount });
 
-		var td = document.createElement('td');
-		td.setAttribute('colspan', colCount);
+		var wrap = el('div', { className: 'gtlm-quick-edit-wrap' });
 
-		var wrap = document.createElement('div');
-		wrap.className = 'gtlm-quick-edit-wrap';
-
-		var urlLabel = document.createElement('label');
-		urlLabel.textContent = 'Destination URL ';
-		var urlInput = document.createElement('input');
-		urlInput.type = 'url';
-		urlInput.className = 'gtlm-quick-url';
-		urlInput.value = data.url;
+		// Row 1: URL + Type
+		var row1 = el('div', { className: 'gtlm-qe-row' });
+		var urlLabel = el('label', { textContent: 'Destination URL ' });
+		var urlInput = el('input', { type: 'url', className: 'gtlm-quick-url', value: data.url });
 		urlLabel.appendChild(urlInput);
 
-		var typeLabel = document.createElement('label');
-		typeLabel.textContent = 'Type ';
-		var typeSelect = document.createElement('select');
-		typeSelect.className = 'gtlm-quick-type';
+		var typeLabel = el('label', { textContent: 'Type ' });
+		var typeSelect = el('select', { className: 'gtlm-quick-type' });
 		['301', '302', '307'].forEach(function (val) {
-			var opt = document.createElement('option');
-			opt.value = val;
-			opt.textContent = val;
-			typeSelect.appendChild(opt);
+			typeSelect.appendChild(el('option', { value: val, textContent: val }));
 		});
+		typeSelect.value = String(data.redirectType);
 		typeLabel.appendChild(typeSelect);
 
-		var saveBtn = document.createElement('button');
-		saveBtn.type = 'button';
-		saveBtn.className = 'button button-primary gtlm-quick-save';
-		saveBtn.textContent = 'Save';
+		row1.appendChild(urlLabel);
+		row1.appendChild(document.createTextNode(' '));
+		row1.appendChild(typeLabel);
 
-		var cancelBtn = document.createElement('button');
-		cancelBtn.type = 'button';
-		cancelBtn.className = 'button gtlm-quick-cancel';
-		cancelBtn.textContent = 'Cancel';
+		// Row 2: Slug + Rel + Category + Status
+		var row2 = el('div', { className: 'gtlm-qe-row' });
 
-		var spinner = document.createElement('span');
-		spinner.className = 'spinner';
-		spinner.style.cssText = 'float:none;margin:0 0 0 8px;';
+		var slugLabel = el('label', { textContent: 'Slug ' });
+		var slugInput = el('input', { type: 'text', className: 'gtlm-quick-slug', value: data.slug || '' });
+		slugLabel.appendChild(slugInput);
 
-		var message = document.createElement('span');
-		message.className = 'gtlm-quick-message';
-		message.style.marginLeft = '10px';
+		var relFieldset = el('span', { className: 'gtlm-qe-rel' });
+		relFieldset.appendChild(document.createTextNode('Rel '));
+		var relValues = (data.rel || '').split(',').filter(Boolean);
+		['nofollow', 'sponsored', 'ugc'].forEach(function (val) {
+			var lbl = el('label');
+			var cb = el('input', { type: 'checkbox', name: 'rel', value: val });
+			if (relValues.indexOf(val) !== -1) {
+				cb.checked = true;
+			}
+			lbl.appendChild(cb);
+			lbl.appendChild(document.createTextNode(' ' + val + ' '));
+			relFieldset.appendChild(lbl);
+		});
 
-		wrap.appendChild(urlLabel);
-		wrap.appendChild(document.createTextNode(' '));
-		wrap.appendChild(typeLabel);
-		wrap.appendChild(document.createTextNode(' '));
-		wrap.appendChild(saveBtn);
-		wrap.appendChild(document.createTextNode(' '));
-		wrap.appendChild(cancelBtn);
-		wrap.appendChild(document.createTextNode(' '));
-		wrap.appendChild(spinner);
-		wrap.appendChild(message);
+		var catLabel = el('label', { textContent: 'Category ' });
+		var catSelect = el('select', { className: 'gtlm-quick-category' });
+		catSelect.appendChild(el('option', { value: '0', textContent: 'None' }));
+		(window.gtlmAdmin.categories || []).forEach(function (cat) {
+			catSelect.appendChild(el('option', { value: String(cat.id), textContent: cat.name }));
+		});
+		catSelect.value = String(data.categoryId || 0);
+		catLabel.appendChild(catSelect);
+
+		var statusLabel = el('label', { textContent: 'Status ' });
+		var statusSelect = el('select', { className: 'gtlm-quick-status' });
+		statusSelect.appendChild(el('option', { value: '1', textContent: 'Active' }));
+		statusSelect.appendChild(el('option', { value: '0', textContent: 'Inactive' }));
+		statusSelect.value = String(data.isActive);
+		statusLabel.appendChild(statusSelect);
+
+		row2.appendChild(slugLabel);
+		row2.appendChild(document.createTextNode(' '));
+		row2.appendChild(relFieldset);
+		row2.appendChild(document.createTextNode(' '));
+		row2.appendChild(catLabel);
+		row2.appendChild(document.createTextNode(' '));
+		row2.appendChild(statusLabel);
+
+		// Row 3: Buttons
+		var row3 = el('div', { className: 'gtlm-qe-row' });
+		var saveBtn = el('button', { type: 'button', className: 'button button-primary gtlm-quick-save', textContent: 'Save' });
+		var cancelBtn = el('button', { type: 'button', className: 'button gtlm-quick-cancel', textContent: 'Cancel' });
+		var spinner = el('span', { className: 'spinner', style: 'float:none;margin:0 0 0 8px;' });
+		var message = el('span', { className: 'gtlm-quick-message', style: 'margin-left:10px;' });
+		row3.appendChild(saveBtn);
+		row3.appendChild(document.createTextNode(' '));
+		row3.appendChild(cancelBtn);
+		row3.appendChild(spinner);
+		row3.appendChild(message);
+
+		wrap.appendChild(row1);
+		wrap.appendChild(row2);
+		wrap.appendChild(row3);
 		td.appendChild(wrap);
 		quickTr.appendChild(td);
 
 		tr.parentNode.insertBefore(quickTr, tr.nextSibling);
-		typeSelect.value = String(data.redirectType);
 
-		quickTr.querySelector('.gtlm-quick-cancel').addEventListener('click', function () {
-			removeQuickEditor();
-		});
+		cancelBtn.addEventListener('click', removeQuickEditor);
 
-		quickTr.querySelector('.gtlm-quick-save').addEventListener('click', function () {
-			var urlInput = quickTr.querySelector('.gtlm-quick-url');
-			var typeInput = quickTr.querySelector('.gtlm-quick-type');
-			var spinner = quickTr.querySelector('.spinner');
-			var message = quickTr.querySelector('.gtlm-quick-message');
+		saveBtn.addEventListener('click', function () {
+			var msgEl = quickTr.querySelector('.gtlm-quick-message');
+			var spinEl = quickTr.querySelector('.spinner');
 			var formData = new window.FormData();
 
-			message.textContent = '';
-			spinner.classList.add('is-active');
+			msgEl.textContent = '';
+			spinEl.classList.add('is-active');
 
 			formData.append('action', 'gtlm_quick_edit');
 			formData.append('nonce', window.gtlmAdmin.quickEditNonce);
 			formData.append('link_id', data.linkId);
-			formData.append('url', urlInput.value);
-			formData.append('redirect_type', typeInput.value);
+			formData.append('url', quickTr.querySelector('.gtlm-quick-url').value);
+			formData.append('redirect_type', quickTr.querySelector('.gtlm-quick-type').value);
+			formData.append('slug', quickTr.querySelector('.gtlm-quick-slug').value);
+			formData.append('category_id', quickTr.querySelector('.gtlm-quick-category').value);
+			formData.append('is_active', quickTr.querySelector('.gtlm-quick-status').value);
+
+			var relChecked = quickTr.querySelectorAll('input[name="rel"]:checked');
+			if (relChecked.length > 0) {
+				relChecked.forEach(function (cb) {
+					formData.append('rel[]', cb.value);
+				});
+			} else {
+				formData.append('rel', '');
+			}
 
 			window.fetch(window.gtlmAdmin.ajaxUrl, {
 				method: 'POST',
@@ -108,32 +166,70 @@
 			})
 				.then(function (res) { return res.json(); })
 				.then(function (json) {
-					spinner.classList.remove('is-active');
+					spinEl.classList.remove('is-active');
 					if (!json || !json.success) {
-						message.textContent = window.gtlmAdmin.i18n.saveFailed;
-						message.style.color = '#b32d2e';
+						msgEl.textContent = window.gtlmAdmin.i18n.saveFailed;
+						msgEl.style.color = '#b32d2e';
 						return;
 					}
 
-					var dataOut = json.data || {};
+					var d = json.data || {};
+
+					// Update visible cells
 					var destCell = tr.querySelector('td.column-url a');
-					var typeCell = tr.querySelector('td.column-redirect_type');
-					if (destCell && dataOut.url) {
-						destCell.href = dataOut.url;
-						destCell.textContent = dataOut.url;
+					if (destCell && d.url) {
+						destCell.href = d.url;
+						destCell.textContent = d.url;
 					}
-					if (typeCell && dataOut.redirect_type) {
-						typeCell.textContent = dataOut.redirect_type;
+					var typeCell = tr.querySelector('td.column-redirect_type');
+					if (typeCell && d.redirect_type) {
+						typeCell.textContent = d.redirect_type;
+					}
+					var relCell = tr.querySelector('td.column-rel');
+					if (relCell) {
+						relCell.textContent = d.rel || '';
+					}
+					var statusCell = tr.querySelector('td.column-status');
+					if (statusCell) {
+						var isActive = parseInt(d.is_active, 10);
+						statusCell.innerHTML = isActive
+							? '<span class="gtlm-status gtlm-status--active">Active</span>'
+							: '<span class="gtlm-status gtlm-status--inactive">Inactive</span>';
+					}
+					var catCell = tr.querySelector('td.column-category');
+					if (catCell) {
+						var catName = '\u2014';
+						(window.gtlmAdmin.categories || []).forEach(function (c) {
+							if (c.id === d.category_id) {
+								catName = c.name;
+							}
+						});
+						catCell.textContent = catName;
+					}
+					var brandedCell = tr.querySelector('td.column-branded_url code');
+					if (brandedCell && d.slug) {
+						brandedCell.textContent = window.location.origin + '/' + (window.gtlmAdmin.prefix || 'go') + '/' + d.slug;
 					}
 
-					message.textContent = window.gtlmAdmin.i18n.saved;
-					message.style.color = '#008a20';
+					// Update quick edit data attributes
+					var qeLink = tr.querySelector('.gtlm-quick-edit');
+					if (qeLink) {
+						qeLink.setAttribute('data-url', d.url || '');
+						qeLink.setAttribute('data-redirect-type', d.redirect_type || '301');
+						qeLink.setAttribute('data-slug', d.slug || '');
+						qeLink.setAttribute('data-rel', d.rel || '');
+						qeLink.setAttribute('data-category-id', d.category_id || 0);
+						qeLink.setAttribute('data-is-active', d.is_active);
+					}
+
+					msgEl.textContent = window.gtlmAdmin.i18n.saved;
+					msgEl.style.color = '#008a20';
 					window.setTimeout(removeQuickEditor, 600);
 				})
 				.catch(function () {
-					spinner.classList.remove('is-active');
-					message.textContent = window.gtlmAdmin.i18n.saveFailed;
-					message.style.color = '#b32d2e';
+					spinEl.classList.remove('is-active');
+					msgEl.textContent = window.gtlmAdmin.i18n.saveFailed;
+					msgEl.style.color = '#b32d2e';
 				});
 		});
 	}
@@ -149,7 +245,11 @@
 			buildQuickEditRow(tr, {
 				linkId: quickLink.getAttribute('data-link-id'),
 				url: quickLink.getAttribute('data-url') || '',
-				redirectType: quickLink.getAttribute('data-redirect-type') || '301'
+				redirectType: quickLink.getAttribute('data-redirect-type') || '301',
+				slug: quickLink.getAttribute('data-slug') || '',
+				rel: quickLink.getAttribute('data-rel') || '',
+				categoryId: quickLink.getAttribute('data-category-id') || '0',
+				isActive: quickLink.getAttribute('data-is-active') || '1'
 			});
 			return;
 		}
@@ -237,4 +337,35 @@
 			progressBar.removeAttribute('value');
 		});
 	}
+
+	// Row highlight after save.
+	var highlightId = parseInt(window.gtlmAdmin.highlight, 10);
+	if (highlightId > 0 && table) {
+		var checkbox = table.querySelector('input[name="link_ids[]"][value="' + highlightId + '"]');
+		if (checkbox) {
+			var row = checkbox.closest('tr');
+			if (row) {
+				row.classList.add('gtlm-highlight');
+				window.setTimeout(function () {
+					row.classList.remove('gtlm-highlight');
+				}, 2400);
+			}
+		}
+	}
+
+	// Keyboard shortcut: "/" to focus search.
+	document.addEventListener('keydown', function (e) {
+		if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) {
+			return;
+		}
+		var tag = (e.target.tagName || '').toLowerCase();
+		if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) {
+			return;
+		}
+		var searchInput = document.getElementById('gtlm-links-search-search-input');
+		if (searchInput) {
+			e.preventDefault();
+			searchInput.focus();
+		}
+	});
 })();
