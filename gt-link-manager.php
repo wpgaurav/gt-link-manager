@@ -3,7 +3,7 @@
  * Plugin Name:       GT Link Manager
  * Plugin URI:        https://wordpress.org/plugins/gt-link-manager/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
- * Version:           1.5.2
+ * Version:           1.5.3
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Gaurav Tiwari
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GTLM_VERSION' ) ) {
-	define( 'GTLM_VERSION', '1.5.2' );
+	define( 'GTLM_VERSION', '1.5.3' );
 }
 
 if ( ! defined( 'GTLM_FILE' ) ) {

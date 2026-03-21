@@ -34,6 +34,9 @@ phpcs.xml.dist
 composer.lock
 vendor/
 
+# WordPress.org SVN assets (deployed separately)
+.wordpress-org/
+
 # Misc
 *.zip
 build-release/

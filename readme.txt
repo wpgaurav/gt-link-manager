@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,6 +103,9 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 5. **Import/Export** — CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.5.3 =
+* Fixed plugin zip size bloat — excluded .wordpress-org assets directory from distribution package.
 
 = 1.5.2 =
 * Added "Delete Data on Uninstall" setting — data is now preserved by default when the plugin is deleted.
