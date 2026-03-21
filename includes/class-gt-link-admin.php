@@ -441,10 +441,11 @@ class GTLM_Admin {
 		$rel   = $this->sanitize_rel_from_post( wp_unslash( $_POST['default_rel'] ?? array() ) );
 		$saved = $this->settings->update(
 			array(
-				'base_prefix'           => sanitize_text_field( (string) wp_unslash( $_POST['base_prefix'] ?? 'go' ) ),
-				'default_redirect_type' => absint( $_POST['default_redirect_type'] ?? 301 ),
-				'default_rel'           => '' !== $rel ? explode( ',', $rel ) : array(),
-				'default_noindex'       => ! empty( $_POST['default_noindex'] ) ? 1 : 0,
+				'base_prefix'              => sanitize_text_field( (string) wp_unslash( $_POST['base_prefix'] ?? 'go' ) ),
+				'default_redirect_type'    => absint( $_POST['default_redirect_type'] ?? 301 ),
+				'default_rel'              => '' !== $rel ? explode( ',', $rel ) : array(),
+				'default_noindex'          => ! empty( $_POST['default_noindex'] ) ? 1 : 0,
+				'delete_data_on_uninstall' => ! empty( $_POST['delete_data_on_uninstall'] ) ? 1 : 0,
 			)
 		);
 

@@ -2,7 +2,7 @@
 /**
  * Uninstall GT Link Manager.
  *
- * Removes plugin options and custom tables when the plugin is deleted.
+ * Only removes data if the user opted in via Settings > Delete Data on Uninstall.
  *
  * @package GTLinkManager
  */
@@ -11,9 +11,15 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
+$gtlm_settings = get_option( 'gtlm_settings', array() );
+
+if ( ! is_array( $gtlm_settings ) || empty( $gtlm_settings['delete_data_on_uninstall'] ) ) {
+	return;
+}
+
 global $wpdb;
 
-// New prefix options.
+// Options.
 delete_option( 'gtlm_settings' );
 delete_option( 'gtlm_db_version' );
 delete_option( 'gtlm_diagnostics' );

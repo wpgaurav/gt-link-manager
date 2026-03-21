@@ -207,6 +207,7 @@ class GTLM_Admin_Pages {
 		$this->render_redirect_type_field( (int) $settings['default_redirect_type'], 'default_redirect_type', __( 'Default Redirect Type', 'gt-link-manager' ) );
 		$this->render_rel_field( implode( ',', (array) $settings['default_rel'] ), 'default_rel[]', __( 'Default Rel Attributes', 'gt-link-manager' ) );
 		$this->render_checkbox_field( 'default_noindex', __( 'Default Noindex', 'gt-link-manager' ), __( 'Apply noindex to new links by default', 'gt-link-manager' ), ! empty( $settings['default_noindex'] ) );
+		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Delete Data on Uninstall', 'gt-link-manager' ), __( 'Remove all links, categories, and settings when the plugin is deleted', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
 		echo '</tbody></table>';
 		submit_button( __( 'Save Settings', 'gt-link-manager' ) );
 		echo '</form>';
