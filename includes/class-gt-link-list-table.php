@@ -58,6 +58,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'name'          => esc_html__( 'Name', 'gt-link-manager' ),
 			'branded_url'   => esc_html__( 'Branded URL', 'gt-link-manager' ),
 			'url'           => esc_html__( 'Destination', 'gt-link-manager' ),
+			'link_mode'     => esc_html__( 'Mode', 'gt-link-manager' ),
 			'redirect_type' => esc_html__( 'Type', 'gt-link-manager' ),
 			'rel'           => esc_html__( 'Rel', 'gt-link-manager' ),
 			'status'        => esc_html__( 'Status', 'gt-link-manager' ),
@@ -83,6 +84,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'name'          => array( 'name', false ),
 			'branded_url'   => array( 'slug', false ),
 			'url'           => array( 'url', false ),
+			'link_mode'     => array( 'link_mode', false ),
 			'redirect_type' => array( 'redirect_type', false ),
 			'rel'           => array( 'rel', false ),
 			'status'        => array( 'is_active', false ),
@@ -191,7 +193,14 @@ class GTLM_List_Table extends WP_List_Table {
 			admin_url( 'admin.php' )
 		);
 
-		$branded_url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
+		$mode = (string) ( $item['link_mode'] ?? 'standard' );
+		if ( 'direct' === $mode ) {
+			$branded_url = home_url( '/' . (string) $item['slug'] );
+		} elseif ( 'regex' === $mode ) {
+			$branded_url = '';
+		} else {
+			$branded_url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
+		}
 
 		if ( 'trash' === $this->view ) {
 			$restore_url = wp_nonce_url(
@@ -256,11 +265,14 @@ class GTLM_List_Table extends WP_List_Table {
 		$actions = array(
 			'edit'       => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'gt-link-manager' ) . '</a>',
 			'quick_edit' => '<a href="#" class="gtlm-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '" data-slug="' . esc_attr( (string) $item['slug'] ) . '" data-rel="' . esc_attr( (string) $item['rel'] ) . '" data-category-id="' . (int) ( $item['category_id'] ?? 0 ) . '" data-is-active="' . (int) $item['is_active'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
-			'copy_url'   => '<a href="#" class="gtlm-copy-url" data-copy-url="' . esc_attr( $branded_url ) . '">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</a>',
 			'toggle'     => '<a href="' . esc_url( $toggle_url ) . '">' . $toggle_label . '</a>',
 			'trash'      => '<a href="' . esc_url( $trash_url ) . '">' . esc_html__( 'Trash', 'gt-link-manager' ) . '</a>',
-			'view'       => '<a href="' . esc_url( $branded_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View', 'gt-link-manager' ) . '</a>',
 		);
+
+		if ( '' !== $branded_url ) {
+			$actions['copy_url'] = '<a href="#" class="gtlm-copy-url" data-copy-url="' . esc_attr( $branded_url ) . '">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</a>';
+			$actions['view']     = '<a href="' . esc_url( $branded_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View', 'gt-link-manager' ) . '</a>';
+		}
 
 		return '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( (string) $item['name'] ) . '</a></strong>' . $this->row_actions( $actions );
 	}
@@ -269,8 +281,28 @@ class GTLM_List_Table extends WP_List_Table {
 	 * @param array<string, mixed> $item Item.
 	 */
 	protected function column_branded_url( $item ): string {
-		$url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
+		$mode = (string) ( $item['link_mode'] ?? 'standard' );
+		if ( 'direct' === $mode ) {
+			$url = home_url( '/' . (string) $item['slug'] );
+		} elseif ( 'regex' === $mode ) {
+			return '<code title="' . esc_attr__( 'Regex pattern', 'gt-link-manager' ) . '">' . esc_html( (string) $item['slug'] ) . '</code>';
+		} else {
+			$url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
+		}
 		return '<code>' . esc_html( $url ) . '</code>';
+	}
+
+	/**
+	 * @param array<string, mixed> $item Item.
+	 */
+	protected function column_link_mode( $item ): string {
+		$mode   = (string) ( $item['link_mode'] ?? 'standard' );
+		$labels = array(
+			'standard' => __( 'Standard', 'gt-link-manager' ),
+			'direct'   => __( 'Direct', 'gt-link-manager' ),
+			'regex'    => __( 'Regex', 'gt-link-manager' ),
+		);
+		return esc_html( $labels[ $mode ] ?? $labels['standard'] );
 	}
 
 	/**
@@ -376,6 +408,14 @@ class GTLM_List_Table extends WP_List_Table {
 		echo '<option value="ugc" ' . selected( $rel, 'ugc', false ) . '>ugc</option>';
 		echo '</select>';
 
+		$link_mode = isset( $_GET['link_mode'] ) ? sanitize_key( (string) wp_unslash( $_GET['link_mode'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		echo '<select name="link_mode">';
+		echo '<option value="">' . esc_html__( 'All modes', 'gt-link-manager' ) . '</option>';
+		echo '<option value="standard" ' . selected( $link_mode, 'standard', false ) . '>' . esc_html__( 'Standard', 'gt-link-manager' ) . '</option>';
+		echo '<option value="direct" ' . selected( $link_mode, 'direct', false ) . '>' . esc_html__( 'Direct', 'gt-link-manager' ) . '</option>';
+		echo '<option value="regex" ' . selected( $link_mode, 'regex', false ) . '>' . esc_html__( 'Regex', 'gt-link-manager' ) . '</option>';
+		echo '</select>';
+
 		submit_button( esc_html__( 'Filter', 'gt-link-manager' ), 'secondary', 'filter_action', false );
 		echo '</div>';
 
@@ -408,6 +448,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'category_id'   => isset( $_REQUEST['category_id'] ) ? absint( $_REQUEST['category_id'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			'redirect_type' => isset( $_REQUEST['redirect_type'] ) ? absint( $_REQUEST['redirect_type'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			'rel'           => isset( $_REQUEST['rel'] ) ? sanitize_key( (string) wp_unslash( $_REQUEST['rel'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			'link_mode'     => isset( $_REQUEST['link_mode'] ) ? sanitize_key( (string) wp_unslash( $_REQUEST['link_mode'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			'm'             => isset( $_REQUEST['m'] ) ? absint( $_REQUEST['m'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		);
 

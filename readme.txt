@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.5.3
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,6 +103,18 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 5. **Import/Export** — CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.6.0 =
+* Added advanced redirects: Direct (prefix-free) and Regex (pattern-based) link modes.
+* Direct links redirect without the prefix — e.g., `yoursite.com/my-page` instead of `yoursite.com/go/my-page`.
+* Regex links match request paths against patterns with capture group substitution in destination URLs.
+* New "Enable Advanced Redirects" toggle in Settings (off by default) to opt in.
+* Link edit form shows mode selector (Standard / Direct / Regex) with contextual fields.
+* Conflict detection warns when direct link paths match existing WordPress posts or pages.
+* Regex patterns are validated on save; invalid patterns are rejected.
+* List table shows link mode with filter support.
+* REST API accepts and returns `link_mode`, `regex_replacement`, and `priority` fields.
+* New database columns: `link_mode`, `regex_replacement`, `priority` — fully backwards compatible.
 
 = 1.5.3 =
 * Fixed plugin zip size bloat — excluded .wordpress-org assets directory from distribution package.
@@ -223,6 +235,9 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.6.0 =
+Adds direct (prefix-free) and regex (pattern-based) redirect modes. Enable in Settings > Advanced Redirects. Fully backwards compatible.
 
 = 1.5.2 =
 Data is now preserved on uninstall by default. Enable "Delete Data on Uninstall" in Settings to remove all data.

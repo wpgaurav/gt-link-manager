@@ -277,6 +277,11 @@
 	var copyBtn = document.getElementById('gtlm-copy-preview');
 	var slugTouched = false;
 
+	function getSelectedMode() {
+		var checked = document.querySelector('input[name="link_mode"]:checked');
+		return checked ? checked.value : 'standard';
+	}
+
 	function slugify(str) {
 		return String(str || '')
 			.toLowerCase()
@@ -295,19 +300,73 @@
 			preview.textContent = '-';
 			return;
 		}
-		preview.textContent = window.location.origin + '/' + prefix + '/' + slug;
+		var mode = getSelectedMode();
+		if (mode === 'direct') {
+			preview.textContent = window.location.origin + '/' + slug;
+		} else if (mode === 'regex') {
+			preview.textContent = slug + ' (regex pattern)';
+		} else {
+			preview.textContent = window.location.origin + '/' + prefix + '/' + slug;
+		}
+	}
+
+	function updateModeUI(mode) {
+		// Show/hide regex-only fields.
+		var regexFields = document.querySelectorAll('.gtlm-field-regex-replacement, .gtlm-field-priority');
+		regexFields.forEach(function (el) {
+			el.style.display = mode === 'regex' ? '' : 'none';
+		});
+
+		// Show/hide mode hints.
+		var hints = document.querySelectorAll('.gtlm-mode-hint');
+		hints.forEach(function (el) {
+			el.style.display = el.getAttribute('data-mode') === mode ? '' : 'none';
+		});
+
+		// Update slug field label.
+		var slugLabel = slugField ? slugField.closest('tr') : null;
+		if (slugLabel) {
+			var label = slugLabel.querySelector('label');
+			if (label) {
+				if (mode === 'direct') {
+					label.textContent = 'Path';
+				} else if (mode === 'regex') {
+					label.textContent = 'Pattern';
+				} else {
+					label.textContent = 'Slug';
+				}
+			}
+		}
+
+		updatePreview();
+	}
+
+	// Bind link mode radio buttons.
+	var modeRadios = document.querySelectorAll('.gtlm-link-mode-radio');
+	modeRadios.forEach(function (radio) {
+		radio.addEventListener('change', function () {
+			updateModeUI(this.value);
+		});
+	});
+
+	if (modeRadios.length > 0) {
+		updateModeUI(getSelectedMode());
 	}
 
 	if (nameField && slugField) {
 		nameField.addEventListener('input', function () {
-			if (!slugTouched || !slugField.value.trim()) {
+			var mode = getSelectedMode();
+			if (mode === 'standard' && (!slugTouched || !slugField.value.trim())) {
 				slugField.value = slugify(nameField.value);
 			}
 			updatePreview();
 		});
 		slugField.addEventListener('input', function () {
 			slugTouched = true;
-			slugField.value = slugify(slugField.value);
+			var mode = getSelectedMode();
+			if (mode === 'standard') {
+				slugField.value = slugify(slugField.value);
+			}
 			updatePreview();
 		});
 		updatePreview();

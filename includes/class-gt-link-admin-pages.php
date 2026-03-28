@@ -65,17 +65,21 @@ class GTLM_Admin_Pages {
 		$categories = $this->db->get_categories();
 
 		$defaults = array(
-			'name'          => '',
-			'url'           => '',
-			'slug'          => '',
-			'redirect_type' => (int) $settings['default_redirect_type'],
-			'rel'           => implode( ',', (array) $settings['default_rel'] ),
-			'noindex'       => (int) $settings['default_noindex'],
-			'category_id'   => 0,
-			'tags'          => '',
-			'notes'         => '',
+			'name'              => '',
+			'url'               => '',
+			'slug'              => '',
+			'redirect_type'     => (int) $settings['default_redirect_type'],
+			'rel'               => implode( ',', (array) $settings['default_rel'] ),
+			'noindex'           => (int) $settings['default_noindex'],
+			'link_mode'         => 'standard',
+			'regex_replacement' => '',
+			'priority'          => 10,
+			'category_id'       => 0,
+			'tags'              => '',
+			'notes'             => '',
 		);
-		$form     = is_array( $link ) ? wp_parse_args( $link, $defaults ) : $defaults;
+		$form               = is_array( $link ) ? wp_parse_args( $link, $defaults ) : $defaults;
+		$advanced_enabled   = ! empty( $settings['enable_advanced_redirects'] );
 
 		echo '<div class="wrap">';
 		echo '<h1>' . esc_html( $link_id > 0 ? __( 'Edit Link', 'gt-link-manager' ) : __( 'Add New Link', 'gt-link-manager' ) ) . '</h1>';
@@ -88,7 +92,29 @@ class GTLM_Admin_Pages {
 		echo '<table class="form-table" role="presentation"><tbody>';
 		$this->render_text_field( 'name', __( 'Link Name', 'gt-link-manager' ), (string) $form['name'], true );
 		$this->render_text_field( 'url', __( 'Destination URL', 'gt-link-manager' ), (string) $form['url'], true, 'url' );
+
+		if ( $advanced_enabled ) {
+			$this->render_link_mode_field( (string) $form['link_mode'] );
+		} else {
+			echo '<input type="hidden" name="link_mode" value="standard" />';
+		}
+
 		$this->render_text_field( 'slug', __( 'Slug', 'gt-link-manager' ), (string) $form['slug'], false );
+
+		if ( $advanced_enabled ) {
+			echo '<tr class="gtlm-field-regex-replacement" style="' . ( 'regex' !== $form['link_mode'] ? 'display:none;' : '' ) . '">';
+			echo '<th scope="row"><label for="regex_replacement">' . esc_html__( 'Regex Replacement', 'gt-link-manager' ) . '</label></th>';
+			echo '<td><input name="regex_replacement" id="regex_replacement" type="text" class="regular-text" value="' . esc_attr( (string) $form['regex_replacement'] ) . '" />';
+			echo '<p class="description">' . esc_html__( 'Use $1, $2 for capture groups. If empty, capture groups are substituted in the Destination URL.', 'gt-link-manager' ) . '</p></td></tr>';
+
+			echo '<tr class="gtlm-field-priority" style="' . ( 'regex' !== $form['link_mode'] ? 'display:none;' : '' ) . '">';
+			echo '<th scope="row"><label for="priority">' . esc_html__( 'Priority', 'gt-link-manager' ) . '</label></th>';
+			echo '<td><input name="priority" id="priority" type="number" class="small-text" value="' . (int) $form['priority'] . '" min="0" step="1" />';
+			echo '<p class="description">' . esc_html__( 'Lower numbers are matched first.', 'gt-link-manager' ) . '</p></td></tr>';
+
+			echo '<tr class="gtlm-field-conflict-warning" style="display:none;">';
+			echo '<th scope="row"></th><td><div class="notice notice-warning inline"><p id="gtlm-conflict-message"></p></div></td></tr>';
+		}
 
 		echo '<tr><th scope="row">' . esc_html__( 'Branded URL Preview', 'gt-link-manager' ) . '</th><td>';
 		echo '<span id="gtlm-branded-preview">-</span> <button type="button" class="button" id="gtlm-copy-preview">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</button>';
@@ -208,6 +234,7 @@ class GTLM_Admin_Pages {
 		$this->render_rel_field( implode( ',', (array) $settings['default_rel'] ), 'default_rel[]', __( 'Default Rel Attributes', 'gt-link-manager' ) );
 		$this->render_checkbox_field( 'default_noindex', __( 'Default Noindex', 'gt-link-manager' ), __( 'Apply noindex to new links by default', 'gt-link-manager' ), ! empty( $settings['default_noindex'] ) );
 		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Delete Data on Uninstall', 'gt-link-manager' ), __( 'Remove all links, categories, and settings when the plugin is deleted', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
+		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced Redirects', 'gt-link-manager' ), __( 'Enable direct (prefix-free) and regex (pattern-based) redirect modes', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
 		echo '</tbody></table>';
 		submit_button( __( 'Save Settings', 'gt-link-manager' ) );
 		echo '</form>';
@@ -285,6 +312,8 @@ class GTLM_Admin_Pages {
 			'invalid'                => array( 'error', __( 'Please enter required fields.', 'gt-link-manager' ) ),
 			'invalid_category'       => array( 'error', __( 'Category name is required.', 'gt-link-manager' ) ),
 			'save_failed'            => array( 'error', __( 'Save failed. Please check values.', 'gt-link-manager' ) ),
+			'invalid_regex'          => array( 'error', __( 'Invalid regex pattern. Please check the syntax.', 'gt-link-manager' ) ),
+			'reserved_path'          => array( 'error', __( 'This path is reserved by WordPress and cannot be used for direct links.', 'gt-link-manager' ) ),
 			'delete_failed'          => array( 'error', __( 'Delete failed.', 'gt-link-manager' ) ),
 			'trash_failed'           => array( 'error', __( 'Could not move to trash.', 'gt-link-manager' ) ),
 			'restore_failed'         => array( 'error', __( 'Could not restore link.', 'gt-link-manager' ) ),
@@ -395,6 +424,23 @@ class GTLM_Admin_Pages {
 		}
 
 		return '—';
+	}
+
+	private function render_link_mode_field( string $current ): void {
+		$modes = array(
+			'standard' => __( 'Standard (with prefix)', 'gt-link-manager' ),
+			'direct'   => __( 'Direct (no prefix)', 'gt-link-manager' ),
+			'regex'    => __( 'Regex (pattern match)', 'gt-link-manager' ),
+		);
+
+		echo '<tr><th scope="row">' . esc_html__( 'Link Mode', 'gt-link-manager' ) . '</th><td>';
+		foreach ( $modes as $value => $label ) {
+			echo '<label style="margin-right:12px;"><input type="radio" name="link_mode" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . ' class="gtlm-link-mode-radio" /> ' . esc_html( $label ) . '</label>';
+		}
+		echo '<p class="description gtlm-mode-hint" data-mode="standard">' . esc_html__( 'URL: yoursite.com/prefix/slug', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description gtlm-mode-hint" data-mode="direct" style="display:none;">' . esc_html__( 'URL: yoursite.com/path — redirects without the prefix.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description gtlm-mode-hint" data-mode="regex" style="display:none;">' . esc_html__( 'Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL.', 'gt-link-manager' ) . '</p>';
+		echo '</td></tr>';
 	}
 
 	private function links_capability( string $context ): string {

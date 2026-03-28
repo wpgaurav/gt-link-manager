@@ -274,22 +274,33 @@ class GTLM_REST_API {
 		$items = array_map(
 			static function ( array $row ) use ( $prefix ): array {
 				$slug = (string) $row['slug'];
+				$mode = (string) ( $row['link_mode'] ?? 'standard' );
+				if ( 'direct' === $mode ) {
+					$branded_url = home_url( '/' . $slug );
+				} elseif ( 'regex' === $mode ) {
+					$branded_url = '';
+				} else {
+					$branded_url = home_url( '/' . $prefix . '/' . $slug );
+				}
 				return array(
-					'id'            => (int) $row['id'],
-					'name'          => (string) $row['name'],
-					'slug'          => $slug,
-					'url'           => home_url( '/' . $prefix . '/' . $slug ),
-					'target_url'    => (string) $row['url'],
-					'redirect_type' => (int) $row['redirect_type'],
-					'rel'           => (string) $row['rel'],
-					'noindex'       => (int) $row['noindex'],
-					'is_active'     => (int) ( $row['is_active'] ?? 1 ),
-					'category_id'   => (int) $row['category_id'],
-					'tags'          => (string) ( $row['tags'] ?? '' ),
-					'notes'         => (string) ( $row['notes'] ?? '' ),
-					'trashed_at'    => $row['trashed_at'] ?? null,
-					'created_at'    => (string) ( $row['created_at'] ?? '' ),
-					'updated_at'    => (string) ( $row['updated_at'] ?? '' ),
+					'id'                => (int) $row['id'],
+					'name'              => (string) $row['name'],
+					'slug'              => $slug,
+					'url'               => $branded_url,
+					'target_url'        => (string) $row['url'],
+					'redirect_type'     => (int) $row['redirect_type'],
+					'rel'               => (string) $row['rel'],
+					'noindex'           => (int) $row['noindex'],
+					'is_active'         => (int) ( $row['is_active'] ?? 1 ),
+					'link_mode'         => $mode,
+					'regex_replacement' => (string) ( $row['regex_replacement'] ?? '' ),
+					'priority'          => (int) ( $row['priority'] ?? 10 ),
+					'category_id'       => (int) $row['category_id'],
+					'tags'              => (string) ( $row['tags'] ?? '' ),
+					'notes'             => (string) ( $row['notes'] ?? '' ),
+					'trashed_at'        => $row['trashed_at'] ?? null,
+					'created_at'        => (string) ( $row['created_at'] ?? '' ),
+					'updated_at'        => (string) ( $row['updated_at'] ?? '' ),
 				);
 			},
 			$rows
@@ -500,15 +511,19 @@ class GTLM_REST_API {
 			$new_slug = $this->make_unique_slug( (string) $link['slug'] );
 			$new_id   = $this->db->insert_link(
 				array(
-					'name'          => (string) $link['name'],
-					'slug'          => $new_slug,
-					'url'           => (string) $link['url'],
-					'redirect_type' => (int) $link['redirect_type'],
-					'rel'           => (string) $link['rel'],
-					'noindex'       => (int) $link['noindex'],
-					'category_id'   => $category_id,
-					'tags'          => (string) $link['tags'],
-					'notes'         => (string) $link['notes'],
+					'name'              => (string) $link['name'],
+					'slug'              => $new_slug,
+					'url'               => (string) $link['url'],
+					'redirect_type'     => (int) $link['redirect_type'],
+					'rel'               => (string) $link['rel'],
+					'noindex'           => (int) $link['noindex'],
+					'is_active'         => (int) ( $link['is_active'] ?? 1 ),
+					'link_mode'         => (string) ( $link['link_mode'] ?? 'standard' ),
+					'regex_replacement' => (string) ( $link['regex_replacement'] ?? '' ),
+					'priority'          => (int) ( $link['priority'] ?? 10 ),
+					'category_id'       => $category_id,
+					'tags'              => (string) ( $link['tags'] ?? '' ),
+					'notes'             => (string) ( $link['notes'] ?? '' ),
 				)
 			);
 
@@ -665,6 +680,25 @@ class GTLM_REST_API {
 			$is_active = (int) $fallback['is_active'];
 		}
 
+		$link_mode = $request->get_param( 'link_mode' );
+		if ( null === $link_mode && isset( $fallback['link_mode'] ) ) {
+			$link_mode = (string) $fallback['link_mode'];
+		}
+		$link_mode = (string) $link_mode;
+		if ( ! in_array( $link_mode, array( 'standard', 'direct', 'regex' ), true ) ) {
+			$link_mode = 'standard';
+		}
+
+		$regex_replacement = $request->get_param( 'regex_replacement' );
+		if ( null === $regex_replacement && isset( $fallback['regex_replacement'] ) ) {
+			$regex_replacement = (string) $fallback['regex_replacement'];
+		}
+
+		$priority = $request->get_param( 'priority' );
+		if ( null === $priority && isset( $fallback['priority'] ) ) {
+			$priority = (int) $fallback['priority'];
+		}
+
 		$redirect_type = (int) $redirect_type;
 		if ( ! in_array( $redirect_type, array( 301, 302, 307 ), true ) ) {
 			$redirect_type = 301;
@@ -672,17 +706,27 @@ class GTLM_REST_API {
 
 		$rel_values = $this->normalize_rel( $rel );
 
+		// Standard links use sanitize_title; direct/regex links preserve special characters.
+		if ( 'standard' === $link_mode ) {
+			$sanitized_slug = sanitize_title( (string) $slug );
+		} else {
+			$sanitized_slug = sanitize_text_field( (string) $slug );
+		}
+
 		return array(
-			'name'          => sanitize_text_field( (string) $name ),
-			'slug'          => sanitize_title( (string) $slug ),
-			'url'           => esc_url_raw( (string) $url ),
-			'redirect_type' => $redirect_type,
-			'rel'           => implode( ',', $rel_values ),
-			'noindex'       => ! empty( $noindex ) ? 1 : 0,
-			'is_active'     => null !== $is_active ? ( ! empty( $is_active ) ? 1 : 0 ) : 1,
-			'category_id'   => absint( $category_id ),
-			'tags'          => sanitize_text_field( (string) $tags ),
-			'notes'         => sanitize_textarea_field( (string) $notes ),
+			'name'              => sanitize_text_field( (string) $name ),
+			'slug'              => $sanitized_slug,
+			'url'               => esc_url_raw( (string) $url ),
+			'redirect_type'     => $redirect_type,
+			'rel'               => implode( ',', $rel_values ),
+			'noindex'           => ! empty( $noindex ) ? 1 : 0,
+			'is_active'         => null !== $is_active ? ( ! empty( $is_active ) ? 1 : 0 ) : 1,
+			'link_mode'         => $link_mode,
+			'regex_replacement' => sanitize_text_field( (string) $regex_replacement ),
+			'priority'          => max( 0, (int) $priority ),
+			'category_id'       => absint( $category_id ),
+			'tags'              => sanitize_text_field( (string) $tags ),
+			'notes'             => sanitize_textarea_field( (string) $notes ),
 		);
 	}
 
@@ -803,11 +847,29 @@ class GTLM_REST_API {
 				'default'           => '',
 				'sanitize_callback' => 'sanitize_textarea_field',
 			),
-			'is_active'     => array(
+			'is_active'         => array(
 				'type'     => 'integer',
 				'required' => false,
 				'default'  => 1,
 				'enum'     => array( 0, 1 ),
+			),
+			'link_mode'         => array(
+				'type'     => 'string',
+				'required' => false,
+				'default'  => 'standard',
+				'enum'     => array( 'standard', 'direct', 'regex' ),
+			),
+			'regex_replacement' => array(
+				'type'              => 'string',
+				'required'          => false,
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'priority'          => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'default'           => 10,
+				'sanitize_callback' => 'absint',
 			),
 		);
 	}

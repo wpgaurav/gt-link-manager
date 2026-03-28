@@ -32,11 +32,12 @@ class GTLM_Settings {
 	 */
 	public static function defaults(): array {
 		return array(
-			'base_prefix'              => 'go',
-			'default_redirect_type'    => 301,
-			'default_rel'              => array(),
-			'default_noindex'          => 0,
-			'delete_data_on_uninstall' => 0,
+			'base_prefix'                => 'go',
+			'default_redirect_type'      => 301,
+			'default_rel'                => array(),
+			'default_noindex'            => 0,
+			'delete_data_on_uninstall'   => 0,
+			'enable_advanced_redirects'  => 0,
 		);
 	}
 
@@ -58,7 +59,8 @@ class GTLM_Settings {
 		$settings['default_redirect_type'] = $this->sanitize_redirect_type( (int) $settings['default_redirect_type'] );
 		$settings['default_noindex']       = (int) ! empty( $settings['default_noindex'] );
 		$settings['default_rel']              = $this->sanitize_rel_array( $settings['default_rel'] );
-		$settings['delete_data_on_uninstall'] = (int) ! empty( $settings['delete_data_on_uninstall'] );
+		$settings['delete_data_on_uninstall']  = (int) ! empty( $settings['delete_data_on_uninstall'] );
+		$settings['enable_advanced_redirects'] = (int) ! empty( $settings['enable_advanced_redirects'] );
 
 		/**
 		 * Filter effective plugin settings.
@@ -92,11 +94,12 @@ class GTLM_Settings {
 	 */
 	public function update( array $settings ): bool {
 		$next = array(
-			'base_prefix'              => $this->sanitize_prefix( (string) ( $settings['base_prefix'] ?? 'go' ) ),
-			'default_redirect_type'    => $this->sanitize_redirect_type( (int) ( $settings['default_redirect_type'] ?? 301 ) ),
-			'default_noindex'          => (int) ! empty( $settings['default_noindex'] ),
-			'default_rel'              => $this->sanitize_rel_array( $settings['default_rel'] ?? array() ),
-			'delete_data_on_uninstall' => (int) ! empty( $settings['delete_data_on_uninstall'] ),
+			'base_prefix'                => $this->sanitize_prefix( (string) ( $settings['base_prefix'] ?? 'go' ) ),
+			'default_redirect_type'      => $this->sanitize_redirect_type( (int) ( $settings['default_redirect_type'] ?? 301 ) ),
+			'default_noindex'            => (int) ! empty( $settings['default_noindex'] ),
+			'default_rel'                => $this->sanitize_rel_array( $settings['default_rel'] ?? array() ),
+			'delete_data_on_uninstall'   => (int) ! empty( $settings['delete_data_on_uninstall'] ),
+			'enable_advanced_redirects'  => (int) ! empty( $settings['enable_advanced_redirects'] ),
 		);
 
 		$updated = update_option( self::OPTION_KEY, $next, false );

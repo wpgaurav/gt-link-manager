@@ -140,12 +140,13 @@ class GTLM_Admin {
 			'gt-link-manager-admin',
 			'gtlmAdmin',
 			array(
-				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
-				'quickEditNonce' => wp_create_nonce( 'gtlm_quick_edit' ),
-				'prefix'         => $this->settings->prefix(),
-				'categories'     => $categories_data,
-				'highlight'      => isset( $_GET['highlight'] ) ? absint( $_GET['highlight'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				'i18n'           => array(
+				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+				'quickEditNonce'  => wp_create_nonce( 'gtlm_quick_edit' ),
+				'prefix'          => $this->settings->prefix(),
+				'advancedEnabled' => ! empty( $this->settings->all()['enable_advanced_redirects'] ),
+				'categories'      => $categories_data,
+				'highlight'       => isset( $_GET['highlight'] ) ? absint( $_GET['highlight'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'i18n'            => array(
 					'saved'      => __( 'Saved', 'gt-link-manager' ),
 					'saveFailed' => __( 'Save failed', 'gt-link-manager' ),
 					'copied'     => __( 'Copied', 'gt-link-manager' ),
@@ -190,6 +191,7 @@ class GTLM_Admin {
 		}
 
 		if ( isset( $_POST['rel'] ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by sanitize_rel_from_post().
 			$updates['rel'] = $this->sanitize_rel_from_post( wp_unslash( $_POST['rel'] ) );
 		}
 
@@ -321,17 +323,32 @@ class GTLM_Admin {
 
 		check_admin_referer( 'gtlm_link_save' );
 
+		$link_mode = sanitize_key( (string) wp_unslash( $_POST['link_mode'] ?? 'standard' ) );
+		if ( ! in_array( $link_mode, array( 'standard', 'direct', 'regex' ), true ) ) {
+			$link_mode = 'standard';
+		}
+
+		// Standard slugs use sanitize_title; direct/regex slugs preserve special characters.
+		if ( 'standard' === $link_mode ) {
+			$slug = sanitize_title( (string) wp_unslash( $_POST['slug'] ?? '' ) );
+		} else {
+			$slug = sanitize_text_field( (string) wp_unslash( $_POST['slug'] ?? '' ) );
+		}
+
 		$data = array(
-			'name'          => sanitize_text_field( (string) wp_unslash( $_POST['name'] ?? '' ) ),
-			'slug'          => sanitize_title( (string) wp_unslash( $_POST['slug'] ?? '' ) ),
-			'url'           => esc_url_raw( (string) wp_unslash( $_POST['url'] ?? '' ) ),
-			'redirect_type' => absint( $_POST['redirect_type'] ?? 301 ),
+			'name'              => sanitize_text_field( (string) wp_unslash( $_POST['name'] ?? '' ) ),
+			'slug'              => $slug,
+			'url'               => esc_url_raw( (string) wp_unslash( $_POST['url'] ?? '' ) ),
+			'redirect_type'     => absint( $_POST['redirect_type'] ?? 301 ),
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by sanitize_rel_from_post().
-			'rel'           => $this->sanitize_rel_from_post( wp_unslash( $_POST['rel'] ?? array() ) ),
-			'noindex'       => ! empty( $_POST['noindex'] ) ? 1 : 0,
-			'category_id'   => absint( $_POST['category_id'] ?? 0 ),
-			'tags'          => sanitize_text_field( (string) wp_unslash( $_POST['tags'] ?? '' ) ),
-			'notes'         => sanitize_textarea_field( (string) wp_unslash( $_POST['notes'] ?? '' ) ),
+			'rel'               => $this->sanitize_rel_from_post( wp_unslash( $_POST['rel'] ?? array() ) ),
+			'noindex'           => ! empty( $_POST['noindex'] ) ? 1 : 0,
+			'link_mode'         => $link_mode,
+			'regex_replacement' => sanitize_text_field( (string) wp_unslash( $_POST['regex_replacement'] ?? '' ) ),
+			'priority'          => max( 0, absint( $_POST['priority'] ?? 10 ) ),
+			'category_id'       => absint( $_POST['category_id'] ?? 0 ),
+			'tags'              => sanitize_text_field( (string) wp_unslash( $_POST['tags'] ?? '' ) ),
+			'notes'             => sanitize_textarea_field( (string) wp_unslash( $_POST['notes'] ?? '' ) ),
 		);
 
 		if ( '' === $data['name'] || '' === $data['url'] ) {
@@ -340,6 +357,28 @@ class GTLM_Admin {
 
 		if ( '' === $data['slug'] ) {
 			$data['slug'] = sanitize_title( $data['name'] );
+		}
+
+		// Validate regex pattern.
+		if ( 'regex' === $link_mode && '' !== $data['slug'] ) {
+			if ( false === @preg_match( '#' . $data['slug'] . '#', 'test' ) ) {
+				$this->redirect_with_notice(
+					admin_url( 'admin.php?page=gtlm-links-edit' . ( absint( $_POST['link_id'] ?? 0 ) > 0 ? '&link_id=' . absint( $_POST['link_id'] ) : '' ) ),
+					'invalid_regex'
+				);
+			}
+		}
+
+		// Block reserved WordPress paths for direct links.
+		if ( 'direct' === $link_mode && '' !== $data['slug'] ) {
+			$reserved = array( 'wp-admin', 'wp-content', 'wp-includes', 'wp-login.php', 'wp-cron.php', 'wp-json', 'xmlrpc.php', 'feed', 'comments' );
+			$first_segment = explode( '/', trim( $data['slug'], '/' ) )[0];
+			if ( in_array( strtolower( $first_segment ), $reserved, true ) ) {
+				$this->redirect_with_notice(
+					admin_url( 'admin.php?page=gtlm-links-edit' . ( absint( $_POST['link_id'] ?? 0 ) > 0 ? '&link_id=' . absint( $_POST['link_id'] ) : '' ) ),
+					'reserved_path'
+				);
+			}
 		}
 
 		$link_id = absint( $_POST['link_id'] ?? 0 );
@@ -441,11 +480,12 @@ class GTLM_Admin {
 		$rel   = $this->sanitize_rel_from_post( wp_unslash( $_POST['default_rel'] ?? array() ) );
 		$saved = $this->settings->update(
 			array(
-				'base_prefix'              => sanitize_text_field( (string) wp_unslash( $_POST['base_prefix'] ?? 'go' ) ),
-				'default_redirect_type'    => absint( $_POST['default_redirect_type'] ?? 301 ),
-				'default_rel'              => '' !== $rel ? explode( ',', $rel ) : array(),
-				'default_noindex'          => ! empty( $_POST['default_noindex'] ) ? 1 : 0,
-				'delete_data_on_uninstall' => ! empty( $_POST['delete_data_on_uninstall'] ) ? 1 : 0,
+				'base_prefix'                => sanitize_text_field( (string) wp_unslash( $_POST['base_prefix'] ?? 'go' ) ),
+				'default_redirect_type'      => absint( $_POST['default_redirect_type'] ?? 301 ),
+				'default_rel'                => '' !== $rel ? explode( ',', $rel ) : array(),
+				'default_noindex'            => ! empty( $_POST['default_noindex'] ) ? 1 : 0,
+				'delete_data_on_uninstall'   => ! empty( $_POST['delete_data_on_uninstall'] ) ? 1 : 0,
+				'enable_advanced_redirects'  => ! empty( $_POST['enable_advanced_redirects'] ) ? 1 : 0,
 			)
 		);
 
@@ -592,7 +632,7 @@ class GTLM_Admin {
 	 */
 	public function default_hidden_columns( array $hidden, \WP_Screen $screen ): array {
 		if ( 'toplevel_page_gtlm-links' === $screen->id ) {
-			$hidden = array_merge( $hidden, array( 'id', 'rel', 'tags' ) );
+			$hidden = array_merge( $hidden, array( 'id', 'rel', 'tags', 'link_mode' ) );
 		}
 
 		return $hidden;

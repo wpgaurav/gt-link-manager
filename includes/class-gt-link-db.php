@@ -18,7 +18,7 @@ class GTLM_DB {
 	/**
 	 * Column list used in SELECT statements.
 	 */
-	private const LINK_COLUMNS = 'id, name, slug, url, redirect_type, rel, noindex, is_active, category_id, tags, notes, trashed_at, created_at, updated_at';
+	private const LINK_COLUMNS = 'id, name, slug, url, redirect_type, rel, noindex, is_active, link_mode, regex_replacement, priority, category_id, tags, notes, trashed_at, created_at, updated_at';
 
 	/**
 	 * @return string
@@ -77,7 +77,7 @@ class GTLM_DB {
 		global $wpdb;
 
 		$insert = $this->normalize_link_for_write( $data );
-		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%s' );
+		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%s' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$result = $wpdb->insert( self::links_table(), $insert, $format );
@@ -89,7 +89,7 @@ class GTLM_DB {
 
 		if ( $link_id > 0 ) {
 			$this->maybe_increment_category_count( (int) $insert['category_id'] );
-			$this->delete_slug_cache( (string) $insert['slug'] );
+			$this->delete_slug_cache( (string) $insert['slug'], (string) ( $insert['link_mode'] ?? 'standard' ) );
 			do_action( 'gtlm_after_save', $link_id, $insert );
 		}
 
@@ -112,7 +112,7 @@ class GTLM_DB {
 		global $wpdb;
 
 		$update = $this->normalize_link_for_write( $data );
-		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%s' );
+		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%s' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->update(
@@ -134,8 +134,8 @@ class GTLM_DB {
 			$this->maybe_increment_category_count( $new_cat );
 		}
 
-		$this->delete_slug_cache( (string) $existing['slug'] );
-		$this->delete_slug_cache( (string) $update['slug'] );
+		$this->delete_slug_cache( (string) $existing['slug'], (string) ( $existing['link_mode'] ?? 'standard' ) );
+		$this->delete_slug_cache( (string) $update['slug'], (string) ( $update['link_mode'] ?? 'standard' ) );
 
 		do_action( 'gtlm_after_save', $id, $update );
 		return true;
@@ -168,7 +168,7 @@ class GTLM_DB {
 			return false;
 		}
 
-		$this->delete_slug_cache( (string) $link['slug'] );
+		$this->delete_slug_cache( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
 		return true;
 	}
 
@@ -198,7 +198,7 @@ class GTLM_DB {
 
 		$link = $this->get_link_by_id( $id );
 		if ( is_array( $link ) ) {
-			$this->delete_slug_cache( (string) $link['slug'] );
+			$this->delete_slug_cache( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
 		}
 
 		return true;
@@ -225,7 +225,7 @@ class GTLM_DB {
 			return false;
 		}
 
-		$this->delete_slug_cache( (string) $link['slug'] );
+		$this->delete_slug_cache( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
 		$this->maybe_decrement_category_count( (int) ( $link['category_id'] ?? 0 ) );
 		do_action( 'gtlm_after_delete', $id, $link );
 
@@ -259,7 +259,7 @@ class GTLM_DB {
 			return false;
 		}
 
-		$this->delete_slug_cache( (string) $link['slug'] );
+		$this->delete_slug_cache( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
 		return true;
 	}
 
@@ -282,10 +282,20 @@ class GTLM_DB {
 		return is_array( $row ) ? $this->normalize_link_row( $row ) : null;
 	}
 
-	public function delete_slug_cache( string $slug ): void {
-		$slug = $this->sanitize_slug( $slug );
-		if ( '' !== $slug ) {
-			wp_cache_delete( $this->cache_key_for_slug( $slug ), self::CACHE_GROUP );
+	public function delete_slug_cache( string $slug, string $link_mode = 'standard' ): void {
+		if ( '' === $slug ) {
+			return;
+		}
+
+		if ( 'standard' === $link_mode ) {
+			$sanitized = $this->sanitize_slug( $slug );
+			if ( '' !== $sanitized ) {
+				wp_cache_delete( $this->cache_key_for_slug( $sanitized ), self::CACHE_GROUP );
+			}
+		} elseif ( 'direct' === $link_mode ) {
+			wp_cache_delete( 'direct:' . sanitize_text_field( $slug ), self::CACHE_GROUP );
+		} elseif ( 'regex' === $link_mode ) {
+			wp_cache_delete( 'regex_rules', self::CACHE_GROUP );
 		}
 	}
 
@@ -301,7 +311,7 @@ class GTLM_DB {
 		$table = self::links_table();
 		$limit = max( 1, min( 100, $limit ) );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$sql  = "SELECT id, name, slug, rel FROM {$table} WHERE trashed_at IS NULL AND is_active = 1";
+		$sql  = "SELECT id, name, slug, rel FROM {$table} WHERE trashed_at IS NULL AND is_active = 1 AND (link_mode = 'standard' OR link_mode IS NULL)";
 		$args = array();
 
 		$search = sanitize_text_field( $search );
@@ -375,7 +385,7 @@ class GTLM_DB {
 	): array {
 		global $wpdb;
 
-		$allowed_orderby = array( 'id', 'name', 'slug', 'url', 'redirect_type', 'rel', 'category_id', 'is_active', 'created_at', 'updated_at' );
+		$allowed_orderby = array( 'id', 'name', 'slug', 'url', 'redirect_type', 'rel', 'category_id', 'is_active', 'link_mode', 'priority', 'created_at', 'updated_at' );
 		$orderby         = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'id';
 		$order           = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
 		$page            = max( 1, $page );
@@ -496,6 +506,12 @@ class GTLM_DB {
 				$sql     .= ' AND FIND_IN_SET(%s, rel)';
 				$params[] = $rel_value;
 			}
+		}
+
+		if ( ! empty( $filters['link_mode'] ) ) {
+			$mode = $this->sanitize_link_mode( (string) $filters['link_mode'] );
+			$sql     .= ' AND link_mode = %s';
+			$params[] = $mode;
 		}
 
 		if ( ! empty( $filters['m'] ) ) {
@@ -706,15 +722,24 @@ class GTLM_DB {
 	 * @return array<string, mixed>
 	 */
 	private function normalize_link_row( array $row ): array {
-		$row['id']            = (int) $row['id'];
-		$row['redirect_type'] = (int) $row['redirect_type'];
-		$row['noindex']       = (int) $row['noindex'];
-		$row['is_active']     = (int) ( $row['is_active'] ?? 1 );
-		$row['category_id']   = isset( $row['category_id'] ) ? (int) $row['category_id'] : 0;
-		$row['slug']          = $this->sanitize_slug( (string) $row['slug'] );
-		$row['rel']           = $this->sanitize_rel_string( (string) $row['rel'] );
-		$row['url']           = esc_url_raw( (string) $row['url'] );
-		$row['trashed_at']    = isset( $row['trashed_at'] ) ? (string) $row['trashed_at'] : null;
+		$row['id']                = (int) $row['id'];
+		$row['redirect_type']     = (int) $row['redirect_type'];
+		$row['noindex']           = (int) $row['noindex'];
+		$row['is_active']         = (int) ( $row['is_active'] ?? 1 );
+		$row['category_id']       = isset( $row['category_id'] ) ? (int) $row['category_id'] : 0;
+		$row['link_mode']         = $this->sanitize_link_mode( (string) ( $row['link_mode'] ?? 'standard' ) );
+		$row['regex_replacement'] = sanitize_text_field( (string) ( $row['regex_replacement'] ?? '' ) );
+		$row['priority']          = (int) ( $row['priority'] ?? 10 );
+		$row['rel']               = $this->sanitize_rel_string( (string) $row['rel'] );
+		$row['url']               = esc_url_raw( (string) $row['url'] );
+		$row['trashed_at']        = isset( $row['trashed_at'] ) ? (string) $row['trashed_at'] : null;
+
+		// Only sanitize_title for standard links; direct/regex slugs need special characters preserved.
+		if ( 'standard' === $row['link_mode'] ) {
+			$row['slug'] = $this->sanitize_slug( (string) $row['slug'] );
+		} else {
+			$row['slug'] = sanitize_text_field( (string) $row['slug'] );
+		}
 
 		return $row;
 	}
@@ -724,20 +749,103 @@ class GTLM_DB {
 	 * @return array<string, int|string>
 	 */
 	private function normalize_link_for_write( array $data ): array {
-		$rel = isset( $data['rel'] ) ? $this->sanitize_rel_string( (string) $data['rel'] ) : '';
+		$rel       = isset( $data['rel'] ) ? $this->sanitize_rel_string( (string) $data['rel'] ) : '';
+		$link_mode = $this->sanitize_link_mode( (string) ( $data['link_mode'] ?? 'standard' ) );
+
+		// Standard links use sanitize_title; direct/regex links preserve special characters.
+		if ( 'standard' === $link_mode ) {
+			$slug = $this->sanitize_slug( (string) ( $data['slug'] ?? '' ) );
+		} else {
+			$slug = sanitize_text_field( (string) ( $data['slug'] ?? '' ) );
+		}
 
 		return array(
-			'name'          => sanitize_text_field( (string) ( $data['name'] ?? '' ) ),
-			'slug'          => $this->sanitize_slug( (string) ( $data['slug'] ?? '' ) ),
-			'url'           => esc_url_raw( (string) ( $data['url'] ?? '' ) ),
-			'redirect_type' => $this->sanitize_redirect_type( (int) ( $data['redirect_type'] ?? 301 ) ),
-			'rel'           => $rel,
-			'noindex'       => ! empty( $data['noindex'] ) ? 1 : 0,
-			'is_active'     => isset( $data['is_active'] ) ? ( ! empty( $data['is_active'] ) ? 1 : 0 ) : 1,
-			'category_id'   => absint( $data['category_id'] ?? 0 ),
-			'tags'          => sanitize_text_field( (string) ( $data['tags'] ?? '' ) ),
-			'notes'         => sanitize_textarea_field( (string) ( $data['notes'] ?? '' ) ),
+			'name'              => sanitize_text_field( (string) ( $data['name'] ?? '' ) ),
+			'slug'              => $slug,
+			'url'               => esc_url_raw( (string) ( $data['url'] ?? '' ) ),
+			'redirect_type'     => $this->sanitize_redirect_type( (int) ( $data['redirect_type'] ?? 301 ) ),
+			'rel'               => $rel,
+			'noindex'           => ! empty( $data['noindex'] ) ? 1 : 0,
+			'is_active'         => isset( $data['is_active'] ) ? ( ! empty( $data['is_active'] ) ? 1 : 0 ) : 1,
+			'link_mode'         => $link_mode,
+			'regex_replacement' => sanitize_text_field( (string) ( $data['regex_replacement'] ?? '' ) ),
+			'priority'          => max( 0, (int) ( $data['priority'] ?? 10 ) ),
+			'category_id'       => absint( $data['category_id'] ?? 0 ),
+			'tags'              => sanitize_text_field( (string) ( $data['tags'] ?? '' ) ),
+			'notes'             => sanitize_textarea_field( (string) ( $data['notes'] ?? '' ) ),
 		);
+	}
+
+	/**
+	 * Fetch a single direct-mode link by its path.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function get_direct_link_by_path( string $path ): ?array {
+		$path = sanitize_text_field( $path );
+		if ( '' === $path ) {
+			return null;
+		}
+
+		$cache_key = 'direct:' . $path;
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return is_array( $cached ) ? $cached : null;
+		}
+
+		global $wpdb;
+
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$sql = $wpdb->prepare( 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE link_mode = 'direct' AND slug = %s LIMIT 1", $path );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$row  = $wpdb->get_row( $sql, ARRAY_A );
+		$link = is_array( $row ) ? $this->normalize_link_row( $row ) : null;
+
+		$ttl = (int) apply_filters( 'gtlm_cache_ttl', 0, $path, $link );
+		wp_cache_set( $cache_key, $link, self::CACHE_GROUP, max( 0, $ttl ) );
+
+		return $link;
+	}
+
+	/**
+	 * Get all active regex rules ordered by priority.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_active_regex_rules(): array {
+		$cache_key = 'regex_rules';
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return is_array( $cached ) ? $cached : array();
+		}
+
+		global $wpdb;
+
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$sql = 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE link_mode = 'regex' AND is_active = 1 AND trashed_at IS NULL ORDER BY priority ASC, id ASC";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows = $wpdb->get_results( $sql, ARRAY_A );
+
+		if ( ! is_array( $rows ) ) {
+			$rows = array();
+		}
+
+		$rules = array_map( array( $this, 'normalize_link_row' ), $rows );
+
+		$ttl = (int) apply_filters( 'gtlm_cache_ttl', 0, 'regex_rules', $rules );
+		wp_cache_set( $cache_key, $rules, self::CACHE_GROUP, max( 0, $ttl ) );
+
+		return $rules;
+	}
+
+	private function sanitize_link_mode( string $mode ): string {
+		$allowed = array( 'standard', 'direct', 'regex' );
+		return in_array( $mode, $allowed, true ) ? $mode : 'standard';
 	}
 
 	private function sanitize_slug( string $slug ): string {
