@@ -37,7 +37,7 @@ Most link management plugins use custom post types, which means every redirect l
 * **Block editor integration** — a toolbar button lets you search your links and insert them directly into post content
 * **Branded URL preview** — see the full branded URL as you type, with one-click copy
 * **Normal and Regex Redirects** supported too. Don't want to use a prefix like `/go/` ? Sure thing. Use the GT Link Manager as an alternative to Rank Math Redirections, Yoast Redirects, Redirection plugin etc. **Tested to be faster** than these top tools.
-* **Click stats** — can be activated to track link clicks using filters
+* **Click tracking** — log clicks via the `gtlm_before_redirect` hook; integrate with GA4, Plausible, Fathom, and more
 * **Developer-friendly** — actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
 
 = Developer Hooks =
@@ -99,7 +99,7 @@ Yes. GT Link Manager is built for **speed and simplicity**. It uses custom datab
 
 = Does it track clicks? =
 
-Click stats can be activated from **GT Links > Settings**. You can also use the `gtlm_before_redirect` action hook to integrate with external analytics tools — see the [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) for step-by-step guides for GA4, Plausible, Fathom, Matomo, Simple Analytics, and custom click logging.
+Click tracking is supported via the `gtlm_before_redirect` action hook, which fires on every redirect. Use it to log clicks to a custom database table or integrate with external analytics tools — the [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) has step-by-step guides for GA4, Plausible, Fathom, Matomo, Simple Analytics, and custom click logging.
 
 = Can I import from Pretty Links or LinkCentral? =
 
@@ -138,6 +138,14 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 5. **Import/Export** — CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.6.1 =
+* Fixed nonce mismatch bug — trash, restore, and permanent delete actions were failing due to inconsistent nonce prefixes.
+* Fixed potential ReDoS vulnerability — removed error suppression on regex pattern matching, added pattern length validation.
+* Standardized all nonce prefixes to `gtlm_` across admin actions and list table.
+* Added REST API route descriptions to all endpoints for better discoverability.
+* Added object caching for admin category dropdown with proper invalidation on create, update, and delete.
+* Updated readme with free training course, developer reference, REST API guide, and new FAQ entries.
 
 = 1.6.0 =
 * Added advanced redirects: Direct (prefix-free) and Regex (pattern-based) link modes.
@@ -270,6 +278,9 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.6.1 =
+Fixes nonce mismatch bug affecting trash/restore/delete actions, hardens regex pattern validation, adds REST API descriptions and category caching.
 
 = 1.6.0 =
 Adds direct (prefix-free) and regex (pattern-based) redirect modes. Enable in Settings > Advanced Redirects. Fully backwards compatible.
