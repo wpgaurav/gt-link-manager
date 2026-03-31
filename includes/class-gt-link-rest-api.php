@@ -37,6 +37,7 @@ class GTLM_REST_API {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_links' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'List links with optional search, filtering, and pagination.',
 					'args'                => array(
 						'search'      => array(
 							'type'              => 'string',
@@ -95,6 +96,7 @@ class GTLM_REST_API {
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_link' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'Create a new link.',
 					'args'                => $this->link_write_args(),
 				),
 			)
@@ -108,17 +110,20 @@ class GTLM_REST_API {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_link' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'Retrieve a single link by ID.',
 				),
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_link' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'Update an existing link.',
 					'args'                => $this->link_write_args(),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_link' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'Trash a link, or permanently delete with force=true.',
 					'args'                => array(
 						'force' => array(
 							'type'    => 'boolean',
@@ -136,6 +141,7 @@ class GTLM_REST_API {
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'restore_link' ),
 				'permission_callback' => array( $this, 'permissions_check' ),
+				'description'         => 'Restore a trashed link.',
 			)
 		);
 
@@ -146,6 +152,7 @@ class GTLM_REST_API {
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'toggle_link_active' ),
 				'permission_callback' => array( $this, 'permissions_check' ),
+				'description'         => 'Toggle a link between active and inactive.',
 				'args'                => array(
 					'is_active' => array(
 						'type'     => 'boolean',
@@ -162,6 +169,7 @@ class GTLM_REST_API {
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'bulk_category_action' ),
 				'permission_callback' => array( $this, 'permissions_check' ),
+				'description'         => 'Move or copy multiple links to a category.',
 				'args'                => array(
 					'link_ids'    => array(
 						'type'              => 'array',
@@ -194,6 +202,7 @@ class GTLM_REST_API {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_categories' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'List all categories with optional search.',
 					'args'                => array(
 						'search' => array(
 							'type'              => 'string',
@@ -207,6 +216,7 @@ class GTLM_REST_API {
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_category' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'Create a new category.',
 					'args'                => $this->category_write_args(),
 				),
 			)
@@ -220,12 +230,14 @@ class GTLM_REST_API {
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_category' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'Update an existing category.',
 					'args'                => $this->category_write_args(),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_category' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'description'         => 'Delete a category. Links in this category become uncategorized.',
 				),
 			)
 		);

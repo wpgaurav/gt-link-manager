@@ -615,6 +615,8 @@ class GTLM_DB {
 			return 0;
 		}
 
+		wp_cache_delete( 'gtlm_admin_categories', 'gtlm_links' );
+
 		return (int) $wpdb->insert_id;
 	}
 
@@ -648,6 +650,10 @@ class GTLM_DB {
 			array( '%d' )
 		);
 
+		if ( false !== $result ) {
+			wp_cache_delete( 'gtlm_admin_categories', 'gtlm_links' );
+		}
+
 		return false !== $result;
 	}
 
@@ -678,6 +684,11 @@ class GTLM_DB {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->delete( self::categories_table(), array( 'id' => $id ), array( '%d' ) );
+
+		if ( false !== $result && $result > 0 ) {
+			wp_cache_delete( 'gtlm_admin_categories', 'gtlm_links' );
+		}
+
 		return false !== $result && $result > 0;
 	}
 

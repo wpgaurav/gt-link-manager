@@ -261,7 +261,10 @@ class GTLM_Redirect {
 
 			// Use # as delimiter to avoid conflicts with / in patterns.
 			$regex  = '#' . $pattern . '#';
-			$result = @preg_match( $regex, $path, $matches );
+			$result = preg_match( $regex, $path, $matches );
+			if ( false === $result ) {
+				continue;
+			}
 
 			if ( 1 === $result ) {
 				$target_url = (string) $rule['url'];

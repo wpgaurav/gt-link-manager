@@ -2,21 +2,21 @@
 Contributors: gauravtiwari
 Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A fast, lightweight Pretty Links alternative with custom database tables, early redirects, CSV import/export, and block editor integration.
+Fast, free branded link manager with custom database tables, early redirects, CSV import/export, and block editor integration.
 
 == Description ==
 
-**GT Link Manager** is a high-performance branded link manager for WordPress. It stores links in **custom database tables** (not custom post types), resolves redirects early on `init`, and keeps your site fast — even with thousands of links.
+**GT Link Manager** is a **100% free** high-performance branded link manager for WordPress — no upsells, no premium tiers, no paywalls. It stores links in **custom database tables** (not custom post types), resolves redirects early on `init`, and keeps your site fast — even with thousands of links.
 
-Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix is configurable).
+Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix is configurable and can even be removed on individual links).
 
-**[Official Page & Documentation](https://gauravtiwari.org/product/gt-link-manager/)**
+**[Official Page & Documentation](https://gauravtiwari.org/product/gt-link-manager/)** | **[Free Training Course](https://gauravtiwari.org/course/gt-link-manager-training/)** | **[REST API & AI Tools Guide](https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/)**
 
 = Why GT Link Manager? =
 
@@ -33,10 +33,11 @@ Most link management plugins use custom post types, which means every redirect l
 * **Quick Edit** — update URL, slug, redirect type, rel, category, and status inline without leaving the list
 * **Activate / Deactivate** — disable a link without deleting it; inactive links stop redirecting but stay in the database
 * **Trash and restore** — soft-delete links to trash with the option to restore or permanently delete
-* **CSV import and export** — import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets
+* **CSV import and export** — import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets, supports any CSV though as it allows you to map fields manually.
 * **Block editor integration** — a toolbar button lets you search your links and insert them directly into post content
 * **Branded URL preview** — see the full branded URL as you type, with one-click copy
-* **Click stats** — can be activated to track link clicks
+* **Normal and Regex Redirects** supported too. Don't want to use a prefix like `/go/` ? Sure thing. Use the GT Link Manager as an alternative to Rank Math Redirections, Yoast Redirects, Redirection plugin etc. **Tested to be faster** than these top tools.
+* **Click stats** — can be activated to track link clicks using filters
 * **Developer-friendly** — actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
 
 = Developer Hooks =
@@ -51,6 +52,28 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_prefix` — filter to override the URL prefix
 * `gtlm_capabilities` — filter to override the required user capability
 * `gtlm_cache_ttl` — filter to set object cache TTL for link lookups
+
+= Free Training Course =
+
+The **[GT Link Manager Training](https://gauravtiwari.org/course/gt-link-manager-training/)** is a free 25-lesson course (under 2 hours) covering everything from installation to advanced developer integrations:
+
+* **Getting Started** — installation, admin interface, link creation, categories, and redirect configuration
+* **Configuration & Features** — settings, redirect mechanics, block editor integration, and bulk import/export
+* **Developer Reference** — REST API, hooks and filters, analytics integrations, webhooks, and advanced redirects
+
+= Analytics & Advanced Integrations =
+
+The **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** includes step-by-step integration guides for:
+
+* **Analytics** — Google Analytics 4 (GA4), Plausible Analytics, Fathom Analytics, Matomo, and Simple Analytics
+* **Tracking** — custom click logging to a database table, dashboard widget, and UTM parameter passthrough
+* **Automation** — webhook notifications for Zapier, Make, and n8n
+* **Advanced redirects** — role-based redirects (route by user role) and geo-based redirects (route by location)
+* **Customization** — custom response headers, hooks and filters reference
+
+= REST API & AI Tools =
+
+GT Link Manager has a full REST API that works with AI tools for programmatic link management. The **[REST API & AI Tools Guide](https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/)** covers authentication setup, all available endpoints, and integration with AI platforms including Claude Code, OpenAI Codex, WP-MCP, Novamira, Claudeus WordPress MCP, and WordPress MCP Adapter.
 
 == Source Code ==
 
@@ -76,7 +99,7 @@ Yes. GT Link Manager is built for **speed and simplicity**. It uses custom datab
 
 = Does it track clicks? =
 
-Click stats can be activated from settings. You can also use the `gtlm_before_redirect` action hook to integrate your own tracking or analytics.
+Click stats can be activated from **GT Links > Settings**. You can also use the `gtlm_before_redirect` action hook to integrate with external analytics tools — see the [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) for step-by-step guides for GA4, Plausible, Fathom, Matomo, Simple Analytics, and custom click logging.
 
 = Can I import from Pretty Links or LinkCentral? =
 
@@ -89,6 +112,18 @@ The plugin hooks into WordPress `init` at **priority 0** (before most plugins lo
 = Can I customize which users can manage links? =
 
 Yes. By default, any user with the `edit_posts` capability can manage links. Use the `gtlm_capabilities` filter to change this per context (e.g., require `manage_options` for settings but allow `edit_posts` for link creation).
+
+= Is GT Link Manager really free? =
+
+Yes, 100%. There are no premium tiers, upsells, or paywalls. Every feature — including advanced redirects, the REST API, CSV import/export, and block editor integration — is included for free. There is also a free training course at [gauravtiwari.org](https://gauravtiwari.org/course/gt-link-manager-training/).
+
+= Can I manage links with AI tools or the REST API? =
+
+Yes. GT Link Manager includes a full REST API for creating, updating, and deleting links programmatically. This works with AI platforms like Claude Code, OpenAI Codex, and MCP adapters. See the [REST API & AI Tools Guide](https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/) for setup instructions.
+
+= Can I integrate with Google Analytics, Plausible, or other analytics? =
+
+Yes. The [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) has step-by-step guides for GA4, Plausible, Fathom, Matomo, and Simple Analytics. You can also set up webhook notifications for Zapier, Make, and n8n.
 
 = What happens when I uninstall? =
 

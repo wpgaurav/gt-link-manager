@@ -245,6 +245,7 @@ class GTLM_Import {
 			$this->cleanup_preview( $existing_preview );
 		}
 
+		// Nonce verified in handle_actions() via check_admin_referer( 'gtlm_import_export' ).
 		if ( ! isset( $_FILES['import_file']['tmp_name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			$this->redirect_notice( 'import_failed' );
 		}

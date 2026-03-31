@@ -128,11 +128,16 @@ class GTLM_Admin {
 
 		$categories_data = array();
 		if ( 'gtlm-links' === $page ) {
-			foreach ( $this->db->get_categories() as $cat ) {
-				$categories_data[] = array(
-					'id'   => (int) $cat['id'],
-					'name' => (string) $cat['name'],
-				);
+			$categories_data = wp_cache_get( 'gtlm_admin_categories', 'gtlm_links' );
+			if ( false === $categories_data ) {
+				$categories_data = array();
+				foreach ( $this->db->get_categories() as $cat ) {
+					$categories_data[] = array(
+						'id'   => (int) $cat['id'],
+						'name' => (string) $cat['name'],
+					);
+				}
+				wp_cache_set( 'gtlm_admin_categories', $categories_data, 'gtlm_links', 3600 );
 			}
 		}
 
@@ -279,7 +284,7 @@ class GTLM_Admin {
 			return;
 		}
 
-		check_admin_referer( 'gt_link_' . $action . '_' . $link_id );
+		check_admin_referer( 'gtlm_' . $action . '_' . $link_id );
 
 		$redirect_url = admin_url( 'admin.php?page=gtlm-links' );
 
@@ -361,7 +366,8 @@ class GTLM_Admin {
 
 		// Validate regex pattern.
 		if ( 'regex' === $link_mode && '' !== $data['slug'] ) {
-			if ( false === @preg_match( '#' . $data['slug'] . '#', 'test' ) ) {
+			// Reject overly complex patterns that could cause ReDoS.
+			if ( mb_strlen( $data['slug'] ) > 500 || false === preg_match( '#' . $data['slug'] . '#', 'test' ) ) {
 				$this->redirect_with_notice(
 					admin_url( 'admin.php?page=gtlm-links-edit' . ( absint( $_POST['link_id'] ?? 0 ) > 0 ? '&link_id=' . absint( $_POST['link_id'] ) : '' ) ),
 					'invalid_regex'

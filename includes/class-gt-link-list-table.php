@@ -259,7 +259,7 @@ class GTLM_List_Table extends WP_List_Table {
 				),
 				admin_url( 'admin.php' )
 			),
-			'gt_link_' . $toggle_action . '_' . (int) $item['id']
+			'gtlm_' . $toggle_action . '_' . (int) $item['id']
 		);
 
 		$actions = array(
