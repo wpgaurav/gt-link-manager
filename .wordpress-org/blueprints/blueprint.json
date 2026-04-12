@@ -1,0 +1,31 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "GT Link Manager",
+		"description": "Fast, free branded link manager with custom database tables, early redirects, CSV import/export, and block editor integration.",
+		"author": "gauravtiwari",
+		"categories": [ "links", "redirects", "marketing" ]
+	},
+	"landingPage": "/wp-admin/admin.php?page=gtlm-links",
+	"preferredVersions": {
+		"php": "8.2",
+		"wp": "latest"
+	},
+	"phpExtensionBundles": [ "kitchen-sink" ],
+	"features": {
+		"networking": true
+	},
+	"login": true,
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "gt-link-manager"
+			},
+			"options": {
+				"activate": true
+			}
+		}
+	]
+}
