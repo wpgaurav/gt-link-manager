@@ -228,6 +228,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # WordPress.org resolves the released build through `Stable tag` in
+      # readme.txt, which carries no `v`. Passing the raw tag name created
+      # tags/v1.6.1 while Stable tag pointed at tags/1.6.1, so the release
+      # was invisible until the bare tag was added by hand.
+      - name: Resolve WordPress.org version
+        id: wporg_version
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          echo "VERSION=${TAG_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -249,5 +259,5 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: gt-link-manager
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: ${{ steps.wporg_version.outputs.VERSION }}
           ASSETS_DIR: '.wordpress-org'
