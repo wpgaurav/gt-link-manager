@@ -100,14 +100,30 @@ class GTLM_Redirect {
 		}
 
 		$target_url = (string) $link['url'];
+		$status     = (int) $link['redirect_type'];
+		$geo        = null;
 
 		// For regex links, apply capture group substitution.
 		if ( 'regex' === ( $link['link_mode'] ?? 'standard' ) && isset( $regex_result ) ) {
 			$target_url = $regex_result['target_url'];
 		}
 
+		// Geolocation targeting. Detection is only reached when the matched
+		// link opts in, so links with geo_mode 'off' cost a single array read.
+		if ( 'off' !== ( $link['geo_mode'] ?? 'off' ) && GTLM_Geo::is_enabled() ) {
+			$geo = GTLM_Geo::resolve( $link );
+
+			if ( null === $geo ) {
+				$this->send_geo_blocked( $link );
+				return;
+			}
+
+			$target_url = $geo['url'];
+			$status     = $geo['redirect_type'];
+		}
+
 		$target_url = (string) apply_filters( 'gtlm_redirect_url', $target_url, $link, $match_slug );
-		$status     = (int) apply_filters( 'gtlm_redirect_code', (int) $link['redirect_type'], $link, $match_slug );
+		$status     = (int) apply_filters( 'gtlm_redirect_code', $status, $link, $match_slug );
 		$status     = in_array( $status, array( 301, 302, 307 ), true ) ? $status : 301;
 
 		$target_url = trim( $target_url );
@@ -136,6 +152,15 @@ class GTLM_Redirect {
 			$headers['X-Robots-Tag'] = 'noindex, nofollow';
 		}
 
+		if ( null !== $geo && GTLM_Geo::debug_enabled() ) {
+			$headers['X-GTLM-Country'] = sprintf(
+				'%s; source=%s; rule=%s',
+				'' !== $geo['country'] ? $geo['country'] : 'unknown',
+				'' !== GTLM_Geo::source() ? GTLM_Geo::source() : 'none',
+				$geo['matched'] ? 'matched' : 'fallback'
+			);
+		}
+
 		if ( ! empty( $rel_values ) ) {
 			$headers['Link'] = '<' . esc_url_raw( $target_url ) . '>; rel="' . implode( ' ', array_map( 'sanitize_key', $rel_values ) ) . '"';
 		}
@@ -147,7 +172,7 @@ class GTLM_Redirect {
 		 */
 		$headers = (array) apply_filters( 'gtlm_headers', $headers, $link, $match_slug );
 
-		do_action( 'gtlm_before_redirect', $link, $target_url, $status, $headers );
+		do_action( 'gtlm_before_redirect', $link, $target_url, $status, $headers, $geo );
 
 		foreach ( $headers as $name => $value ) {
 			if ( '' !== $name && '' !== $value ) {
@@ -164,9 +189,39 @@ class GTLM_Redirect {
 	}
 
 	/**
+	 * No geo rule matched and the link's fallback is "block".
+	 *
+	 * This has to terminate explicitly rather than return: for direct-mode
+	 * links the request path may resolve to a real page, and returning would
+	 * render it.
+	 *
+	 * @param array<string, mixed> $link Link row.
+	 */
+	private function send_geo_blocked( array $link ): void {
+		/**
+		 * Fires when a request is blocked because no geo rule matched.
+		 *
+		 * @param array<string, mixed> $link    Link row.
+		 * @param string               $country Detected country, '' if unknown.
+		 */
+		do_action( 'gtlm_geo_blocked', $link, GTLM_Geo::country() );
+
+		nocache_headers();
+
+		if ( GTLM_Geo::debug_enabled() ) {
+			header( 'X-GTLM-Country: ' . ( '' !== GTLM_Geo::country() ? GTLM_Geo::country() : 'unknown' ) . '; rule=blocked', true );
+		}
+
+		status_header( 404 );
+		header( 'X-Redirect-By: GT Link Manager', true );
+		exit;
+	}
+
+	/**
 	 * @param array<string, mixed> $settings
 	 */
 	public function on_settings_saved( array $settings ): void {
+		GTLM_Geo::reset();
 		flush_rewrite_rules();
 
 		if ( function_exists( 'wp_cache_flush_group' ) ) {
@@ -267,7 +322,7 @@ class GTLM_Redirect {
 			}
 
 			if ( 1 === $result ) {
-				$target_url = (string) $rule['url'];
+				$target_url  = (string) $rule['url'];
 				$replacement = (string) ( $rule['regex_replacement'] ?? '' );
 
 				// If regex_replacement is set, use it as the target with capture group substitution.

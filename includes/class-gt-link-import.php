@@ -156,6 +156,7 @@ class GTLM_Import {
 			'category'      => __( 'Category', 'gt-link-manager' ),
 			'tags'          => __( 'Tags', 'gt-link-manager' ),
 			'notes'         => __( 'Notes', 'gt-link-manager' ),
+			'geo_rules'     => __( 'Geo Rules (JSON)', 'gt-link-manager' ),
 		);
 
 		echo '<form method="post" action="" id="gtlm-import-form">';
@@ -209,7 +210,7 @@ class GTLM_Import {
 			exit;
 		}
 
-		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes' ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
+		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes', 'geo_mode', 'geo_rules' ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
 
 		$categories = $this->db->get_categories();
 		$cat_map    = array();
@@ -231,6 +232,8 @@ class GTLM_Import {
 					$cat_map[ (int) $row['category_id'] ] ?? '',
 					(string) $row['tags'],
 					(string) $row['notes'],
+					(string) ( $row['geo_mode'] ?? 'off' ),
+					(string) ( $row['geo_rules'] ?? '' ),
 				)
 			);
 		}
@@ -414,6 +417,7 @@ class GTLM_Import {
 			'category'      => $normalized['category'] ?? -1,
 			'tags'          => $normalized['tags'] ?? -1,
 			'notes'         => $normalized['notes'] ?? -1,
+			'geo_rules'     => $normalized['geo_rules'] ?? -1,
 		);
 
 		if ( 'linkcentral' === $preset ) {
@@ -479,6 +483,10 @@ class GTLM_Import {
 		$allowed_rel = array_intersect( $rel_tokens, array( 'nofollow', 'sponsored', 'ugc' ) );
 		$noindex_raw = strtolower( $get( 'noindex' ) );
 
+		// Malformed JSON yields '' rather than failing the row, so a bad geo
+		// column never blocks an otherwise valid import.
+		$geo_rules = GTLM_Geo::encode_rules( $get( 'geo_rules' ) );
+
 		return array(
 			'name'          => $name,
 			'slug'          => $slug,
@@ -489,6 +497,8 @@ class GTLM_Import {
 			'category_id'   => $category_id,
 			'tags'          => sanitize_text_field( $get( 'tags' ) ),
 			'notes'         => sanitize_textarea_field( $get( 'notes' ) ),
+			'geo_mode'      => '' !== $geo_rules ? 'targeted' : 'off',
+			'geo_rules'     => $geo_rules,
 		);
 	}
 

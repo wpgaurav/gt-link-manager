@@ -64,7 +64,7 @@ class GTLM_Admin_Pages {
 		$settings   = $this->settings->all();
 		$categories = $this->db->get_categories();
 
-		$defaults = array(
+		$defaults         = array(
 			'name'              => '',
 			'url'               => '',
 			'slug'              => '',
@@ -74,12 +74,15 @@ class GTLM_Admin_Pages {
 			'link_mode'         => 'standard',
 			'regex_replacement' => '',
 			'priority'          => 10,
+			'geo_mode'          => 'off',
+			'geo_rules'         => '',
 			'category_id'       => 0,
 			'tags'              => '',
 			'notes'             => '',
 		);
-		$form               = is_array( $link ) ? wp_parse_args( $link, $defaults ) : $defaults;
-		$advanced_enabled   = ! empty( $settings['enable_advanced_redirects'] );
+		$form             = is_array( $link ) ? wp_parse_args( $link, $defaults ) : $defaults;
+		$advanced_enabled = ! empty( $settings['enable_advanced_redirects'] );
+		$geo_enabled      = ! empty( $settings['enable_geo_targeting'] );
 
 		echo '<div class="wrap">';
 		echo '<h1>' . esc_html( $link_id > 0 ? __( 'Edit Link', 'gt-link-manager' ) : __( 'Add New Link', 'gt-link-manager' ) ) . '</h1>';
@@ -124,6 +127,14 @@ class GTLM_Admin_Pages {
 		$this->render_rel_field( (string) $form['rel'] );
 		$this->render_checkbox_field( 'noindex', __( 'Noindex', 'gt-link-manager' ), __( 'Prevent indexing this redirect', 'gt-link-manager' ), ! empty( $form['noindex'] ) );
 		$this->render_category_field( $categories, (int) $form['category_id'] );
+
+		if ( $geo_enabled ) {
+			$this->render_geo_rules_field( (string) $form['geo_mode'], (string) $form['geo_rules'], (int) $form['redirect_type'] );
+		} else {
+			echo '<input type="hidden" name="geo_mode" value="' . esc_attr( (string) $form['geo_mode'] ) . '" />';
+			echo '<input type="hidden" name="geo_rules_json" value="' . esc_attr( (string) $form['geo_rules'] ) . '" />';
+		}
+
 		$this->render_text_field( 'tags', __( 'Tags (comma-separated)', 'gt-link-manager' ), (string) $form['tags'], false );
 		$this->render_textarea_field( 'notes', __( 'Notes', 'gt-link-manager' ), (string) $form['notes'] );
 		echo '</tbody></table>';
@@ -236,6 +247,18 @@ class GTLM_Admin_Pages {
 		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Delete Data on Uninstall', 'gt-link-manager' ), __( 'Remove all links, categories, and settings when the plugin is deleted', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
 		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced Redirects', 'gt-link-manager' ), __( 'Enable direct (prefix-free) and regex (pattern-based) redirect modes', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
 		echo '</tbody></table>';
+
+		echo '<h2>' . esc_html__( 'Geolocation Targeting', 'gt-link-manager' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Send visitors from different countries to different destinations. The country is read from the header your CDN or web server already provides — no lookup service is contacted and no database file is required.', 'gt-link-manager' ) . '</p>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->render_checkbox_field( 'enable_geo_targeting', __( 'Enable Geolocation', 'gt-link-manager' ), __( 'Allow individual links to route by visitor country', 'gt-link-manager' ), ! empty( $settings['enable_geo_targeting'] ) );
+		$this->render_geo_method_field( (string) $settings['geo_detection_method'] );
+		$this->render_text_field( 'geo_custom_header', __( 'Custom Country Header', 'gt-link-manager' ), (string) $settings['geo_custom_header'], false );
+		echo '<tr><th scope="row"></th><td><p class="description">' . esc_html__( 'Only needed if your CDN sends the country in a header GT Link Manager does not already recognise, e.g. X-Geo-Country. Leave blank otherwise.', 'gt-link-manager' ) . '</p></td></tr>';
+		$this->render_checkbox_field( 'geo_debug_header', __( 'Debug Header', 'gt-link-manager' ), __( 'Send X-GTLM-Country on geo redirects, showing the detected country and its source', 'gt-link-manager' ), ! empty( $settings['geo_debug_header'] ) );
+		$this->render_geo_detection_status();
+		echo '</tbody></table>';
+
 		submit_button( __( 'Save Settings', 'gt-link-manager' ) );
 		echo '</form>';
 		echo '</div>';
@@ -275,6 +298,25 @@ class GTLM_Admin_Pages {
 			echo '<tr><th>' . esc_html__( 'Runtime Redirect', 'gt-link-manager' ) . '</th><td>' . ( true === $loopback ? '<span class="gtlm-status gtlm-status--active">' . esc_html( $label ) . '</span>' : '<span class="gtlm-status gtlm-status--inactive">' . esc_html( $label ) . '</span>' ) . '</td></tr>';
 			if ( ! empty( $diagnostics['message'] ) ) {
 				echo '<tr><th>' . esc_html__( 'Details', 'gt-link-manager' ) . '</th><td>' . esc_html( (string) $diagnostics['message'] ) . '</td></tr>';
+			}
+
+			if ( array_key_exists( 'geo_enabled', $diagnostics ) ) {
+				$geo_country = (string) ( $diagnostics['geo_country'] ?? '' );
+				$geo_sources = (array) ( $diagnostics['geo_sources'] ?? array() );
+
+				echo '<tr><th>' . esc_html__( 'Geolocation', 'gt-link-manager' ) . '</th><td>';
+				if ( empty( $diagnostics['geo_enabled'] ) ) {
+					echo '<span class="gtlm-status gtlm-status--inactive">' . esc_html__( 'Disabled', 'gt-link-manager' ) . '</span>';
+				} elseif ( '' !== $geo_country ) {
+					echo '<span class="gtlm-status gtlm-status--active">' . esc_html( $geo_country ) . '</span> <code>' . esc_html( (string) ( $diagnostics['geo_source'] ?? '' ) ) . '</code>';
+				} else {
+					echo '<span class="gtlm-status gtlm-status--inactive">' . esc_html__( 'Enabled, but no country header found', 'gt-link-manager' ) . '</span>';
+				}
+				echo '</td></tr>';
+
+				echo '<tr><th>' . esc_html__( 'Country Headers Seen', 'gt-link-manager' ) . '</th><td>';
+				echo '' !== implode( '', $geo_sources ) ? '<code>' . esc_html( implode( ', ', $geo_sources ) ) . '</code>' : esc_html__( 'None — your CDN is not forwarding a country header.', 'gt-link-manager' );
+				echo '</td></tr>';
 			}
 			echo '</tbody></table>';
 		}
@@ -424,6 +466,292 @@ class GTLM_Admin_Pages {
 		}
 
 		return '—';
+	}
+
+	/**
+	 * Country routing repeater for the link editor.
+	 *
+	 * Rows are rendered server-side from stored rules; admin.js clones the
+	 * template row for additions and reorders. Values post as parallel arrays.
+	 */
+	private function render_geo_rules_field( string $geo_mode, string $geo_rules, int $link_redirect_type ): void {
+		$decoded  = GTLM_Geo::decode_rules( $geo_rules );
+		$rules    = $decoded['rules'];
+		$is_on    = 'off' !== $geo_mode;
+		$statuses = array(
+			0   => __( 'Inherit', 'gt-link-manager' ),
+			302 => '302',
+			307 => '307',
+			301 => '301',
+		);
+
+		echo '<tr><th scope="row">' . esc_html__( 'Geolocation', 'gt-link-manager' ) . '</th><td>';
+		echo '<label><input type="checkbox" name="geo_mode" value="targeted" id="gtlm-geo-toggle" ' . checked( $is_on, true, false ) . ' /> <strong>' . esc_html__( 'Send visitors to a different URL based on their country', 'gt-link-manager' ) . '</strong></label>';
+		echo '<p class="description">' . esc_html__( 'Everyone else keeps using the Destination URL above.', 'gt-link-manager' ) . '</p>';
+		echo '</td></tr>';
+
+		echo '<tr class="gtlm-field-geo-rules" style="' . ( $is_on ? '' : 'display:none;' ) . '"><th scope="row">' . esc_html__( 'Country Rules', 'gt-link-manager' ) . '</th><td>';
+
+		if ( 301 === $link_redirect_type ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'This link uses a 301. Browsers cache a 301 permanently, which pins each visitor to whichever country they were in on their first click — so geo rules stop working for returning visitors. Switch Redirect Type to 302 above.', 'gt-link-manager' ) . '</p></div>';
+		}
+
+		echo '<p class="description">' . esc_html__( 'Rules are checked from the top down and the first country match wins, so put your most specific rules first. A country listed twice only ever matches its highest rule.', 'gt-link-manager' ) . '</p>';
+
+		echo '<table class="gtlm-geo-rules widefat"><thead><tr>';
+		echo '<th class="gtlm-geo-col-order">' . esc_html__( 'Order', 'gt-link-manager' ) . '</th>';
+		echo '<th class="gtlm-geo-col-countries">' . esc_html__( 'When the visitor is in…', 'gt-link-manager' ) . '</th>';
+		echo '<th class="gtlm-geo-col-url">' . esc_html__( 'Send them to', 'gt-link-manager' ) . '</th>';
+		echo '<th class="gtlm-geo-col-status">' . esc_html__( 'Status', 'gt-link-manager' ) . '</th>';
+		echo '<th class="gtlm-geo-col-actions"><span class="screen-reader-text">' . esc_html__( 'Actions', 'gt-link-manager' ) . '</span></th>';
+		echo '</tr></thead><tbody id="gtlm-geo-rows">';
+
+		if ( empty( $rules ) ) {
+			$rules = array(
+				array(
+					'countries'     => array(),
+					'url'           => '',
+					'redirect_type' => 0,
+				),
+			);
+		}
+
+		foreach ( $rules as $index => $rule ) {
+			$this->render_geo_rule_row( $rule, $statuses, (string) $index );
+		}
+
+		echo '</tbody>';
+
+		// The fallback reads as the final row so precedence is visible top-to-bottom.
+		echo '<tfoot><tr class="gtlm-geo-fallback-row">';
+		echo '<td><span class="gtlm-geo-order-badge gtlm-geo-order-badge--last">' . esc_html__( 'Last', 'gt-link-manager' ) . '</span></td>';
+		echo '<td><strong>' . esc_html__( 'Everyone else', 'gt-link-manager' ) . '</strong><br /><span class="description">' . esc_html__( 'Including visitors whose country cannot be determined', 'gt-link-manager' ) . '</span></td>';
+		echo '<td colspan="3"><select name="geo_fallback" id="gtlm-geo-fallback">';
+		echo '<option value="default" ' . selected( $decoded['fallback'], 'default', false ) . '>' . esc_html__( 'The main Destination URL', 'gt-link-manager' ) . '</option>';
+		echo '<option value="block" ' . selected( $decoded['fallback'], 'block', false ) . '>' . esc_html__( 'Nothing — show a 404', 'gt-link-manager' ) . '</option>';
+		echo '</select></td>';
+		echo '</tr></tfoot></table>';
+
+		echo '<p><button type="button" class="button" id="gtlm-geo-add-rule">' . esc_html__( '+ Add Rule', 'gt-link-manager' ) . '</button></p>';
+
+		echo '<div id="gtlm-geo-warnings" role="status"></div>';
+
+		// Rule tester: resolves against the form as it stands, before saving.
+		echo '<div class="gtlm-geo-tester">';
+		echo '<strong>' . esc_html__( 'Preview', 'gt-link-manager' ) . '</strong> ';
+		echo '<label>' . esc_html__( 'A visitor from', 'gt-link-manager' ) . ' ';
+		echo '<select id="gtlm-geo-test-country">';
+		echo '<option value="">' . esc_html__( '— pick a country —', 'gt-link-manager' ) . '</option>';
+		foreach ( GTLM_Geo::countries() as $code => $name ) {
+			echo '<option value="' . esc_attr( $code ) . '">' . esc_html( $name ) . '</option>';
+		}
+		echo '</select></label> ';
+		echo '<span id="gtlm-geo-test-result" class="gtlm-geo-test-result" role="status" aria-live="polite"></span>';
+		echo '<p class="description">' . esc_html__( 'Previews your unsaved rules in the browser. No request is made.', 'gt-link-manager' ) . '</p>';
+		echo '</div>';
+
+		echo '<p class="description">' . esc_html__( 'Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN.', 'gt-link-manager' ) . '</p>';
+
+		// __INDEX__ is replaced by admin.js when a row is cloned.
+		echo '<script type="text/html" id="gtlm-geo-row-template">';
+		$this->render_geo_rule_row(
+			array(
+				'countries'     => array(),
+				'url'           => '',
+				'redirect_type' => 0,
+			),
+			$statuses,
+			'__INDEX__'
+		);
+		echo '</script>';
+
+		echo '</td></tr>';
+	}
+
+	/**
+	 * @param array<string, mixed> $rule     Rule.
+	 * @param array<int, string>   $statuses Status options.
+	 * @param string               $index    Row index, so each row's country
+	 *                                       multi-select posts as its own array
+	 *                                       instead of flattening into one.
+	 */
+	private function render_geo_rule_row( array $rule, array $statuses, string $index ): void {
+		$selected  = array_map( 'strval', (array) ( $rule['countries'] ?? array() ) );
+		$countries = GTLM_Geo::countries();
+		$groups    = GTLM_Geo::groups();
+
+		echo '<tr class="gtlm-geo-rule" data-index="' . esc_attr( $index ) . '">';
+
+		// data-label carries the column name into the stacked mobile layout,
+		// where the header row is hidden.
+		echo '<td class="gtlm-geo-order" data-label="' . esc_attr__( 'Order', 'gt-link-manager' ) . '">';
+		// Not aria-hidden: the number is the rule's precedence, which is the
+		// whole point of the column and must be announced.
+		echo '<span class="gtlm-geo-order-badge"></span>';
+		echo '<span class="gtlm-geo-move">';
+		echo '<button type="button" class="button-link gtlm-geo-move-up" aria-label="' . esc_attr__( 'Move rule up', 'gt-link-manager' ) . '" title="' . esc_attr__( 'Move up', 'gt-link-manager' ) . '">&uarr;</button>';
+		echo '<button type="button" class="button-link gtlm-geo-move-down" aria-label="' . esc_attr__( 'Move rule down', 'gt-link-manager' ) . '" title="' . esc_attr__( 'Move down', 'gt-link-manager' ) . '">&darr;</button>';
+		echo '</span></td>';
+
+		echo '<td class="gtlm-geo-countries-cell" data-label="' . esc_attr__( 'When the visitor is in…', 'gt-link-manager' ) . '">';
+
+		// Quick picks cover the combinations most affiliate links actually use.
+		echo '<span class="gtlm-geo-presets">';
+		foreach ( $this->geo_quick_picks() as $preset ) {
+			echo '<button type="button" class="button button-small gtlm-geo-preset" data-codes="' . esc_attr( implode( ',', $preset['codes'] ) ) . '" aria-label="' . esc_attr( sprintf( /* translators: %s: market name, e.g. "US + CA" */ __( 'Add %s to this rule', 'gt-link-manager' ), $preset['label'] ) ) . '">' . esc_html( $preset['label'] ) . '</button>';
+		}
+		echo '</span>';
+
+		echo '<input type="search" class="gtlm-geo-filter" placeholder="' . esc_attr__( 'Type to filter countries…', 'gt-link-manager' ) . '" aria-label="' . esc_attr__( 'Filter the country list', 'gt-link-manager' ) . '" />';
+
+		echo '<select name="geo_countries[' . esc_attr( $index ) . '][]" multiple size="6" class="gtlm-geo-countries" aria-label="' . esc_attr__( 'Countries this rule applies to', 'gt-link-manager' ) . '">';
+		echo '<optgroup label="' . esc_attr__( 'Groups', 'gt-link-manager' ) . '">';
+		foreach ( array_keys( $groups ) as $code ) {
+			echo '<option value="' . esc_attr( $code ) . '" ' . ( in_array( $code, $selected, true ) ? 'selected' : '' ) . '>' . esc_html( GTLM_Geo::label( $code ) ) . '</option>';
+		}
+		echo '</optgroup>';
+		echo '<optgroup label="' . esc_attr__( 'Countries', 'gt-link-manager' ) . '">';
+		foreach ( $countries as $code => $name ) {
+			echo '<option value="' . esc_attr( $code ) . '" ' . ( in_array( $code, $selected, true ) ? 'selected' : '' ) . '>' . esc_html( $name ) . ' (' . esc_html( $code ) . ')</option>';
+		}
+		echo '</optgroup>';
+		echo '</select>';
+
+		echo '<div class="gtlm-geo-chips" aria-live="polite"></div>';
+		echo '</td>';
+
+		echo '<td data-label="' . esc_attr__( 'Send them to', 'gt-link-manager' ) . '"><input type="url" name="geo_urls[' . esc_attr( $index ) . ']" class="large-text gtlm-geo-url" value="' . esc_attr( (string) ( $rule['url'] ?? '' ) ) . '" placeholder="https://" aria-label="' . esc_attr__( 'Destination URL for this rule', 'gt-link-manager' ) . '" /></td>';
+
+		echo '<td data-label="' . esc_attr__( 'Status', 'gt-link-manager' ) . '"><select name="geo_types[' . esc_attr( $index ) . ']" class="gtlm-geo-type" aria-label="' . esc_attr__( 'Redirect status code for this rule', 'gt-link-manager' ) . '">';
+		foreach ( $statuses as $value => $label ) {
+			echo '<option value="' . esc_attr( (string) $value ) . '" ' . selected( (int) ( $rule['redirect_type'] ?? 0 ), (int) $value, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select></td>';
+
+		echo '<td><button type="button" class="button-link gtlm-geo-remove-rule" aria-label="' . esc_attr__( 'Remove rule', 'gt-link-manager' ) . '">' . esc_html__( 'Remove', 'gt-link-manager' ) . '</button></td>';
+
+		echo '</tr>';
+	}
+
+	/**
+	 * Common market groupings offered as one-click country selections.
+	 *
+	 * @return array<int, array{label: string, codes: array<int, string>}>
+	 */
+	private function geo_quick_picks(): array {
+		$picks = array(
+			array(
+				'label' => __( 'US + CA', 'gt-link-manager' ),
+				'codes' => array( 'US', 'CA' ),
+			),
+			array(
+				'label' => __( 'EU', 'gt-link-manager' ),
+				'codes' => array( 'EU' ),
+			),
+			array(
+				'label' => __( 'UK', 'gt-link-manager' ),
+				'codes' => array( 'GB' ),
+			),
+			array(
+				'label' => __( 'India', 'gt-link-manager' ),
+				'codes' => array( 'IN' ),
+			),
+			array(
+				'label' => __( 'AU + NZ', 'gt-link-manager' ),
+				'codes' => array( 'AU', 'NZ' ),
+			),
+		);
+
+		/**
+		 * Filter the one-click country groupings shown in the link editor.
+		 *
+		 * @param array<int, array{label: string, codes: array<int, string>}> $picks Quick picks.
+		 */
+		return (array) apply_filters( 'gtlm_geo_quick_picks', $picks );
+	}
+
+	private function render_geo_method_field( string $current ): void {
+		$methods = array(
+			'auto'       => __( 'Auto-detect (recommended)', 'gt-link-manager' ),
+			'cloudflare' => __( 'Cloudflare only', 'gt-link-manager' ),
+			'custom'     => __( 'Custom header only', 'gt-link-manager' ),
+		);
+
+		echo '<tr><th scope="row">' . esc_html__( 'Detection Method', 'gt-link-manager' ) . '</th><td>';
+		foreach ( $methods as $value => $label ) {
+			echo '<label style="margin-right:12px;"><input type="radio" name="geo_detection_method" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . ' /> ' . esc_html( $label ) . '</label>';
+		}
+		echo '<p class="description">' . esc_html__( 'Auto-detect checks Cloudflare first, then CloudFront, Vercel, App Engine, and common web-server GeoIP variables. Choose "Cloudflare only" to ignore every other source — the strictest option, because Cloudflare overwrites its own country header at the edge and it cannot be forged by a visitor.', 'gt-link-manager' ) . '</p>';
+		echo '</td></tr>';
+	}
+
+	/**
+	 * Live readout of what the current request resolves to.
+	 *
+	 * The single most useful thing on this screen: it answers "is my CDN
+	 * actually sending a country?" without the user having to guess.
+	 */
+	private function render_geo_detection_status(): void {
+		GTLM_Geo::reset();
+		$country = GTLM_Geo::country();
+		$source  = GTLM_Geo::source();
+
+		echo '<tr><th scope="row">' . esc_html__( 'Detected Now', 'gt-link-manager' ) . '</th><td>';
+
+		echo '<p id="gtlm-geo-current">';
+		if ( '' !== $country ) {
+			printf(
+				'<span class="gtlm-status gtlm-status--active">%s</span> <code>%s</code> <span class="description">%s</span>',
+				esc_html( $country ),
+				esc_html( $source ),
+				esc_html( GTLM_Geo::label( $country ) )
+			);
+		} else {
+			echo '<span class="gtlm-status gtlm-status--inactive">' . esc_html__( 'No country detected', 'gt-link-manager' ) . '</span>';
+		}
+		echo '</p>';
+
+		if ( '' === $country ) {
+			$proxies = GTLM_Geo::proxy_signals();
+
+			if ( empty( $proxies ) ) {
+				// Nothing in front of PHP at all: expected on local and staging
+				// installs, and not a sign that anything is misconfigured.
+				echo '<p class="description">' . esc_html__( 'Expected here — nothing is proxying this site, so no country header exists to read. This is normal on a local, staging, or direct-to-origin install. Geolocation will start resolving once the site is served through a CDN. Use "Check Detection" below to confirm the plugin itself works regardless.', 'gt-link-manager' ) . '</p>';
+			} else {
+				echo '<p class="description">' . esc_html(
+					sprintf(
+					/* translators: %s: comma-separated proxy names */
+						__( '%s is in front of this site but did not send a country header. On Cloudflare, turn on IP Geolocation for the zone (Rules → Settings, or Network → IP Geolocation). On another CDN, forward its country header and name it above.', 'gt-link-manager' ),
+						implode( ', ', $proxies )
+					)
+				) . '</p>';
+			}
+		}
+
+		echo '<p class="gtlm-geo-check-controls">';
+		echo '<button type="button" class="button" id="gtlm-geo-check-btn" data-nonce="' . esc_attr( wp_create_nonce( 'gtlm_geo_check' ) ) . '">' . esc_html__( 'Check Detection', 'gt-link-manager' ) . '</button> ';
+		echo '<label style="margin-inline-start:8px;">' . esc_html__( 'Test a country code:', 'gt-link-manager' ) . ' ';
+		echo '<input type="text" id="gtlm-geo-check-simulate" class="small-text" maxlength="2" placeholder="US" style="text-transform:uppercase;" />';
+		echo '</label>';
+		echo '</p>';
+		echo '<p class="description">' . esc_html__( 'The check reports every country header present on the request right now, so you can confirm your CDN setup. Entering a code additionally validates that it is usable in a rule.', 'gt-link-manager' ) . '</p>';
+
+		echo '<div id="gtlm-geo-check-result" class="gtlm-geo-check-result" hidden></div>';
+
+		echo '</td></tr>';
+
+		echo '<tr><th scope="row">' . esc_html__( 'Privacy', 'gt-link-manager' ) . '</th><td>';
+		echo '<p class="description">' . esc_html__( 'Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor\'s IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description">' . sprintf(
+			/* translators: %s: link to the Privacy Settings screen */
+			esc_html__( 'Suggested wording for your privacy policy is available under %s.', 'gt-link-manager' ),
+			'<a href="' . esc_url( admin_url( 'options-privacy.php?tab=policyguide' ) ) . '">' . esc_html__( 'Settings → Privacy → Policy Guide', 'gt-link-manager' ) . '</a>'
+		) . '</p>';
+		echo '<p class="description">' . esc_html__( 'If you added click tracking through the gtlm_before_redirect hook, that integration receives the country and may store it — disclose it there.', 'gt-link-manager' ) . '</p>';
+
+		echo '</td></tr>';
 	}
 
 	private function render_link_mode_field( string $current ): void {

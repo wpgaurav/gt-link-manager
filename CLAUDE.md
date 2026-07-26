@@ -43,6 +43,7 @@ All service classes use a static `init()` factory that takes dependencies, const
 |-------|------|
 | `GTLM_DB` | Data access layer. All SQL lives here. Object cache per-slug with `gtlm_links` cache group. |
 | `GTLM_Redirect` | Early redirect on `init` priority 0. Parses REQUEST_URI, looks up slug, sends Location header + exit. |
+| `GTLM_Geo` | Country detection and geo rule resolution. Header-based only — reads `$_SERVER` keys the CDN/web server already set (no DB file, no HTTP call). Memoizes detection and its settings-derived config per request. Owns rule validation (`normalize_rules`/`encode_rules`/`decode_rules`) shared by REST, admin, and CSV. |
 | `GTLM_Settings` | Singleton. Reads/writes `gtlm_settings` option. Exposes `prefix()`. |
 | `GTLM_Admin` | Admin menu pages, form handlers, AJAX quick edit. Renders all admin UI inline (no template files). |
 | `GTLM_REST_API` | REST endpoints under `gt-link-manager/v1`. CRUD for links and categories. |
@@ -53,7 +54,11 @@ All service classes use a static `init()` factory that takes dependencies, const
 
 ### Database tables
 
-**`{prefix}_gtlm_links`**: id, name, slug (UNIQUE), url, redirect_type, rel, noindex, is_active, category_id, tags, notes, trashed_at, created_at, updated_at
+**`{prefix}_gtlm_links`**: id, name, slug (UNIQUE), url, redirect_type, rel, noindex, is_active, link_mode, regex_replacement, priority, geo_mode, geo_rules, category_id, tags, notes, trashed_at, created_at, updated_at
+
+`geo_rules` holds JSON (`{version, rules[{countries, url, redirect_type}], fallback}`) and is deliberately **not** decoded in `normalize_link_row()` — decoding on every link read would cost the redirect hot path and list tables for a field only geo links use. `GTLM_Geo` decodes lazily; REST decodes explicitly for responses.
+
+Insert/update placeholder arrays are derived from the payload via `GTLM_DB::COLUMN_FORMATS` + `formats_for()`. Do not reintroduce hardcoded positional `$format` arrays — they silently corrupt writes when a column is added.
 
 **`{prefix}_gtlm_categories`**: id, name, slug (UNIQUE), description, parent_id, count
 
@@ -70,6 +75,8 @@ All service classes use a static `init()` factory that takes dependencies, const
 | `/categories/{id}` | PUT/PATCH, DELETE |
 
 Permission: `edit_posts` capability, filterable via `gtlm_capabilities`.
+
+**Write args must not declare `default`.** `WP_REST_Request` materialises a schema default into the request, so `get_param()` returns it for an omitted field and `sanitize_link_payload()` can no longer distinguish "not supplied" from "explicitly set" — which made every PATCH reset the fields it omitted. Per-field fallbacks belong in `sanitize_link_payload()` (existing row on update, documented default on create).
 
 ### Block editor integration
 The link inserter registers a RichText format type (`gt-link-manager/link-inserter`) that adds a toolbar button. Clicking it opens a Popover that searches links via the REST API and inserts them as `core/link` formats. Source uses `createElement` (aliased as `h`), not JSX.
@@ -89,6 +96,18 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 | `gtlm_prefix` | filter | Override URL prefix |
 | `gtlm_capabilities` | filter | Override required capability |
 | `gtlm_cache_ttl` | filter | Set object cache TTL |
+| `gtlm_geo_country` | filter | Override the detected country (any custom detection method) |
+| `gtlm_geo_sources` | filter | Add/remove `$_SERVER` keys probed for a country |
+| `gtlm_geo_country_groups` | filter | Define country groups usable in rules (ships with `EU`) |
+| `gtlm_geo_matched_rule` | filter | Override the resolved geo rule; return `null` to block |
+| `gtlm_geo_blocked` | action | Fires when a geo 404 fallback blocks a request |
+
+### Geolocation notes
+
+- Detection is header-only by design: zero dependencies, zero latency, nothing to update. `GTLM_Geo::sources()` lists the probed `$_SERVER` keys in priority order (Cloudflare first).
+- Country headers are forgeable unless traffic passes through the CDN that sets them. Behind Cloudflare, `CF-IPCountry` is rewritten at the edge — verified — so the `cloudflare` detection method is the hardened choice. The 404 fallback is not a security control.
+- Geo links should use 302. A 301 is cached by the browser and pins a visitor to their first detected country; the editor warns on 301.
+- The redirect path resolves the link *first*, then checks `geo_mode` — detection must never run for links that don't opt in.
 
 ## Conventions
 

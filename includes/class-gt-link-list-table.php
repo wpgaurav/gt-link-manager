@@ -59,6 +59,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'branded_url'   => esc_html__( 'Branded URL', 'gt-link-manager' ),
 			'url'           => esc_html__( 'Destination', 'gt-link-manager' ),
 			'link_mode'     => esc_html__( 'Mode', 'gt-link-manager' ),
+			'geo'           => esc_html__( 'Geo', 'gt-link-manager' ),
 			'redirect_type' => esc_html__( 'Type', 'gt-link-manager' ),
 			'rel'           => esc_html__( 'Rel', 'gt-link-manager' ),
 			'status'        => esc_html__( 'Status', 'gt-link-manager' ),
@@ -353,6 +354,22 @@ class GTLM_List_Table extends WP_List_Table {
 	/**
 	 * @param array<string, mixed> $item Item.
 	 */
+	protected function column_geo( array $item ): string {
+		if ( 'off' === (string) ( $item['geo_mode'] ?? 'off' ) ) {
+			return '<span aria-hidden="true">—</span><span class="screen-reader-text">' . esc_html__( 'No geo rules', 'gt-link-manager' ) . '</span>';
+		}
+
+		$count = GTLM_Geo::rule_count( $item );
+
+		return '<span class="gtlm-status gtlm-status--active">' . esc_html(
+			sprintf(
+				/* translators: %d: number of country rules */
+				_n( '%d rule', '%d rules', $count, 'gt-link-manager' ),
+				$count
+			)
+		) . '</span>';
+	}
+
 	protected function column_default( $item, $column_name ): string {
 		if ( isset( $item[ $column_name ] ) ) {
 			return esc_html( (string) $item[ $column_name ] );

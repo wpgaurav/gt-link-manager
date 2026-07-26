@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.6.1
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,7 @@ Most link management plugins use custom post types, which means every redirect l
 * **Block editor integration** — a toolbar button lets you search your links and insert them directly into post content
 * **Branded URL preview** — see the full branded URL as you type, with one-click copy
 * **Normal and Regex Redirects** supported too. Don't want to use a prefix like `/go/` ? Sure thing. Use the GT Link Manager as an alternative to Rank Math Redirections, Yoast Redirects, Redirection plugin etc. **Tested to be faster** than these top tools.
+* **Geolocation targeting** — send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from the header your CDN already sends — Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module — so there is **no GeoIP database to install, no external API call, and no added latency**. Adds roughly 20 microseconds to a geo-enabled redirect and nothing measurable to the rest.
 * **Click tracking** — log clicks via the `gtlm_before_redirect` hook; integrate with GA4, Plausible, Fathom, and more
 * **Developer-friendly** — actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
 
@@ -52,6 +53,11 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_prefix` — filter to override the URL prefix
 * `gtlm_capabilities` — filter to override the required user capability
 * `gtlm_cache_ttl` — filter to set object cache TTL for link lookups
+* `gtlm_geo_country` — filter the detected country code (plug in any detection method you like)
+* `gtlm_geo_sources` — filter the list of request variables checked for a country
+* `gtlm_geo_country_groups` — filter country groups usable in rules (ships with `EU`)
+* `gtlm_geo_matched_rule` — filter the resolved geo rule before the redirect is sent
+* `gtlm_geo_blocked` — action fired when a visitor is blocked by a geo rule's 404 fallback
 
 = Free Training Course =
 
@@ -138,6 +144,26 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 5. **Import/Export** — CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.7.0 =
+* New: Geolocation targeting. Any link can route visitors to a different destination based on their country, with rules evaluated in order and the first country match winning.
+* New: Country detection with zero dependencies. The country is read from request variables your CDN or web server already provides — Cloudflare (`CF-IPCountry`), CloudFront, Vercel, Google App Engine, nginx GeoIP2, Apache mod_geoip, mod_maxminddb, or a custom header you name. No GeoIP database file, no third-party API, no outbound request.
+* New: `EU` country group expands to all 27 member states in a single rule; extendable via `gtlm_geo_country_groups`.
+* New: Per-rule status codes, and a "show a 404" fallback for visitors matching no rule.
+* New: Geolocation settings section with a live "Detected Now" readout showing which country and source resolved for the current request — the fastest way to confirm your CDN is forwarding a country header.
+* New: "Check Detection" button. Lists every country header present on the request with its raw value, and runs a loopback self-test — it sends the site a request carrying a country header and reports what the plugin detected at the other end. That proves detection works even on a local or staging install with no CDN in front, where "no country on this request" is correct rather than a fault. Also validates a country code you type before you use it in a rule.
+* New: The detection readout distinguishes "nothing is proxying this site, so no country is expected" from "your CDN is in front but sent no country header" — only the second is a misconfiguration, and it now says how to fix it.
+* New: Rule builder in the link editor. Numbered rows show match precedence, rules can be reordered, one-click picks cover common markets (US + CA, EU, UK, India, AU + NZ), the long country list is filterable, selections show as removable chips, and the "Everyone else" fallback reads as the final row. It warns when a country is listed twice (only the highest rule can ever match) or when a rule has countries but no URL.
+* New: Rule preview. Pick a country and see exactly which rule wins and where it sends — evaluated in the browser against your unsaved edits, with no request made.
+* New: Privacy disclosure. The plugin registers a suggested privacy-policy section under Settings → Privacy → Policy Guide, and states inline that country detection reads only a CDN-provided header — never the visitor's IP address, never an external service, and the country is never stored or logged.
+* Fixed: a partial REST update (PATCH) of one field silently reset every field that was not included, because each write argument declared a schema default that WP_REST_Request materialises into the request. Sending only `geo_rules` would reset `redirect_type` to 301 — which quietly breaks geo targeting — and blank `tags`, `notes`, and `rel`. Omitted fields now keep their stored values. Create defaults are unchanged.
+* New: Optional `X-GTLM-Country` debug response header showing the detected country, its source, and whether a rule matched.
+* New: Geo rules are exposed in the REST API on `/links` (create, read, update) with a self-describing schema, so links can be geo-targeted programmatically. Posting `geo_rules` without `geo_mode` opts the link in automatically.
+* New: Geo rules round-trip through CSV import and export; a malformed rules cell is dropped without failing the row.
+* New: Geo column in the links list table, and geolocation status in Diagnostics.
+* Performance: geolocation costs nothing on links that do not use it — the check is a single array read, and country detection is never invoked unless a matched link opts in. Detection and settings are resolved once per request.
+* Note: geo-targeted links should use 302, not 301. A 301 is cached by the browser permanently, which pins a visitor to whichever country they were in on their first click. The link editor warns when a geo link is set to 301.
+* Note: a country header can be forged on requests that reach your site without passing through your CDN, so the 404 fallback is not a security control. Behind Cloudflare, `CF-IPCountry` is rewritten at the edge and cannot be spoofed; the "Cloudflare only" detection method is the strictest setting.
 
 = 1.6.1 =
 * Fixed nonce mismatch bug — trash, restore, and permanent delete actions were failing due to inconsistent nonce prefixes.
@@ -278,6 +304,9 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.7.0 =
+Adds geolocation targeting: route each link by visitor country using the header your CDN already sends — no GeoIP database, no external API, no added latency. Two columns are added to the links table automatically on upgrade; existing links are untouched and keep redirecting exactly as before. Enable it under GT Links → Settings → Geolocation Targeting.
 
 = 1.6.1 =
 Fixes nonce mismatch bug affecting trash/restore/delete actions, hardens regex pattern validation, adds REST API descriptions and category caching.

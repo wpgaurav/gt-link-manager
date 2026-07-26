@@ -32,13 +32,26 @@ class GTLM_Settings {
 	 */
 	public static function defaults(): array {
 		return array(
-			'base_prefix'                => 'go',
-			'default_redirect_type'      => 301,
-			'default_rel'                => array(),
-			'default_noindex'            => 0,
-			'delete_data_on_uninstall'   => 0,
-			'enable_advanced_redirects'  => 0,
+			'base_prefix'               => 'go',
+			'default_redirect_type'     => 301,
+			'default_rel'               => array(),
+			'default_noindex'           => 0,
+			'delete_data_on_uninstall'  => 0,
+			'enable_advanced_redirects' => 0,
+			'enable_geo_targeting'      => 0,
+			'geo_detection_method'      => 'auto',
+			'geo_custom_header'         => '',
+			'geo_debug_header'          => 0,
 		);
+	}
+
+	/**
+	 * Allowed geolocation detection methods.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function geo_detection_methods(): array {
+		return array( 'auto', 'cloudflare', 'custom' );
 	}
 
 	/**
@@ -55,12 +68,16 @@ class GTLM_Settings {
 
 		$settings = wp_parse_args( $stored, self::defaults() );
 
-		$settings['base_prefix']           = $this->sanitize_prefix( (string) $settings['base_prefix'] );
-		$settings['default_redirect_type'] = $this->sanitize_redirect_type( (int) $settings['default_redirect_type'] );
-		$settings['default_noindex']       = (int) ! empty( $settings['default_noindex'] );
-		$settings['default_rel']              = $this->sanitize_rel_array( $settings['default_rel'] );
+		$settings['base_prefix']               = $this->sanitize_prefix( (string) $settings['base_prefix'] );
+		$settings['default_redirect_type']     = $this->sanitize_redirect_type( (int) $settings['default_redirect_type'] );
+		$settings['default_noindex']           = (int) ! empty( $settings['default_noindex'] );
+		$settings['default_rel']               = $this->sanitize_rel_array( $settings['default_rel'] );
 		$settings['delete_data_on_uninstall']  = (int) ! empty( $settings['delete_data_on_uninstall'] );
 		$settings['enable_advanced_redirects'] = (int) ! empty( $settings['enable_advanced_redirects'] );
+		$settings['enable_geo_targeting']      = (int) ! empty( $settings['enable_geo_targeting'] );
+		$settings['geo_detection_method']      = $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) );
+		$settings['geo_custom_header']         = $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) );
+		$settings['geo_debug_header']          = (int) ! empty( $settings['geo_debug_header'] );
 
 		/**
 		 * Filter effective plugin settings.
@@ -94,12 +111,16 @@ class GTLM_Settings {
 	 */
 	public function update( array $settings ): bool {
 		$next = array(
-			'base_prefix'                => $this->sanitize_prefix( (string) ( $settings['base_prefix'] ?? 'go' ) ),
-			'default_redirect_type'      => $this->sanitize_redirect_type( (int) ( $settings['default_redirect_type'] ?? 301 ) ),
-			'default_noindex'            => (int) ! empty( $settings['default_noindex'] ),
-			'default_rel'                => $this->sanitize_rel_array( $settings['default_rel'] ?? array() ),
-			'delete_data_on_uninstall'   => (int) ! empty( $settings['delete_data_on_uninstall'] ),
-			'enable_advanced_redirects'  => (int) ! empty( $settings['enable_advanced_redirects'] ),
+			'base_prefix'               => $this->sanitize_prefix( (string) ( $settings['base_prefix'] ?? 'go' ) ),
+			'default_redirect_type'     => $this->sanitize_redirect_type( (int) ( $settings['default_redirect_type'] ?? 301 ) ),
+			'default_noindex'           => (int) ! empty( $settings['default_noindex'] ),
+			'default_rel'               => $this->sanitize_rel_array( $settings['default_rel'] ?? array() ),
+			'delete_data_on_uninstall'  => (int) ! empty( $settings['delete_data_on_uninstall'] ),
+			'enable_advanced_redirects' => (int) ! empty( $settings['enable_advanced_redirects'] ),
+			'enable_geo_targeting'      => (int) ! empty( $settings['enable_geo_targeting'] ),
+			'geo_detection_method'      => $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) ),
+			'geo_custom_header'         => $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) ),
+			'geo_debug_header'          => (int) ! empty( $settings['geo_debug_header'] ),
 		);
 
 		$updated = update_option( self::OPTION_KEY, $next, false );
@@ -125,6 +146,22 @@ class GTLM_Settings {
 	private function sanitize_redirect_type( int $type ): int {
 		$allowed = array( 301, 302, 307 );
 		return in_array( $type, $allowed, true ) ? $type : 301;
+	}
+
+	private function sanitize_geo_method( string $method ): string {
+		$method = strtolower( trim( $method ) );
+
+		return in_array( $method, self::geo_detection_methods(), true ) ? $method : 'auto';
+	}
+
+	/**
+	 * Sanitize an HTTP header name (letters, digits, dashes, underscores).
+	 */
+	private function sanitize_header_name( string $header ): string {
+		$header = strtoupper( trim( $header ) );
+		$header = preg_replace( '/[^A-Z0-9_-]/', '', $header ) ?? '';
+
+		return substr( $header, 0, 100 );
 	}
 
 	/**

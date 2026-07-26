@@ -23,6 +23,7 @@ global $wpdb;
 delete_option( 'gtlm_settings' );
 delete_option( 'gtlm_db_version' );
 delete_option( 'gtlm_diagnostics' );
+delete_option( 'gtlm_geo_probe_token' );
 // Old prefix options (pre-1.4.0).
 delete_option( 'gt_link_manager_settings' );
 delete_option( 'gt_link_manager_db_version' );

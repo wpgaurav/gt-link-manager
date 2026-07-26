@@ -134,6 +134,26 @@ class GTLM_REST_API {
 			)
 		);
 
+		// Loopback self-test target. Authenticated by a single-use token rather
+		// than a cookie, because the request originates from the server itself.
+		register_rest_route(
+			'gt-link-manager/v1',
+			'/geo-probe',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'geo_probe' ),
+				'permission_callback' => array( $this, 'geo_probe_permission' ),
+				'description'         => 'Internal: reports the country this request resolves to. Requires a single-use token issued by the settings screen.',
+				'args'                => array(
+					'token' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
 		register_rest_route(
 			'gt-link-manager/v1',
 			'/links/(?P<id>\d+)/restore',
@@ -243,6 +263,31 @@ class GTLM_REST_API {
 		);
 	}
 
+	/**
+	 * Single-use token check for the geolocation loopback probe.
+	 *
+	 * The probe reveals nothing but the country of the caller's own request,
+	 * and the token is minted only by an administrator, expires in 60 seconds,
+	 * and is consumed on first use.
+	 */
+	public function geo_probe_permission( WP_REST_Request $request ): bool {
+		return GTLM_Geo::consume_probe_token( sanitize_text_field( (string) $request->get_param( 'token' ) ) );
+	}
+
+	/**
+	 * Report what geolocation detection resolves for this request.
+	 */
+	public function geo_probe( WP_REST_Request $request ): WP_REST_Response {
+		GTLM_Geo::reset();
+
+		return rest_ensure_response(
+			array(
+				'country' => GTLM_Geo::country(),
+				'source'  => GTLM_Geo::source(),
+			)
+		);
+	}
+
 	public function permissions_check(): bool {
 		$capability = (string) apply_filters( 'gtlm_capabilities', 'edit_posts', 'rest_api' );
 		return current_user_can( $capability );
@@ -307,6 +352,8 @@ class GTLM_REST_API {
 					'link_mode'         => $mode,
 					'regex_replacement' => (string) ( $row['regex_replacement'] ?? '' ),
 					'priority'          => (int) ( $row['priority'] ?? 10 ),
+					'geo_mode'          => (string) ( $row['geo_mode'] ?? 'off' ),
+					'geo_rules'         => GTLM_Geo::decode_rules( (string) ( $row['geo_rules'] ?? '' ) ),
 					'category_id'       => (int) $row['category_id'],
 					'tags'              => (string) ( $row['tags'] ?? '' ),
 					'notes'             => (string) ( $row['notes'] ?? '' ),
@@ -335,7 +382,23 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_not_found', __( 'Link not found.', 'gt-link-manager' ), array( 'status' => 404 ) );
 		}
 
-		return rest_ensure_response( $link );
+		return rest_ensure_response( $this->prepare_link_row( $link ) );
+	}
+
+	/**
+	 * Shape a stored link row for a response.
+	 *
+	 * geo_rules is held as JSON in the database so link reads stay cheap;
+	 * API consumers get the decoded structure.
+	 *
+	 * @param array<string, mixed> $link Link row.
+	 * @return array<string, mixed>
+	 */
+	private function prepare_link_row( array $link ): array {
+		$link['geo_mode']  = (string) ( $link['geo_mode'] ?? 'off' );
+		$link['geo_rules'] = GTLM_Geo::decode_rules( (string) ( $link['geo_rules'] ?? '' ) );
+
+		return $link;
 	}
 
 	/**
@@ -361,7 +424,7 @@ class GTLM_REST_API {
 		}
 
 		$link = $this->db->get_link_by_id( $id );
-		return new WP_REST_Response( $link, 201 );
+		return new WP_REST_Response( is_array( $link ) ? $this->prepare_link_row( $link ) : $link, 201 );
 	}
 
 	/**
@@ -389,7 +452,9 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_update_failed', __( 'Could not update link.', 'gt-link-manager' ), array( 'status' => 500 ) );
 		}
 
-		return rest_ensure_response( $this->db->get_link_by_id( $id ) );
+		$updated = $this->db->get_link_by_id( $id );
+
+		return rest_ensure_response( is_array( $updated ) ? $this->prepare_link_row( $updated ) : $updated );
 	}
 
 	/**
@@ -533,6 +598,8 @@ class GTLM_REST_API {
 					'link_mode'         => (string) ( $link['link_mode'] ?? 'standard' ),
 					'regex_replacement' => (string) ( $link['regex_replacement'] ?? '' ),
 					'priority'          => (int) ( $link['priority'] ?? 10 ),
+					'geo_mode'          => (string) ( $link['geo_mode'] ?? 'off' ),
+					'geo_rules'         => (string) ( $link['geo_rules'] ?? '' ),
 					'category_id'       => $category_id,
 					'tags'              => (string) ( $link['tags'] ?? '' ),
 					'notes'             => (string) ( $link['notes'] ?? '' ),
@@ -710,6 +777,30 @@ class GTLM_REST_API {
 		if ( null === $priority && isset( $fallback['priority'] ) ) {
 			$priority = (int) $fallback['priority'];
 		}
+		// No request value and no existing row: keep the documented create default.
+		if ( null === $priority ) {
+			$priority = 10;
+		}
+
+		$geo_mode = $request->get_param( 'geo_mode' );
+		if ( null === $geo_mode && isset( $fallback['geo_mode'] ) ) {
+			$geo_mode = (string) $fallback['geo_mode'];
+		}
+		$geo_mode = in_array( (string) $geo_mode, array( 'off', 'targeted' ), true ) ? (string) $geo_mode : 'off';
+
+		$geo_rules = $request->get_param( 'geo_rules' );
+		if ( null === $geo_rules && isset( $fallback['geo_rules'] ) ) {
+			$geo_rules = (string) $fallback['geo_rules'];
+		}
+
+		// Supplying rules without setting geo_mode is almost always the intent,
+		// so opt the link in rather than silently storing inert rules.
+		if ( 'off' === $geo_mode && null === $request->get_param( 'geo_mode' ) && null !== $request->get_param( 'geo_rules' ) ) {
+			$parsed = GTLM_Geo::normalize_rules( $geo_rules );
+			if ( ! empty( $parsed['rules'] ) ) {
+				$geo_mode = 'targeted';
+			}
+		}
 
 		$redirect_type = (int) $redirect_type;
 		if ( ! in_array( $redirect_type, array( 301, 302, 307 ), true ) ) {
@@ -736,6 +827,8 @@ class GTLM_REST_API {
 			'link_mode'         => $link_mode,
 			'regex_replacement' => sanitize_text_field( (string) $regex_replacement ),
 			'priority'          => max( 0, (int) $priority ),
+			'geo_mode'          => $geo_mode,
+			'geo_rules'         => GTLM_Geo::encode_rules( $geo_rules ),
 			'category_id'       => absint( $category_id ),
 			'tags'              => sanitize_text_field( (string) $tags ),
 			'notes'             => sanitize_textarea_field( (string) $notes ),
@@ -806,82 +899,144 @@ class GTLM_REST_API {
 	/**
 	 * @return array<string, array<string, mixed>>
 	 */
+	/**
+	 * Write args for create and update.
+	 *
+	 * None of these declare a `default`. A default is materialised into the
+	 * request by WP_REST_Request, so get_param() would return it for an
+	 * omitted field and sanitize_link_payload() could no longer tell "not
+	 * supplied" from "explicitly set" — which silently reset every omitted
+	 * field on a PATCH. Per-field fallbacks live in sanitize_link_payload():
+	 * the existing row's value on update, the documented default on create.
+	 */
 	private function link_write_args(): array {
 		return array(
-			'name'          => array(
+			'name'              => array(
 				'type'              => 'string',
 				'required'          => false,
 				'sanitize_callback' => 'sanitize_text_field',
 			),
-			'slug'          => array(
+			'slug'              => array(
 				'type'              => 'string',
 				'required'          => false,
 				'sanitize_callback' => 'sanitize_title',
 			),
-			'url'           => array(
+			'url'               => array(
 				'type'              => 'string',
 				'required'          => false,
 				'format'            => 'uri',
 				'sanitize_callback' => 'esc_url_raw',
 			),
-			'redirect_type' => array(
+			'redirect_type'     => array(
 				'type'     => 'integer',
 				'required' => false,
-				'default'  => 301,
 				'enum'     => array( 301, 302, 307 ),
 			),
-			'rel'           => array(
+			'rel'               => array(
 				'type'     => array( 'string', 'array' ),
 				'required' => false,
-				'default'  => '',
 			),
-			'noindex'       => array(
+			'noindex'           => array(
 				'type'     => 'integer',
 				'required' => false,
-				'default'  => 0,
 				'enum'     => array( 0, 1 ),
 			),
-			'category_id'   => array(
+			'category_id'       => array(
 				'type'              => 'integer',
 				'required'          => false,
-				'default'           => 0,
 				'sanitize_callback' => 'absint',
 			),
-			'tags'          => array(
+			'tags'              => array(
 				'type'              => 'string',
 				'required'          => false,
-				'default'           => '',
 				'sanitize_callback' => 'sanitize_text_field',
 			),
-			'notes'         => array(
+			'notes'             => array(
 				'type'              => 'string',
 				'required'          => false,
-				'default'           => '',
 				'sanitize_callback' => 'sanitize_textarea_field',
 			),
 			'is_active'         => array(
 				'type'     => 'integer',
 				'required' => false,
-				'default'  => 1,
 				'enum'     => array( 0, 1 ),
 			),
 			'link_mode'         => array(
 				'type'     => 'string',
 				'required' => false,
-				'default'  => 'standard',
 				'enum'     => array( 'standard', 'direct', 'regex' ),
 			),
 			'regex_replacement' => array(
 				'type'              => 'string',
 				'required'          => false,
-				'default'           => '',
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 			'priority'          => array(
 				'type'              => 'integer',
 				'required'          => false,
-				'default'           => 10,
 				'sanitize_callback' => 'absint',
+			),
+			'geo_mode'          => array(
+				'type'        => 'string',
+				'required'    => false,
+				'enum'        => array( 'off', 'targeted' ),
+				// Deliberately no default: the payload sanitizer distinguishes
+				// "not supplied" from an explicit "off" so that posting
+				// geo_rules alone opts the link in.
+				'description' => 'Set to "targeted" to route this link by visitor country using geo_rules. "off" always uses url. Omit it and supply geo_rules to opt in automatically.',
+			),
+			'geo_rules'         => array(
+				'required'          => false,
+				'description'       => 'Country routing for this link. Rules are evaluated in order and the first match wins; a visitor whose country matches no rule follows "fallback". Country detection is read from the CDN or web server (Cloudflare CF-IPCountry and equivalents) — no lookup service is called. Requires geo_mode="targeted" and the site-wide geolocation setting to be enabled.',
+				'type'              => 'object',
+				'properties'        => array(
+					'rules'    => array(
+						'type'        => 'array',
+						'description' => 'Ordered list of country rules. First match wins.',
+						'items'       => array(
+							'type'       => 'object',
+							'required'   => array( 'countries', 'url' ),
+							'properties' => array(
+								'countries'     => array(
+									'type'        => 'array',
+									'description' => 'ISO 3166-1 alpha-2 country codes (e.g. ["US","CA"]). The group token "EU" expands to all 27 EU member states.',
+									'items'       => array( 'type' => 'string' ),
+								),
+								'url'           => array(
+									'type'        => 'string',
+									'format'      => 'uri',
+									'description' => 'Destination for visitors from these countries.',
+								),
+								'redirect_type' => array(
+									'type'        => 'integer',
+									'enum'        => array( 301, 302, 307 ),
+									'description' => 'Optional per-rule status code. Omit to inherit the link\'s redirect_type. Prefer 302 — a 301 is cached by the browser and pins the visitor to their first detected country.',
+								),
+							),
+						),
+					),
+					'fallback' => array(
+						'type'        => 'string',
+						'enum'        => array( 'default', 'block' ),
+						'description' => '"default" sends unmatched visitors to the link\'s url. "block" returns 404. Not a security control — country headers can be forged if requests reach the site without passing through your CDN.',
+					),
+				),
+				'validate_callback' => static function ( $value ): bool|WP_Error {
+					$normalized = GTLM_Geo::normalize_rules( $value );
+
+					// Reject payloads where every rule was thrown away, so a typo
+					// in a country code or URL fails loudly instead of silently.
+					$submitted = is_array( $value ) ? ( $value['rules'] ?? $value ) : array();
+					if ( is_array( $submitted ) && count( $submitted ) > 0 && empty( $normalized['rules'] ) ) {
+						return new WP_Error(
+							'gtlm_invalid_geo_rules',
+							__( 'No valid geo rules found. Each rule needs a "url" and at least one valid ISO 3166-1 alpha-2 country code or the "EU" group.', 'gt-link-manager' ),
+							array( 'status' => 400 )
+						);
+					}
+
+					return true;
+				},
 			),
 		);
 	}

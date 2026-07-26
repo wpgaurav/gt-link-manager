@@ -538,3 +538,255 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 		flex-wrap: wrap;
 	}
 }
+
+/* ── Geolocation rule builder ────────────────────────────────── */
+
+/*
+ * This table is nested inside a .form-table cell, so `.form-table th`
+ * (core's `padding: 20px 10px 20px 0` plus a fixed label width) leaks into
+ * its headers and shifts them 10px left of the cells beneath. Re-declare
+ * both here with enough specificity to win, so headers and content align.
+ */
+.gtlm-card .form-table .gtlm-geo-rules th,
+.gtlm-card .form-table .gtlm-geo-rules td {
+	padding: 10px;
+	vertical-align: top;
+	text-align: start;
+}
+
+/* Same specificity prefix as the reset above, or the reset wins and fixed
+   layout falls back to equal-width columns. */
+.gtlm-card .form-table .gtlm-geo-rules .gtlm-geo-col-order {
+	width: 5.5em;
+}
+
+.gtlm-card .form-table .gtlm-geo-rules .gtlm-geo-col-countries {
+	width: 32%;
+}
+
+.gtlm-card .form-table .gtlm-geo-rules .gtlm-geo-col-url {
+	width: auto;
+}
+
+.gtlm-card .form-table .gtlm-geo-rules .gtlm-geo-col-status {
+	width: 7em;
+}
+
+.gtlm-card .form-table .gtlm-geo-rules .gtlm-geo-col-actions {
+	width: 6em;
+}
+
+.gtlm-card .form-table .gtlm-geo-rules thead th {
+	padding-block: 8px;
+	vertical-align: bottom;
+	color: #102a43;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+/*
+ * Fixed layout, because with auto layout the country <select> contributes the
+ * width of its longest option ("South Georgia and the South Sandwich Islands")
+ * to the column's max-content size, which starves the URL field.
+ */
+.gtlm-geo-rules {
+	margin-block: 8px;
+	table-layout: fixed;
+	width: 100%;
+}
+
+.gtlm-geo-order {
+	white-space: nowrap;
+}
+
+.gtlm-geo-order-badge {
+	display: inline-block;
+	min-width: 22px;
+	padding: 1px 6px;
+	border-radius: 10px;
+	background: #f0f0f1;
+	color: #50575e;
+	font-size: 12px;
+	font-weight: 600;
+	text-align: center;
+}
+
+.gtlm-geo-order-badge--last {
+	background: transparent;
+	font-weight: 400;
+	font-style: italic;
+}
+
+.gtlm-geo-move {
+	display: inline-flex;
+	flex-direction: column;
+	margin-inline-start: 4px;
+	line-height: 1;
+}
+
+.gtlm-geo-move button {
+	padding: 0 2px;
+	color: #787c82;
+	text-decoration: none;
+}
+
+.gtlm-geo-move button:hover {
+	color: #135e96;
+}
+
+.gtlm-geo-countries-cell {
+	min-width: 240px;
+}
+
+.gtlm-geo-presets {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-block-end: 6px;
+}
+
+/* The default button-small line-height makes a ragged row of pills. */
+.gtlm-geo-presets .button-small {
+	margin: 0;
+	line-height: 2;
+}
+
+.gtlm-geo-filter {
+	width: 100%;
+	margin-block-end: 4px;
+}
+
+.gtlm-geo-countries {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+}
+
+/* Fixed layout can otherwise let a long URL push its cell wider than the column. */
+.gtlm-geo-rules .gtlm-geo-url {
+	width: 100%;
+	min-width: 0;
+}
+
+.gtlm-geo-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-block-start: 6px;
+}
+
+.gtlm-geo-chip {
+	padding: 1px 6px 1px 8px;
+	border: 1px solid #c3c4c7;
+	border-radius: 10px;
+	background: #fff;
+	color: #1d2327;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.gtlm-geo-chip::after {
+	content: " \00d7";
+	color: #787c82;
+	font-weight: 600;
+}
+
+.gtlm-geo-chip:hover {
+	border-color: #d63638;
+	color: #d63638;
+}
+
+.gtlm-geo-chip:hover::after {
+	color: #d63638;
+}
+
+.gtlm-card .form-table .gtlm-geo-fallback-row td {
+	background: #f6f7f7;
+	border-top: 1px solid #dcdcde;
+	vertical-align: middle;
+}
+
+.gtlm-geo-tester {
+	margin-block: 12px;
+	padding: 10px 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+}
+
+.gtlm-geo-test-result {
+	display: inline-block;
+	margin-inline-start: 6px;
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+	word-break: break-all;
+}
+
+.gtlm-geo-test-result--match {
+	color: #007017;
+}
+
+.gtlm-geo-test-result--block {
+	color: #d63638;
+}
+
+/* ── Detection check on the settings screen ──────────────────── */
+.gtlm-geo-check-controls {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.gtlm-geo-check-result {
+	margin-block-start: 10px;
+	max-width: 720px;
+}
+
+.gtlm-geo-check-table td:nth-child(2) {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}
+
+@media (max-width: 782px) {
+	.gtlm-geo-rules,
+	.gtlm-geo-rules tbody,
+	.gtlm-geo-rules tfoot,
+	.gtlm-geo-rules tr,
+	.gtlm-card .form-table .gtlm-geo-rules td {
+		display: block;
+		width: auto;
+	}
+
+	/* Header row is hidden once rows stack, so each cell states its own
+	   column via data-label — otherwise the URL and Status fields lose all
+	   context on a phone. */
+	.gtlm-geo-rules thead {
+		display: none;
+	}
+
+	.gtlm-card .form-table .gtlm-geo-rules td[data-label]::before {
+		content: attr(data-label);
+		display: block;
+		margin-block-end: 4px;
+		color: #50575e;
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.gtlm-card .form-table .gtlm-geo-rules td {
+		padding-block: 6px;
+	}
+
+	.gtlm-geo-rules tr.gtlm-geo-rule {
+		margin-block-end: 12px;
+		padding-block-end: 8px;
+		border-block-end: 1px solid #dcdcde;
+	}
+
+	/* Arrows read better side by side when the row is a stacked card. */
+	.gtlm-geo-rules tr.gtlm-geo-rule .gtlm-geo-move {
+		flex-direction: row;
+		gap: 8px;
+	}
+}

@@ -412,6 +412,521 @@
 		}
 	}
 
+	// Geolocation rule builder on the link editor.
+	(function () {
+		var toggle = document.getElementById('gtlm-geo-toggle');
+		var rows = document.getElementById('gtlm-geo-rows');
+		var addBtn = document.getElementById('gtlm-geo-add-rule');
+		var template = document.getElementById('gtlm-geo-row-template');
+		var warnings = document.getElementById('gtlm-geo-warnings');
+		var testSelect = document.getElementById('gtlm-geo-test-country');
+		var testResult = document.getElementById('gtlm-geo-test-result');
+		var fallback = document.getElementById('gtlm-geo-fallback');
+
+		if (!rows) {
+			return;
+		}
+
+		var i18n = (window.gtlmAdmin && window.gtlmAdmin.i18n) || {};
+
+		function ruleRows() {
+			return Array.prototype.slice.call(rows.querySelectorAll('tr.gtlm-geo-rule'));
+		}
+
+		function selectedIn(row) {
+			var select = row.querySelector('.gtlm-geo-countries');
+			if (!select) {
+				return [];
+			}
+			return Array.prototype.filter
+				.call(select.options, function (o) {
+					return o.selected;
+				})
+				.map(function (o) {
+					return { code: o.value, label: o.text };
+				});
+		}
+
+		// Field names carry a row index so each row's country multi-select
+		// posts as its own array. Indices must stay contiguous after edits.
+		function renumber() {
+			ruleRows().forEach(function (row, i) {
+				row.setAttribute('data-index', i);
+				Array.prototype.forEach.call(row.querySelectorAll('[name]'), function (field) {
+					field.name = field.name.replace(/\[(?:\d+|__INDEX__)\]/, '[' + i + ']');
+				});
+				var badge = row.querySelector('.gtlm-geo-order-badge');
+				if (badge) {
+					badge.textContent = String(i + 1);
+				}
+			});
+		}
+
+		// Show the current selection as readable chips; a 249-option list is
+		// impossible to read at a glance otherwise.
+		function renderChips(row) {
+			var host = row.querySelector('.gtlm-geo-chips');
+			if (!host) {
+				return;
+			}
+			var picked = selectedIn(row);
+			host.innerHTML = '';
+			if (!picked.length) {
+				var empty = document.createElement('span');
+				empty.className = 'description';
+				empty.textContent = i18n.geoNoCountries || 'No countries selected yet — this rule will be ignored.';
+				host.appendChild(empty);
+				return;
+			}
+			picked.forEach(function (item) {
+				var name = item.label.replace(/\s*\([A-Z]{2}\)$/, '');
+				var chip = document.createElement('button');
+				chip.type = 'button';
+				chip.className = 'gtlm-geo-chip';
+				chip.setAttribute('data-code', item.code);
+				// The chip's text is just the country, so the action has to be
+				// in the accessible name or it reads as a meaningless button.
+				chip.setAttribute('aria-label', (i18n.geoRemoveNamed || 'Remove %s').replace('%s', name));
+				chip.title = i18n.geoRemoveCountry || 'Remove';
+				chip.textContent = name;
+				host.appendChild(chip);
+			});
+		}
+
+		// A country claimed by an earlier rule can never reach a later one.
+		function renderWarnings() {
+			if (!warnings) {
+				return;
+			}
+			var seen = {};
+			var shadowed = [];
+			var noUrl = 0;
+
+			ruleRows().forEach(function (row) {
+				var url = row.querySelector('.gtlm-geo-url');
+				var picked = selectedIn(row);
+				if (picked.length && (!url || !url.value.trim())) {
+					noUrl++;
+				}
+				picked.forEach(function (item) {
+					if (seen[item.code]) {
+						shadowed.push(item.label.replace(/\s*\([A-Z]{2}\)$/, ''));
+					} else {
+						seen[item.code] = true;
+					}
+				});
+			});
+
+			var messages = [];
+			if (shadowed.length) {
+				messages.push(
+					(i18n.geoShadowed || 'Listed more than once, so only the highest rule applies:') +
+						' ' +
+						shadowed.join(', ')
+				);
+			}
+			if (noUrl) {
+				messages.push(i18n.geoMissingUrl || 'A rule has countries but no destination URL, so it will be discarded on save.');
+			}
+
+			warnings.innerHTML = '';
+			if (!messages.length) {
+				return;
+			}
+			var notice = document.createElement('div');
+			notice.className = 'notice notice-warning inline';
+			messages.forEach(function (text) {
+				var p = document.createElement('p');
+				p.textContent = text;
+				notice.appendChild(p);
+			});
+			warnings.appendChild(notice);
+		}
+
+		// Resolve the in-progress form the same way the server would.
+		function runPreview() {
+			if (!testSelect || !testResult) {
+				return;
+			}
+			var code = testSelect.value;
+			if (!code) {
+				testResult.textContent = '';
+				testResult.className = 'gtlm-geo-test-result';
+				return;
+			}
+
+			var winner = null;
+			ruleRows().some(function (row) {
+				var codes = selectedIn(row).map(function (i) {
+					return i.code;
+				});
+				var hit =
+					codes.indexOf(code) !== -1 ||
+					(codes.indexOf('EU') !== -1 && (window.gtlmAdmin.euCountries || []).indexOf(code) !== -1);
+				if (hit) {
+					var url = row.querySelector('.gtlm-geo-url');
+					winner = {
+						index: Number(row.getAttribute('data-index')) + 1,
+						url: url ? url.value.trim() : ''
+					};
+					return true;
+				}
+				return false;
+			});
+
+			if (winner && winner.url) {
+				testResult.className = 'gtlm-geo-test-result gtlm-geo-test-result--match';
+				testResult.textContent =
+					'→ ' + winner.url + ' (' + (i18n.geoRule || 'rule') + ' ' + winner.index + ')';
+			} else if (fallback && fallback.value === 'block') {
+				testResult.className = 'gtlm-geo-test-result gtlm-geo-test-result--block';
+				testResult.textContent = '→ ' + (i18n.geo404 || '404 — blocked');
+			} else {
+				var main = document.getElementById('url');
+				testResult.className = 'gtlm-geo-test-result';
+				testResult.textContent =
+					'→ ' + (main && main.value ? main.value : i18n.geoMainUrl || 'the main Destination URL');
+			}
+		}
+
+		function refresh() {
+			renumber();
+			ruleRows().forEach(renderChips);
+			renderWarnings();
+			runPreview();
+		}
+
+		function toggleRules() {
+			var wrapper = document.querySelector('.gtlm-field-geo-rules');
+			if (wrapper) {
+				wrapper.style.display = toggle && toggle.checked ? '' : 'none';
+			}
+		}
+
+		if (toggle) {
+			toggle.addEventListener('change', toggleRules);
+			toggleRules();
+		}
+
+		if (addBtn && template) {
+			addBtn.addEventListener('click', function () {
+				var html = template.innerHTML.replace(/__INDEX__/g, String(ruleRows().length));
+				var host = document.createElement('tbody');
+				host.innerHTML = html.trim();
+				var row = host.querySelector('tr');
+				if (row) {
+					rows.appendChild(row);
+					refresh();
+					var filter = row.querySelector('.gtlm-geo-filter');
+					if (filter) {
+						filter.focus();
+					}
+				}
+			});
+		}
+
+		rows.addEventListener('click', function (e) {
+			var target = e.target;
+			var row = target.closest ? target.closest('tr.gtlm-geo-rule') : null;
+			if (!row) {
+				return;
+			}
+
+			// Quick pick: add a whole market in one click.
+			if (target.classList.contains('gtlm-geo-preset')) {
+				e.preventDefault();
+				var codes = (target.getAttribute('data-codes') || '').split(',');
+				var select = row.querySelector('.gtlm-geo-countries');
+				if (select) {
+					Array.prototype.forEach.call(select.options, function (o) {
+						if (codes.indexOf(o.value) !== -1) {
+							o.selected = true;
+						}
+					});
+				}
+				refresh();
+				return;
+			}
+
+			// Chip acts as its own remove control.
+			if (target.classList.contains('gtlm-geo-chip')) {
+				e.preventDefault();
+				var code = target.getAttribute('data-code');
+				var sel = row.querySelector('.gtlm-geo-countries');
+				if (sel) {
+					Array.prototype.forEach.call(sel.options, function (o) {
+						if (o.value === code) {
+							o.selected = false;
+						}
+					});
+				}
+				refresh();
+				return;
+			}
+
+			if (target.classList.contains('gtlm-geo-move-up') || target.classList.contains('gtlm-geo-move-down')) {
+				e.preventDefault();
+				var up = target.classList.contains('gtlm-geo-move-up');
+				var sibling = up ? row.previousElementSibling : row.nextElementSibling;
+				if (sibling && sibling.classList.contains('gtlm-geo-rule')) {
+					if (up) {
+						rows.insertBefore(row, sibling);
+					} else {
+						rows.insertBefore(sibling, row);
+					}
+					refresh();
+					target.focus();
+				}
+				return;
+			}
+
+			if (target.classList.contains('gtlm-geo-remove-rule')) {
+				e.preventDefault();
+				// Keep one row so the table never becomes an empty shell.
+				if (ruleRows().length === 1) {
+					Array.prototype.forEach.call(row.querySelectorAll('input[type="url"]'), function (i) {
+						i.value = '';
+					});
+					Array.prototype.forEach.call(row.querySelectorAll('option'), function (o) {
+						o.selected = false;
+					});
+				} else {
+					row.parentNode.removeChild(row);
+				}
+				refresh();
+			}
+		});
+
+		// Filter the long country list down as the user types.
+		rows.addEventListener('input', function (e) {
+			if (e.target.classList.contains('gtlm-geo-filter')) {
+				var row = e.target.closest('tr.gtlm-geo-rule');
+				var select = row && row.querySelector('.gtlm-geo-countries');
+				if (!select) {
+					return;
+				}
+				var term = e.target.value.trim().toLowerCase();
+				Array.prototype.forEach.call(select.options, function (o) {
+					o.hidden = term !== '' && !o.selected && o.text.toLowerCase().indexOf(term) === -1;
+				});
+				return;
+			}
+
+			if (e.target.classList.contains('gtlm-geo-url')) {
+				renderWarnings();
+				runPreview();
+			}
+		});
+
+		rows.addEventListener('change', function (e) {
+			if (e.target.classList.contains('gtlm-geo-countries')) {
+				refresh();
+			}
+		});
+
+		if (testSelect) {
+			testSelect.addEventListener('change', runPreview);
+		}
+		if (fallback) {
+			fallback.addEventListener('change', runPreview);
+		}
+
+		refresh();
+	})();
+
+	// "Check Detection" on the settings screen.
+	(function () {
+		var btn = document.getElementById('gtlm-geo-check-btn');
+		var out = document.getElementById('gtlm-geo-check-result');
+		var sim = document.getElementById('gtlm-geo-check-simulate');
+
+		if (!btn || !out || !window.gtlmAdmin) {
+			return;
+		}
+
+		var i18n = window.gtlmAdmin.i18n || {};
+
+		function row(cells, header) {
+			var tr = document.createElement('tr');
+			cells.forEach(function (text) {
+				var cell = document.createElement(header ? 'th' : 'td');
+				if (text instanceof Node) {
+					cell.appendChild(text);
+				} else {
+					cell.textContent = text;
+				}
+				tr.appendChild(cell);
+			});
+			return tr;
+		}
+
+		function badge(text, ok) {
+			var span = document.createElement('span');
+			span.className = 'gtlm-status ' + (ok ? 'gtlm-status--active' : 'gtlm-status--inactive');
+			span.textContent = text;
+			return span;
+		}
+
+		btn.addEventListener('click', function () {
+			btn.disabled = true;
+			out.hidden = false;
+			out.textContent = i18n.geoChecking || 'Checking…';
+
+			var body = new URLSearchParams();
+			body.append('action', 'gtlm_geo_check');
+			body.append('nonce', btn.getAttribute('data-nonce') || '');
+			body.append('simulate', sim ? sim.value : '');
+
+			window
+				.fetch(window.gtlmAdmin.ajaxUrl, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: body.toString()
+				})
+				.then(function (r) {
+					return r.json();
+				})
+				.then(function (res) {
+					btn.disabled = false;
+					out.innerHTML = '';
+
+					if (!res || !res.success) {
+						out.appendChild(
+							row([(res && res.data && res.data.message) || i18n.saveFailed || 'Check failed.'])
+						);
+						return;
+					}
+
+					var d = res.data;
+
+					var summary = document.createElement('p');
+					if (d.country) {
+						summary.appendChild(badge(d.country, true));
+						summary.appendChild(
+							document.createTextNode(' ' + d.label + ' — ' + (i18n.geoVia || 'via') + ' ' + d.source)
+						);
+					} else {
+						summary.appendChild(badge(i18n.geoNone || 'No country on this request', false));
+						var why = document.createElement('span');
+						why.className = 'description';
+						why.textContent =
+							' ' +
+							(d.proxies && d.proxies.length
+								? (i18n.geoProxyNoCountry || 'in front: %s — but it sent no country header').replace(
+										'%s',
+										d.proxies.join(', ')
+								  )
+								: i18n.geoNoProxy || 'nothing is proxying this site, so none is expected here');
+						summary.appendChild(why);
+					}
+					out.appendChild(summary);
+
+					// The part that works without a CDN: did detection resolve a
+					// country we deliberately sent to ourselves?
+					if (d.loopback) {
+						var lp = document.createElement('p');
+						if (d.loopback.ok && d.loopback.overridden) {
+							// Best possible outcome: the edge rewrote our forged
+							// header, proving both detection and un-forgeability.
+							lp.appendChild(badge(i18n.geoSelfTestPass || 'Self-test passed', true));
+							lp.appendChild(
+								document.createTextNode(
+									' ' +
+										(i18n.geoSelfTestOverridden ||
+											'sent %1$s as %2$s, and your CDN replaced it with %3$s. Detection works, and the country header cannot be forged by a visitor.')
+											.replace('%1$s', d.loopback.sent)
+											.replace('%2$s', d.loopback.header)
+											.replace('%3$s', d.loopback.detected)
+								)
+							);
+						} else if (d.loopback.ok) {
+							lp.appendChild(badge(i18n.geoSelfTestPass || 'Self-test passed', true));
+							lp.appendChild(
+								document.createTextNode(
+									' ' +
+										(i18n.geoSelfTestOk ||
+											'sent %1$s as %2$s to this site and the plugin detected %1$s. Detection works; it is only waiting on a CDN to supply real visitor countries.')
+											.replace(/%1\$s/g, d.loopback.sent)
+											.replace('%2$s', d.loopback.header)
+								)
+							);
+						} else {
+							lp.appendChild(badge(i18n.geoSelfTestFail || 'Self-test inconclusive', false));
+							lp.appendChild(
+								document.createTextNode(
+									' ' +
+										(d.loopback.message ||
+											(i18n.geoSelfTestMismatch || 'sent %1$s but the plugin read %2$s.')
+												.replace('%1$s', d.loopback.sent)
+												.replace('%2$s', d.loopback.detected || '—'))
+								)
+							);
+						}
+						out.appendChild(lp);
+					}
+
+					if (!d.enabled) {
+						var off = document.createElement('p');
+						off.className = 'description';
+						off.textContent =
+							i18n.geoDisabled ||
+							'Geolocation is currently disabled, so links ignore their rules. Tick "Enable Geolocation" and save.';
+						out.appendChild(off);
+					}
+
+					var table = document.createElement('table');
+					table.className = 'widefat striped gtlm-geo-check-table';
+					var thead = document.createElement('thead');
+					thead.appendChild(
+						row(
+							[
+								i18n.geoSource || 'Source',
+								i18n.geoVariable || 'Request variable',
+								i18n.geoValue || 'Value'
+							],
+							true
+						)
+					);
+					table.appendChild(thead);
+
+					var tbody = document.createElement('tbody');
+					d.sources.forEach(function (s) {
+						var value = s.present
+							? s.raw + (s.normalized ? '' : ' (' + (i18n.geoUnusable || 'not a usable country code') + ')')
+							: '—';
+						tbody.appendChild(row([s.source, s.key, value]));
+					});
+					table.appendChild(tbody);
+					out.appendChild(table);
+
+					if (d.simulate) {
+						var p = document.createElement('p');
+						if (d.simulate.valid) {
+							p.appendChild(badge(d.simulate.code, true));
+							p.appendChild(
+								document.createTextNode(
+									' ' + d.simulate.label + ' — ' + (i18n.geoUsable || 'valid in a rule')
+								)
+							);
+						} else {
+							p.appendChild(badge(d.simulate.input, false));
+							p.appendChild(
+								document.createTextNode(
+									' ' + (i18n.geoNotUsable || 'is not a country code you can target')
+								)
+							);
+						}
+						out.appendChild(p);
+					}
+				})
+				.catch(function () {
+					btn.disabled = false;
+					out.textContent = i18n.saveFailed || 'Check failed.';
+				});
+		});
+	})();
+
 	// Keyboard shortcut: "/" to focus search.
 	document.addEventListener('keydown', function (e) {
 		if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) {

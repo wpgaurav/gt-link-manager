@@ -18,7 +18,31 @@ class GTLM_DB {
 	/**
 	 * Column list used in SELECT statements.
 	 */
-	private const LINK_COLUMNS = 'id, name, slug, url, redirect_type, rel, noindex, is_active, link_mode, regex_replacement, priority, category_id, tags, notes, trashed_at, created_at, updated_at';
+	private const LINK_COLUMNS = 'id, name, slug, url, redirect_type, rel, noindex, is_active, link_mode, regex_replacement, priority, geo_mode, geo_rules, category_id, tags, notes, trashed_at, created_at, updated_at';
+
+	/**
+	 * wpdb placeholder per writable column.
+	 *
+	 * Keyed so insert/update formats are derived from the payload rather than
+	 * hand-maintained positionally.
+	 */
+	private const COLUMN_FORMATS = array(
+		'name'              => '%s',
+		'slug'              => '%s',
+		'url'               => '%s',
+		'redirect_type'     => '%d',
+		'rel'               => '%s',
+		'noindex'           => '%d',
+		'is_active'         => '%d',
+		'link_mode'         => '%s',
+		'regex_replacement' => '%s',
+		'priority'          => '%d',
+		'geo_mode'          => '%s',
+		'geo_rules'         => '%s',
+		'category_id'       => '%d',
+		'tags'              => '%s',
+		'notes'             => '%s',
+	);
 
 	/**
 	 * @return string
@@ -77,7 +101,7 @@ class GTLM_DB {
 		global $wpdb;
 
 		$insert = $this->normalize_link_for_write( $data );
-		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%s' );
+		$format = $this->formats_for( $insert );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$result = $wpdb->insert( self::links_table(), $insert, $format );
@@ -112,7 +136,7 @@ class GTLM_DB {
 		global $wpdb;
 
 		$update = $this->normalize_link_for_write( $data );
-		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%s' );
+		$format = $this->formats_for( $update );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->update(
@@ -509,9 +533,14 @@ class GTLM_DB {
 		}
 
 		if ( ! empty( $filters['link_mode'] ) ) {
-			$mode = $this->sanitize_link_mode( (string) $filters['link_mode'] );
+			$mode     = $this->sanitize_link_mode( (string) $filters['link_mode'] );
 			$sql     .= ' AND link_mode = %s';
 			$params[] = $mode;
+		}
+
+		if ( ! empty( $filters['geo_mode'] ) ) {
+			$sql     .= ' AND geo_mode = %s';
+			$params[] = $this->sanitize_geo_mode( (string) $filters['geo_mode'] );
 		}
 
 		if ( ! empty( $filters['m'] ) ) {
@@ -741,9 +770,16 @@ class GTLM_DB {
 		$row['link_mode']         = $this->sanitize_link_mode( (string) ( $row['link_mode'] ?? 'standard' ) );
 		$row['regex_replacement'] = sanitize_text_field( (string) ( $row['regex_replacement'] ?? '' ) );
 		$row['priority']          = (int) ( $row['priority'] ?? 10 );
+		$row['geo_mode']          = $this->sanitize_geo_mode( (string) ( $row['geo_mode'] ?? 'off' ) );
 		$row['rel']               = $this->sanitize_rel_string( (string) $row['rel'] );
 		$row['url']               = esc_url_raw( (string) $row['url'] );
 		$row['trashed_at']        = isset( $row['trashed_at'] ) ? (string) $row['trashed_at'] : null;
+
+		// geo_rules stays a raw JSON string here on purpose. Decoding it would
+		// cost every link read — including the redirect hot path and list
+		// tables — for a field only geo-enabled links ever use. GTLM_Geo
+		// decodes lazily, so links with geo_mode 'off' never pay for it.
+		$row['geo_rules'] = isset( $row['geo_rules'] ) ? (string) $row['geo_rules'] : '';
 
 		// Only sanitize_title for standard links; direct/regex slugs need special characters preserved.
 		if ( 'standard' === $row['link_mode'] ) {
@@ -762,6 +798,7 @@ class GTLM_DB {
 	private function normalize_link_for_write( array $data ): array {
 		$rel       = isset( $data['rel'] ) ? $this->sanitize_rel_string( (string) $data['rel'] ) : '';
 		$link_mode = $this->sanitize_link_mode( (string) ( $data['link_mode'] ?? 'standard' ) );
+		$geo_mode  = $this->sanitize_geo_mode( (string) ( $data['geo_mode'] ?? 'off' ) );
 
 		// Standard links use sanitize_title; direct/regex links preserve special characters.
 		if ( 'standard' === $link_mode ) {
@@ -781,6 +818,8 @@ class GTLM_DB {
 			'link_mode'         => $link_mode,
 			'regex_replacement' => sanitize_text_field( (string) ( $data['regex_replacement'] ?? '' ) ),
 			'priority'          => max( 0, (int) ( $data['priority'] ?? 10 ) ),
+			'geo_mode'          => $geo_mode,
+			'geo_rules'         => 'off' === $geo_mode ? '' : GTLM_Geo::encode_rules( $data['geo_rules'] ?? '' ),
 			'category_id'       => absint( $data['category_id'] ?? 0 ),
 			'tags'              => sanitize_text_field( (string) ( $data['tags'] ?? '' ) ),
 			'notes'             => sanitize_textarea_field( (string) ( $data['notes'] ?? '' ) ),
@@ -857,6 +896,27 @@ class GTLM_DB {
 	private function sanitize_link_mode( string $mode ): string {
 		$allowed = array( 'standard', 'direct', 'regex' );
 		return in_array( $mode, $allowed, true ) ? $mode : 'standard';
+	}
+
+	private function sanitize_geo_mode( string $mode ): string {
+		$allowed = array( 'off', 'targeted' );
+		return in_array( $mode, $allowed, true ) ? $mode : 'off';
+	}
+
+	/**
+	 * Derive wpdb placeholders for a write payload.
+	 *
+	 * @param array<string, mixed> $row Payload from normalize_link_for_write().
+	 * @return array<int, string>
+	 */
+	private function formats_for( array $row ): array {
+		$formats = array();
+
+		foreach ( array_keys( $row ) as $column ) {
+			$formats[] = self::COLUMN_FORMATS[ $column ] ?? '%s';
+		}
+
+		return $formats;
 	}
 
 	private function sanitize_slug( string $slug ): string {

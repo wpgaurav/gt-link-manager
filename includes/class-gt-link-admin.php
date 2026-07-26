@@ -40,6 +40,8 @@ class GTLM_Admin {
 		add_filter( 'set-screen-option', array( $this, 'set_screen_option' ), 10, 3 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_gtlm_quick_edit', array( $this, 'ajax_quick_edit' ) );
+		add_action( 'wp_ajax_gtlm_geo_check', array( $this, 'ajax_geo_check' ) );
+		add_action( 'admin_init', array( $this, 'register_privacy_content' ) );
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_new_link' ), 80 );
 		add_filter( 'dashboard_glance_items', array( $this, 'dashboard_glance_items' ) );
 		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
@@ -151,11 +153,44 @@ class GTLM_Admin {
 				'advancedEnabled' => ! empty( $this->settings->all()['enable_advanced_redirects'] ),
 				'categories'      => $categories_data,
 				'highlight'       => isset( $_GET['highlight'] ) ? absint( $_GET['highlight'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				// The rule preview expands the EU group client-side, so it needs
+				// the same membership list the server matches against.
+				'euCountries'     => array_values( (array) ( GTLM_Geo::groups()['EU'] ?? array() ) ),
 				'i18n'            => array(
-					'saved'      => __( 'Saved', 'gt-link-manager' ),
-					'saveFailed' => __( 'Save failed', 'gt-link-manager' ),
-					'copied'     => __( 'Copied', 'gt-link-manager' ),
-					'copyUrl'    => __( 'Copy URL', 'gt-link-manager' ),
+					'saved'                 => __( 'Saved', 'gt-link-manager' ),
+					'saveFailed'            => __( 'Save failed', 'gt-link-manager' ),
+					'copied'                => __( 'Copied', 'gt-link-manager' ),
+					'copyUrl'               => __( 'Copy URL', 'gt-link-manager' ),
+					'geoNoCountries'        => __( 'No countries selected yet — this rule will be ignored.', 'gt-link-manager' ),
+					'geoRemoveCountry'      => __( 'Remove this country', 'gt-link-manager' ),
+					/* translators: %s: country name */
+					'geoRemoveNamed'        => __( 'Remove %s', 'gt-link-manager' ),
+					'geoShadowed'           => __( 'Listed more than once, so only the highest rule applies:', 'gt-link-manager' ),
+					'geoMissingUrl'         => __( 'A rule has countries but no destination URL, so it will be discarded on save.', 'gt-link-manager' ),
+					'geoRule'               => __( 'rule', 'gt-link-manager' ),
+					'geo404'                => __( '404 — blocked', 'gt-link-manager' ),
+					'geoMainUrl'            => __( 'the main Destination URL', 'gt-link-manager' ),
+					'geoChecking'           => __( 'Checking…', 'gt-link-manager' ),
+					'geoVia'                => __( 'via', 'gt-link-manager' ),
+					'geoNone'               => __( 'No country on this request', 'gt-link-manager' ),
+					'geoDisabled'           => __( 'Geolocation is currently disabled, so links ignore their rules. Tick "Enable Geolocation" and save.', 'gt-link-manager' ),
+					'geoSource'             => __( 'Source', 'gt-link-manager' ),
+					'geoVariable'           => __( 'Request variable', 'gt-link-manager' ),
+					'geoValue'              => __( 'Value', 'gt-link-manager' ),
+					'geoUnusable'           => __( 'not a usable country code', 'gt-link-manager' ),
+					'geoNoProxy'            => __( 'nothing is proxying this site, so none is expected here', 'gt-link-manager' ),
+					/* translators: %s: comma-separated proxy names */
+					'geoProxyNoCountry'     => __( 'in front: %s — but it sent no country header', 'gt-link-manager' ),
+					'geoSelfTestPass'       => __( 'Self-test passed', 'gt-link-manager' ),
+					'geoSelfTestFail'       => __( 'Self-test inconclusive', 'gt-link-manager' ),
+					/* translators: 1: country code, 2: header name */
+					'geoSelfTestOk'         => __( 'sent %1$s as %2$s to this site and the plugin detected %1$s. Detection works; it is only waiting on a CDN to supply real visitor countries.', 'gt-link-manager' ),
+					/* translators: 1: country code sent, 2: country code detected */
+					'geoSelfTestMismatch'   => __( 'sent %1$s but the plugin read %2$s.', 'gt-link-manager' ),
+					/* translators: 1: country code sent, 2: header name, 3: country code the CDN substituted */
+					'geoSelfTestOverridden' => __( 'sent %1$s as %2$s, and your CDN replaced it with %3$s. Detection works, and the country header cannot be forged by a visitor.', 'gt-link-manager' ),
+					'geoUsable'             => __( 'valid in a rule', 'gt-link-manager' ),
+					'geoNotUsable'          => __( 'is not a country code you can target', 'gt-link-manager' ),
 				),
 			)
 		);
@@ -228,6 +263,182 @@ class GTLM_Admin {
 				'category_id'   => (int) ( $updated_link['category_id'] ?? 0 ),
 				'is_active'     => (int) ( $updated_link['is_active'] ?? 1 ),
 			)
+		);
+	}
+
+	/**
+	 * Add a suggested privacy policy section to the WordPress Privacy Guide.
+	 *
+	 * Geolocation is the only part of the plugin that touches visitor data, and
+	 * it does so without storing anything — worth stating explicitly, because
+	 * "geolocation" reads as invasive when it usually isn't here.
+	 */
+	public function register_privacy_content(): void {
+		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+			return;
+		}
+
+		$content =
+			'<p>' . esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts, set cookies, or add tracking scripts.', 'gt-link-manager' ) . '</p>' .
+			'<h3>' . esc_html__( 'Redirects', 'gt-link-manager' ) . '</h3>' .
+			'<p>' . esc_html__( 'When a visitor follows a short link, the plugin looks up the destination and issues an HTTP redirect. It does not log the request, the visitor\'s IP address, or the referring page.', 'gt-link-manager' ) . '</p>' .
+			'<h3>' . esc_html__( 'Geolocation targeting', 'gt-link-manager' ) . '</h3>' .
+			'<p>' . esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never reads or processes the visitor\'s IP address, never contacts an external geolocation service, and never stores or transmits the country. The value exists only for the duration of that single request and is used solely to choose which URL to redirect to.', 'gt-link-manager' ) . '</p>' .
+			'<p>' . esc_html__( 'Because the country is derived from data your CDN already collects, the relevant disclosure usually belongs with your CDN provider rather than with this plugin. Check your CDN\'s own privacy documentation.', 'gt-link-manager' ) . '</p>' .
+			'<p>' . esc_html__( 'Note: if you have added click tracking or analytics through the plugin\'s gtlm_before_redirect hook, that code receives the detected country and may store or transmit it. Any such storage is the responsibility of the integration you added, not of this plugin.', 'gt-link-manager' ) . '</p>';
+
+		wp_add_privacy_policy_content( __( 'GT Link Manager', 'gt-link-manager' ), $content );
+	}
+
+	/**
+	 * Report what geolocation detection sees, for the settings screen.
+	 *
+	 * Two separate questions, answered separately: what the current request
+	 * actually carries (does the CDN forward a country at all?), and what a
+	 * given country code would normalize to (does a rule target work?).
+	 */
+	public function ajax_geo_check(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to do this.', 'gt-link-manager' ) ), 403 );
+		}
+
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( (string) wp_unslash( $_POST['nonce'] ) ), 'gtlm_geo_check' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed. Reload the page and try again.', 'gt-link-manager' ) ), 400 );
+		}
+
+		GTLM_Geo::reset();
+
+		$rows = array();
+		foreach ( GTLM_Geo::sources() as $key => $label ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+			$raw = isset( $_SERVER[ $key ] ) ? (string) wp_unslash( $_SERVER[ $key ] ) : '';
+
+			$rows[] = array(
+				'source'     => $label,
+				'key'        => $key,
+				'present'    => '' !== $raw,
+				'raw'        => '' !== $raw ? sanitize_text_field( mb_substr( $raw, 0, 40 ) ) : '',
+				'normalized' => GTLM_Geo::normalize_code( $raw ),
+			);
+		}
+
+		$country = GTLM_Geo::country();
+		$source  = GTLM_Geo::source();
+
+		$simulate = isset( $_POST['simulate'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['simulate'] ) ) : '';
+		$sim      = null;
+		if ( '' !== $simulate ) {
+			$code = GTLM_Geo::normalize_code( $simulate );
+			$sim  = array(
+				'input' => strtoupper( $simulate ),
+				'code'  => $code,
+				'valid' => '' !== $code && GTLM_Geo::is_valid_target( $code ),
+				'label' => '' !== $code ? GTLM_Geo::label( $code ) : '',
+			);
+		}
+
+		// Detection is memoized per request, and the loopback below resets it
+		// on its own request — but this one must be restored for the response.
+		$proxies = GTLM_Geo::proxy_signals();
+		$loop    = $this->run_geo_loopback( '' !== $simulate ? strtoupper( $simulate ) : 'SE' );
+
+		wp_send_json_success(
+			array(
+				'enabled'  => GTLM_Geo::is_enabled(),
+				'country'  => $country,
+				'label'    => '' !== $country ? GTLM_Geo::label( $country ) : '',
+				'source'   => $source,
+				'method'   => (string) $this->settings->all()['geo_detection_method'],
+				'sources'  => $rows,
+				'proxies'  => $proxies,
+				'simulate' => $sim,
+				'loopback' => $loop,
+			)
+		);
+	}
+
+	/**
+	 * Send the site a request carrying a country header and report what the
+	 * plugin detected at the other end.
+	 *
+	 * This is the check that works without a CDN: it proves the detection
+	 * pipeline itself functions on this server, which "no country on this
+	 * request" alone can never tell you.
+	 *
+	 * @param string $country Country code to send.
+	 * @return array<string, mixed>
+	 */
+	private function run_geo_loopback( string $country ): array {
+		$country = GTLM_Geo::normalize_code( $country );
+		if ( '' === $country ) {
+			$country = 'SE';
+		}
+
+		$token  = GTLM_Geo::issue_probe_token();
+		$method = (string) $this->settings->all()['geo_detection_method'];
+		$header = 'CF-IPCountry';
+		if ( 'custom' === $method ) {
+			$custom = (string) $this->settings->all()['geo_custom_header'];
+			if ( '' !== $custom ) {
+				$header = str_replace( '_', '-', $custom );
+			}
+		}
+
+		$response = wp_remote_get(
+			add_query_arg( 'token', $token, rest_url( 'gt-link-manager/v1/geo-probe' ) ),
+			array(
+				'timeout'     => 10,
+				'redirection' => 0,
+				'headers'     => array( $header => $country ),
+				'sslverify'   => false,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			// The token is never spent when the request itself fails, so retire it.
+			GTLM_Geo::consume_probe_token( $token );
+
+			return array(
+				'ok'      => false,
+				'sent'    => $country,
+				'header'  => $header,
+				'message' => $response->get_error_message(),
+			);
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+
+		if ( 200 !== $code || ! is_array( $body ) ) {
+			return array(
+				'ok'      => false,
+				'sent'    => $country,
+				'header'  => $header,
+				'message' => sprintf(
+					/* translators: %d: HTTP status code */
+					__( 'The loopback request returned HTTP %d. If your site blocks server-to-self requests, this check cannot run — it does not mean geolocation is broken.', 'gt-link-manager' ),
+					$code
+				),
+			);
+		}
+
+		$detected = isset( $body['country'] ) ? (string) $body['country'] : '';
+
+		// A mismatch is not a failure when the site sits behind a CDN: the
+		// loopback leaves the server, reaches the edge, and the edge rewrites
+		// the country header to the server's own location. Detection resolving
+		// a real country that is not the one we sent is the strongest possible
+		// evidence the pipeline works *and* that the header cannot be forged.
+		$echoed     = ( $detected === $country );
+		$overridden = ( '' !== $detected && ! $echoed );
+
+		return array(
+			'ok'         => $echoed || $overridden,
+			'overridden' => $overridden,
+			'sent'       => $country,
+			'header'     => $header,
+			'detected'   => $detected,
+			'source'     => isset( $body['source'] ) ? (string) $body['source'] : '',
 		);
 	}
 
@@ -351,6 +562,8 @@ class GTLM_Admin {
 			'link_mode'         => $link_mode,
 			'regex_replacement' => sanitize_text_field( (string) wp_unslash( $_POST['regex_replacement'] ?? '' ) ),
 			'priority'          => max( 0, absint( $_POST['priority'] ?? 10 ) ),
+			'geo_mode'          => 'targeted' === sanitize_key( (string) wp_unslash( $_POST['geo_mode'] ?? 'off' ) ) ? 'targeted' : 'off',
+			'geo_rules'         => $this->geo_rules_from_post(),
 			'category_id'       => absint( $_POST['category_id'] ?? 0 ),
 			'tags'              => sanitize_text_field( (string) wp_unslash( $_POST['tags'] ?? '' ) ),
 			'notes'             => sanitize_textarea_field( (string) wp_unslash( $_POST['notes'] ?? '' ) ),
@@ -377,7 +590,7 @@ class GTLM_Admin {
 
 		// Block reserved WordPress paths for direct links.
 		if ( 'direct' === $link_mode && '' !== $data['slug'] ) {
-			$reserved = array( 'wp-admin', 'wp-content', 'wp-includes', 'wp-login.php', 'wp-cron.php', 'wp-json', 'xmlrpc.php', 'feed', 'comments' );
+			$reserved      = array( 'wp-admin', 'wp-content', 'wp-includes', 'wp-login.php', 'wp-cron.php', 'wp-json', 'xmlrpc.php', 'feed', 'comments' );
 			$first_segment = explode( '/', trim( $data['slug'], '/' ) )[0];
 			if ( in_array( strtolower( $first_segment ), $reserved, true ) ) {
 				$this->redirect_with_notice(
@@ -486,12 +699,16 @@ class GTLM_Admin {
 		$rel   = $this->sanitize_rel_from_post( wp_unslash( $_POST['default_rel'] ?? array() ) );
 		$saved = $this->settings->update(
 			array(
-				'base_prefix'                => sanitize_text_field( (string) wp_unslash( $_POST['base_prefix'] ?? 'go' ) ),
-				'default_redirect_type'      => absint( $_POST['default_redirect_type'] ?? 301 ),
-				'default_rel'                => '' !== $rel ? explode( ',', $rel ) : array(),
-				'default_noindex'            => ! empty( $_POST['default_noindex'] ) ? 1 : 0,
-				'delete_data_on_uninstall'   => ! empty( $_POST['delete_data_on_uninstall'] ) ? 1 : 0,
-				'enable_advanced_redirects'  => ! empty( $_POST['enable_advanced_redirects'] ) ? 1 : 0,
+				'base_prefix'               => sanitize_text_field( (string) wp_unslash( $_POST['base_prefix'] ?? 'go' ) ),
+				'default_redirect_type'     => absint( $_POST['default_redirect_type'] ?? 301 ),
+				'default_rel'               => '' !== $rel ? explode( ',', $rel ) : array(),
+				'default_noindex'           => ! empty( $_POST['default_noindex'] ) ? 1 : 0,
+				'delete_data_on_uninstall'  => ! empty( $_POST['delete_data_on_uninstall'] ) ? 1 : 0,
+				'enable_advanced_redirects' => ! empty( $_POST['enable_advanced_redirects'] ) ? 1 : 0,
+				'enable_geo_targeting'      => ! empty( $_POST['enable_geo_targeting'] ) ? 1 : 0,
+				'geo_detection_method'      => sanitize_key( (string) wp_unslash( $_POST['geo_detection_method'] ?? 'auto' ) ),
+				'geo_custom_header'         => sanitize_text_field( (string) wp_unslash( $_POST['geo_custom_header'] ?? '' ) ),
+				'geo_debug_header'          => ! empty( $_POST['geo_debug_header'] ) ? 1 : 0,
 			)
 		);
 
@@ -557,6 +774,15 @@ class GTLM_Admin {
 			}
 		}
 
+		GTLM_Geo::reset();
+		$geo_sources = array();
+		foreach ( GTLM_Geo::sources() as $key => $label ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+			if ( ! empty( $_SERVER[ $key ] ) ) {
+				$geo_sources[] = $label;
+			}
+		}
+
 		return array(
 			'checked_at'  => current_time( 'mysql' ),
 			'prefix'      => $prefix,
@@ -564,6 +790,56 @@ class GTLM_Admin {
 			'rewrite_ok'  => $rule_match,
 			'loopback_ok' => $loopback_ok,
 			'message'     => $loopback_message,
+			'geo_enabled' => GTLM_Geo::is_enabled(),
+			'geo_country' => GTLM_Geo::country(),
+			'geo_source'  => GTLM_Geo::source(),
+			'geo_sources' => $geo_sources,
+		);
+	}
+
+	/**
+	 * Assemble geo rules from the editor's parallel POST arrays.
+	 *
+	 * GTLM_Geo::encode_rules() does the validation, so anything malformed is
+	 * dropped rather than stored.
+	 */
+	private function geo_rules_from_post(): string {
+		// Nonce verified by the caller via check_admin_referer( 'gtlm_link_save' ),
+		// and every value below is validated by GTLM_Geo::encode_rules(), which
+		// drops anything that is not a known country code or a valid URL.
+		// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		// The screen posts a pre-encoded value when the geo UI is not rendered.
+		if ( isset( $_POST['geo_rules_json'] ) && ! isset( $_POST['geo_urls'] ) ) {
+			return GTLM_Geo::encode_rules( wp_unslash( $_POST['geo_rules_json'] ) );
+		}
+
+		$urls = isset( $_POST['geo_urls'] ) ? (array) wp_unslash( $_POST['geo_urls'] ) : array();
+		if ( empty( $urls ) ) {
+			return '';
+		}
+
+		$countries = isset( $_POST['geo_countries'] ) ? (array) wp_unslash( $_POST['geo_countries'] ) : array();
+		$types     = isset( $_POST['geo_types'] ) ? (array) wp_unslash( $_POST['geo_types'] ) : array();
+		$fallback  = 'block' === sanitize_key( (string) wp_unslash( $_POST['geo_fallback'] ?? 'default' ) ) ? 'block' : 'default';
+
+		// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		$rules = array();
+
+		foreach ( $urls as $i => $url ) {
+			$rules[] = array(
+				'countries'     => $countries[ $i ] ?? array(),
+				'url'           => (string) $url,
+				'redirect_type' => (int) ( $types[ $i ] ?? 0 ),
+			);
+		}
+
+		return GTLM_Geo::encode_rules(
+			array(
+				'rules'    => $rules,
+				'fallback' => $fallback,
+			)
 		);
 	}
 

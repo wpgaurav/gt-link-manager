@@ -50,6 +50,8 @@ class GTLM_Activator {
 			link_mode VARCHAR(20) NOT NULL DEFAULT 'standard',
 			regex_replacement VARCHAR(500) DEFAULT '',
 			priority INT NOT NULL DEFAULT 10,
+			geo_mode VARCHAR(20) NOT NULL DEFAULT 'off',
+			geo_rules LONGTEXT,
 			category_id BIGINT(20) UNSIGNED DEFAULT NULL,
 			tags VARCHAR(255) DEFAULT '',
 			notes TEXT,
@@ -62,7 +64,8 @@ class GTLM_Activator {
 			KEY redirect_type (redirect_type),
 			KEY is_active (is_active),
 			KEY trashed_at (trashed_at),
-			KEY link_mode (link_mode)
+			KEY link_mode (link_mode),
+			KEY geo_mode (geo_mode)
 		) {$charset_collate};";
 
 		$sql_cats = "CREATE TABLE {$cats_table} (
@@ -119,6 +122,16 @@ class GTLM_Activator {
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"UPDATE {$table} SET link_mode = %s WHERE link_mode IS NULL OR link_mode = ''",
 				'standard'
+			)
+		);
+
+		// Backfill: rows created before 1.7.0 have NULL geo_mode.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$wpdb->query(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET geo_mode = %s WHERE geo_mode IS NULL OR geo_mode = ''",
+				'off'
 			)
 		);
 
