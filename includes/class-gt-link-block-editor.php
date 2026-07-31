@@ -37,7 +37,7 @@ class GTLM_Block_Editor {
 		$asset = file_exists( $asset_file )
 			? require $asset_file
 			: array(
-				'dependencies' => array( 'wp-block-editor', 'wp-components', 'wp-element', 'wp-rich-text', 'wp-i18n', 'wp-api-fetch', 'wp-dom-ready' ),
+				'dependencies' => array( 'wp-block-editor', 'wp-components', 'wp-element', 'wp-rich-text', 'wp-i18n', 'wp-api-fetch', 'wp-dom-ready', 'wp-hooks' ),
 				'version'      => filemtime( $build_dir . 'index.js' ),
 			);
 

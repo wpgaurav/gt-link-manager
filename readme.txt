@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -144,6 +144,10 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 5. **Import/Export** — CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.7.1 =
+* Fixed: The GT Link toolbar now works with the core Button block by updating the Button's native URL and rel attributes.
+* Improved: Rich text and Button controls now share the same GT Link search popover, normalize rel attributes, and preserve `noopener` for buttons that open in a new tab.
 
 = 1.7.0 =
 * New: Geolocation targeting. Any link can route visitors to a different destination based on their country, with rules evaluated in order and the first country match winning.
@@ -304,6 +308,9 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.7.1 =
+Fixes the GT Link inserter for the core Button block while preserving the Button block's native link settings.
 
 = 1.7.0 =
 Adds geolocation targeting: route each link by visitor country using the header your CDN already sends — no GeoIP database, no external API, no added latency. Two columns are added to the links table automatically on upgrade; existing links are untouched and keep redirecting exactly as before. Enable it under GT Links → Settings → Geolocation Targeting.

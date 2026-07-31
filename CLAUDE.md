@@ -79,7 +79,7 @@ Permission: `edit_posts` capability, filterable via `gtlm_capabilities`.
 **Write args must not declare `default`.** `WP_REST_Request` materialises a schema default into the request, so `get_param()` returns it for an omitted field and `sanitize_link_payload()` can no longer distinguish "not supplied" from "explicitly set" — which made every PATCH reset the fields it omitted. Per-field fallbacks belong in `sanitize_link_payload()` (existing row on update, documented default on create).
 
 ### Block editor integration
-The link inserter registers a RichText format type (`gt-link-manager/link-inserter`) that adds a toolbar button. Clicking it opens a Popover that searches links via the REST API and inserts them as `core/link` formats. Source uses `createElement` (aliased as `h`), not JSX.
+The link inserter registers a RichText format type (`gt-link-manager/link-inserter`) that adds a toolbar button. Clicking it opens a Popover that searches links via the REST API and inserts them as `core/link` formats. Because `core/button` stores its destination in block attributes rather than an inline format, an `editor.BlockEdit` extension adds the same search control and writes the selected branded URL and relation tokens to the button's native `url` and `rel` attributes. Source uses `createElement` (aliased as `h`), not JSX.
 
 ### Developer hooks
 
