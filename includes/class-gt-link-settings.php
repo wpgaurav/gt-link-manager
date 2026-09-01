@@ -37,6 +37,8 @@ class GTLM_Settings {
 			'default_rel'               => array(),
 			'default_noindex'           => 0,
 			'delete_data_on_uninstall'  => 0,
+			'trash_retention_days'      => 30,
+			'enable_click_tracking'     => 0,
 			'enable_advanced_redirects' => 0,
 			'enable_geo_targeting'      => 0,
 			'geo_detection_method'      => 'auto',
@@ -73,6 +75,8 @@ class GTLM_Settings {
 		$settings['default_noindex']           = (int) ! empty( $settings['default_noindex'] );
 		$settings['default_rel']               = $this->sanitize_rel_array( $settings['default_rel'] );
 		$settings['delete_data_on_uninstall']  = (int) ! empty( $settings['delete_data_on_uninstall'] );
+		$settings['trash_retention_days']      = $this->sanitize_retention_days( $settings['trash_retention_days'] ?? 30 );
+		$settings['enable_click_tracking']     = (int) ! empty( $settings['enable_click_tracking'] );
 		$settings['enable_advanced_redirects'] = (int) ! empty( $settings['enable_advanced_redirects'] );
 		$settings['enable_geo_targeting']      = (int) ! empty( $settings['enable_geo_targeting'] );
 		$settings['geo_detection_method']      = $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) );
@@ -116,6 +120,8 @@ class GTLM_Settings {
 			'default_noindex'           => (int) ! empty( $settings['default_noindex'] ),
 			'default_rel'               => $this->sanitize_rel_array( $settings['default_rel'] ?? array() ),
 			'delete_data_on_uninstall'  => (int) ! empty( $settings['delete_data_on_uninstall'] ),
+			'trash_retention_days'      => $this->sanitize_retention_days( $settings['trash_retention_days'] ?? 30 ),
+			'enable_click_tracking'     => (int) ! empty( $settings['enable_click_tracking'] ),
 			'enable_advanced_redirects' => (int) ! empty( $settings['enable_advanced_redirects'] ),
 			'enable_geo_targeting'      => (int) ! empty( $settings['enable_geo_targeting'] ),
 			'geo_detection_method'      => $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) ),
@@ -130,6 +136,32 @@ class GTLM_Settings {
 		}
 
 		return (bool) $updated;
+	}
+
+	/**
+	 * Days to keep trashed links. 0 keeps them until deleted by hand.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	private function sanitize_retention_days( mixed $value ): int {
+		return max( 0, min( 365, absint( $value ) ) );
+	}
+
+	/**
+	 * Whether the opt-in click counter is enabled.
+	 *
+	 * Off by default: with tracking disabled the plugin's privacy statement
+	 * that it does not log requests stays literally true.
+	 */
+	public function click_tracking_enabled(): bool {
+		return ! empty( $this->all()['enable_click_tracking'] );
+	}
+
+	/**
+	 * Retention window for trashed links, in days. 0 means keep forever.
+	 */
+	public function trash_retention_days(): int {
+		return (int) $this->all()['trash_retention_days'];
 	}
 
 	private function sanitize_prefix( string $prefix ): string {

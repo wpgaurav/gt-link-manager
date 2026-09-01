@@ -210,7 +210,9 @@ class GTLM_Import {
 			exit;
 		}
 
-		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes', 'geo_mode', 'geo_rules' ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
+		// total_clicks is exported for reporting but deliberately not importable:
+		// it is a measured value, not configuration.
+		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes', 'geo_mode', 'geo_rules', 'total_clicks' ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
 
 		$categories = $this->db->get_categories();
 		$cat_map    = array();
@@ -234,6 +236,7 @@ class GTLM_Import {
 					(string) $row['notes'],
 					(string) ( $row['geo_mode'] ?? 'off' ),
 					(string) ( $row['geo_rules'] ?? '' ),
+					(int) ( $row['total_clicks'] ?? 0 ),
 				)
 			);
 		}

@@ -18,7 +18,7 @@ class GTLM_DB {
 	/**
 	 * Column list used in SELECT statements.
 	 */
-	private const LINK_COLUMNS = 'id, name, slug, url, redirect_type, rel, noindex, is_active, link_mode, regex_replacement, priority, geo_mode, geo_rules, category_id, tags, notes, trashed_at, created_at, updated_at';
+	private const LINK_COLUMNS = 'id, name, slug, url, redirect_type, rel, noindex, is_active, link_mode, regex_replacement, priority, geo_mode, geo_rules, category_id, tags, notes, total_clicks, trashed_at, created_at, updated_at';
 
 	/**
 	 * wpdb placeholder per writable column.
@@ -42,6 +42,7 @@ class GTLM_DB {
 		'category_id'       => '%d',
 		'tags'              => '%s',
 		'notes'             => '%s',
+		'total_clicks'      => '%d',
 	);
 
 	/**
@@ -257,6 +258,124 @@ class GTLM_DB {
 	}
 
 	/**
+	 * Increment a link's click counter.
+	 *
+	 * A single atomic UPDATE rather than read-modify-write, so concurrent
+	 * clicks on the same link cannot lose counts. The slug cache is left
+	 * alone on purpose: the counter is not part of redirect resolution, and
+	 * busting the cache on every click would defeat the point of caching.
+	 *
+	 * @param int $id Link ID.
+	 */
+	public function increment_clicks( int $id ): bool {
+		if ( $id <= 0 ) {
+			return false;
+		}
+
+		global $wpdb;
+		$table = self::links_table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET total_clicks = total_clicks + 1 WHERE id = %d",
+				$id
+			)
+		);
+
+		return false !== $result && $result > 0;
+	}
+
+	/**
+	 * Reset one link's click counter, or every link's when no ID is given.
+	 *
+	 * @param int $id Link ID, or 0 for all links.
+	 * @return int Rows affected.
+	 */
+	public function reset_clicks( int $id = 0 ): int {
+		global $wpdb;
+		$table = self::links_table();
+
+		if ( $id > 0 ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$result = $wpdb->query(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"UPDATE {$table} SET total_clicks = 0 WHERE id = %d",
+					$id
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$result = $wpdb->query( "UPDATE {$table} SET total_clicks = 0 WHERE total_clicks > 0" );
+		}
+
+		return false === $result ? 0 : (int) $result;
+	}
+
+	/**
+	 * Permanently delete every trashed link.
+	 *
+	 * Deletes row by row through delete_link() so per-link cache invalidation,
+	 * category counts, and the gtlm_after_delete hook all still fire.
+	 *
+	 * @return int Number of links deleted.
+	 */
+	public function empty_trash(): int {
+		global $wpdb;
+		$table = self::links_table();
+
+		// Table name comes from $wpdb->prefix, never user input; there are no
+		// value placeholders in this query.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = $wpdb->get_col( "SELECT id FROM {$table} WHERE trashed_at IS NOT NULL" );
+
+		$deleted = 0;
+		foreach ( $ids as $id ) {
+			if ( $this->delete_link( (int) $id ) ) {
+				++$deleted;
+			}
+		}
+
+		return $deleted;
+	}
+
+	/**
+	 * Permanently delete links trashed longer ago than the retention window.
+	 *
+	 * @param int $days Retention window in days. 0 or less keeps trash forever.
+	 * @return int Number of links purged.
+	 */
+	public function purge_trash_older_than( int $days ): int {
+		if ( $days <= 0 ) {
+			return 0;
+		}
+
+		global $wpdb;
+		$table  = self::links_table();
+		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT id FROM {$table} WHERE trashed_at IS NOT NULL AND trashed_at < %s",
+				$cutoff
+			)
+		);
+
+		$purged = 0;
+		foreach ( $ids as $id ) {
+			if ( $this->delete_link( (int) $id ) ) {
+				++$purged;
+			}
+		}
+
+		return $purged;
+	}
+
+	/**
 	 * Toggle is_active status for a link.
 	 */
 	public function toggle_active( int $id, bool $active ): bool {
@@ -409,7 +528,7 @@ class GTLM_DB {
 	): array {
 		global $wpdb;
 
-		$allowed_orderby = array( 'id', 'name', 'slug', 'url', 'redirect_type', 'rel', 'category_id', 'is_active', 'link_mode', 'priority', 'created_at', 'updated_at' );
+		$allowed_orderby = array( 'id', 'name', 'slug', 'url', 'redirect_type', 'rel', 'category_id', 'is_active', 'link_mode', 'priority', 'total_clicks', 'created_at', 'updated_at' );
 		$orderby         = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'id';
 		$order           = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
 		$page            = max( 1, $page );
@@ -774,6 +893,7 @@ class GTLM_DB {
 		$row['rel']               = $this->sanitize_rel_string( (string) $row['rel'] );
 		$row['url']               = esc_url_raw( (string) $row['url'] );
 		$row['trashed_at']        = isset( $row['trashed_at'] ) ? (string) $row['trashed_at'] : null;
+		$row['total_clicks']      = (int) ( $row['total_clicks'] ?? 0 );
 
 		// geo_rules stays a raw JSON string here on purpose. Decoding it would
 		// cost every link read — including the redirect hot path and list
@@ -930,7 +1050,7 @@ class GTLM_DB {
 
 	private function sanitize_rel_string( string $rel ): string {
 		$allowed = array( 'nofollow', 'sponsored', 'ugc' );
-		$parts   = array_filter( array_map( 'trim', explode( ',', strtolower( $rel ) ) ) );
+		$parts   = preg_split( '/[\s,]+/', strtolower( $rel ), -1, PREG_SPLIT_NO_EMPTY );
 		$parts   = array_map( 'sanitize_key', $parts );
 		$parts   = array_values( array_intersect( $parts, $allowed ) );
 

@@ -3,7 +3,7 @@
  * Plugin Name:       GT Link Manager
  * Plugin URI:        https://wordpress.org/plugins/gt-link-manager/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
- * Version:           1.7.1
+ * Version:           1.8.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Gaurav Tiwari
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GTLM_VERSION' ) ) {
-	define( 'GTLM_VERSION', '1.7.1' );
+	define( 'GTLM_VERSION', '1.8.0' );
 }
 
 if ( ! defined( 'GTLM_FILE' ) ) {
@@ -65,5 +65,38 @@ function gtlm_bootstrap(): void {
 	GTLM_Admin::init( $db, $settings );
 	GTLM_REST_API::init( $db, $settings );
 	GTLM_Block_Editor::init( $settings );
+
+	add_action( 'gtlm_purge_trash', 'gtlm_run_trash_purge' );
+
+	// Self-heal the schedule for sites that updated in place rather than
+	// deactivating and reactivating.
+	if ( is_admin() && ! wp_next_scheduled( 'gtlm_purge_trash' ) ) {
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'gtlm_purge_trash' );
+	}
 }
 add_action( 'plugins_loaded', 'gtlm_bootstrap' );
+
+/**
+ * Permanently remove links that have outlived the trash retention window.
+ */
+function gtlm_run_trash_purge(): void {
+	$settings = GTLM_Settings::get_instance();
+	$days     = $settings->trash_retention_days();
+
+	if ( $days <= 0 ) {
+		return;
+	}
+
+	$db     = new GTLM_DB();
+	$purged = $db->purge_trash_older_than( $days );
+
+	if ( $purged > 0 ) {
+		/**
+		 * Fires after trashed links are auto-purged.
+		 *
+		 * @param int $purged Number of links removed.
+		 * @param int $days   Retention window used.
+		 */
+		do_action( 'gtlm_trash_purged', $purged, $days );
+	}
+}

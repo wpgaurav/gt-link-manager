@@ -278,10 +278,22 @@ class GTLM_Admin {
 			return;
 		}
 
+		// The redirect paragraph has to describe what the site actually does.
+		// Claiming nothing is logged while the click counter is switched on
+		// would be a false statement in the site's own privacy policy.
+		if ( $this->settings->click_tracking_enabled() ) {
+			$redirect_paragraph =
+				'<p>' . esc_html__( 'When a visitor follows a short link, the plugin looks up the destination and issues an HTTP redirect. It does not log the visitor\'s IP address, user agent, or the referring page.', 'gt-link-manager' ) . '</p>' .
+				'<p>' . esc_html__( 'Click tracking is enabled on this site. The plugin keeps one running total per link, counting how many times that link has been followed. The count is not tied to a visitor, a session, a time, or a location: it is a single number per link and cannot be used to identify anyone or to reconstruct an individual visit.', 'gt-link-manager' ) . '</p>';
+		} else {
+			$redirect_paragraph =
+				'<p>' . esc_html__( 'When a visitor follows a short link, the plugin looks up the destination and issues an HTTP redirect. It does not log the request, the visitor\'s IP address, or the referring page.', 'gt-link-manager' ) . '</p>';
+		}
+
 		$content =
 			'<p>' . esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts, set cookies, or add tracking scripts.', 'gt-link-manager' ) . '</p>' .
 			'<h3>' . esc_html__( 'Redirects', 'gt-link-manager' ) . '</h3>' .
-			'<p>' . esc_html__( 'When a visitor follows a short link, the plugin looks up the destination and issues an HTTP redirect. It does not log the request, the visitor\'s IP address, or the referring page.', 'gt-link-manager' ) . '</p>' .
+			$redirect_paragraph .
 			'<h3>' . esc_html__( 'Geolocation targeting', 'gt-link-manager' ) . '</h3>' .
 			'<p>' . esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never reads or processes the visitor\'s IP address, never contacts an external geolocation service, and never stores or transmits the country. The value exists only for the duration of that single request and is used solely to choose which URL to redirect to.', 'gt-link-manager' ) . '</p>' .
 			'<p>' . esc_html__( 'Because the country is derived from data your CDN already collects, the relevant disclosure usually belongs with your CDN provider rather than with this plugin. Check your CDN\'s own privacy documentation.', 'gt-link-manager' ) . '</p>' .
@@ -462,6 +474,9 @@ class GTLM_Admin {
 		}
 
 		if ( 'gtlm-links' === $page ) {
+			$this->handle_undo_action();
+			$this->handle_bulk_actions();
+			$this->handle_empty_trash_action();
 			$this->handle_link_actions();
 		}
 
@@ -478,6 +493,175 @@ class GTLM_Admin {
 		}
 	}
 
+	/**
+	 * Run bulk actions on admin_init.
+	 *
+	 * Previously these ran from the list table's prepare_items(), which meant
+	 * no success notice, no undo, and a browser refresh silently re-running
+	 * the action. Handling them here follows the core pattern: act, then
+	 * redirect to a clean URL carrying the result.
+	 */
+	private function handle_bulk_actions(): void {
+		$action = '';
+		foreach ( array( 'action', 'action2' ) as $field ) {
+			if ( isset( $_REQUEST[ $field ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$candidate = sanitize_key( (string) wp_unslash( $_REQUEST[ $field ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				if ( '' !== $candidate && '-1' !== $candidate ) {
+					$action = $candidate;
+					break;
+				}
+			}
+		}
+
+		if ( '' === $action || ! str_starts_with( $action, 'bulk_' ) ) {
+			return;
+		}
+
+		if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( (string) wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-gtlm_links' ) ) {
+			return;
+		}
+
+		$link_ids = isset( $_REQUEST['link_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_REQUEST['link_ids'] ) ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$link_ids = array_values( array_filter( $link_ids ) );
+
+		$view         = isset( $_REQUEST['link_status'] ) ? sanitize_key( (string) wp_unslash( $_REQUEST['link_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$redirect_url = admin_url( 'admin.php?page=gtlm-links' );
+		if ( '' !== $view ) {
+			$redirect_url = add_query_arg( 'link_status', $view, $redirect_url );
+		}
+
+		if ( empty( $link_ids ) ) {
+			$this->redirect_with_notice( $redirect_url, 'bulk_none' );
+		}
+
+		$result = $this->run_bulk_action( $action, $link_ids );
+
+		if ( null === $result ) {
+			return;
+		}
+
+		$this->redirect_with_notice(
+			$redirect_url,
+			$result['notice'],
+			$result['undo_ids'],
+			$result['undo_action'],
+			$result['count']
+		);
+	}
+
+	/**
+	 * Apply one bulk action.
+	 *
+	 * @param array<int, int> $link_ids Target links.
+	 * @return array{notice: string, count: int, undo_ids: array<int, int>, undo_action: string}|null
+	 */
+	private function run_bulk_action( string $action, array $link_ids ): ?array {
+		$count    = 0;
+		$affected = array();
+
+		$simple = array(
+			'bulk_trash'            => array(
+				'notice' => 'bulk_trashed',
+				'undo'   => 'restore',
+			),
+			'bulk_restore'          => array(
+				'notice' => 'bulk_restored',
+				'undo'   => 'trash',
+			),
+			'bulk_permanent_delete' => array(
+				'notice' => 'bulk_deleted',
+				'undo'   => '',
+			),
+			'bulk_activate'         => array(
+				'notice' => 'bulk_activated',
+				'undo'   => 'deactivate',
+			),
+			'bulk_deactivate'       => array(
+				'notice' => 'bulk_deactivated',
+				'undo'   => 'activate',
+			),
+		);
+
+		if ( isset( $simple[ $action ] ) ) {
+			foreach ( $link_ids as $id ) {
+				$ok = false;
+				switch ( $action ) {
+					case 'bulk_trash':
+						$ok = $this->db->trash_link( $id );
+						break;
+					case 'bulk_restore':
+						$ok = $this->db->restore_link( $id );
+						break;
+					case 'bulk_permanent_delete':
+						$ok = $this->db->delete_link( $id );
+						break;
+					case 'bulk_activate':
+						$ok = $this->db->toggle_active( $id, true );
+						break;
+					case 'bulk_deactivate':
+						$ok = $this->db->toggle_active( $id, false );
+						break;
+				}
+				if ( $ok ) {
+					++$count;
+					$affected[] = $id;
+				}
+			}
+
+			return array(
+				'notice'      => $simple[ $action ]['notice'],
+				'count'       => $count,
+				'undo_ids'    => $affected,
+				'undo_action' => (string) $simple[ $action ]['undo'],
+			);
+		}
+
+		$rel_map = array(
+			'bulk_rel_none'      => '',
+			'bulk_rel_nofollow'  => 'nofollow',
+			'bulk_rel_sponsored' => 'sponsored',
+			'bulk_rel_ugc'       => 'ugc',
+		);
+
+		foreach ( $link_ids as $id ) {
+			$link = $this->db->get_link_by_id( $id );
+			if ( null === $link ) {
+				continue;
+			}
+
+			if ( in_array( $action, array( 'bulk_301', 'bulk_302', 'bulk_307' ), true ) ) {
+				if ( $this->db->update_link( $id, array_merge( $link, array( 'redirect_type' => (int) str_replace( 'bulk_', '', $action ) ) ) ) ) {
+					++$count;
+				}
+				continue;
+			}
+
+			if ( array_key_exists( $action, $rel_map ) ) {
+				if ( $this->db->update_link( $id, array_merge( $link, array( 'rel' => $rel_map[ $action ] ) ) ) ) {
+					++$count;
+				}
+				continue;
+			}
+
+			if ( 'bulk_set_category' === $action ) {
+				$category_id = isset( $_REQUEST['bulk_category_id'] ) ? absint( $_REQUEST['bulk_category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				if ( $this->db->update_link( $id, array_merge( $link, array( 'category_id' => $category_id ) ) ) ) {
+					++$count;
+				}
+				continue;
+			}
+
+			return null;
+		}
+
+		return array(
+			'notice'      => 'bulk_updated',
+			'count'       => $count,
+			'undo_ids'    => array(),
+			'undo_action' => '',
+		);
+	}
+
 	private function handle_link_actions(): void {
 		if ( ! isset( $_GET['action'], $_GET['link'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
@@ -490,7 +674,7 @@ class GTLM_Admin {
 			return;
 		}
 
-		$allowed = array( 'trash', 'restore', 'permanent_delete', 'activate', 'deactivate' );
+		$allowed = array( 'trash', 'restore', 'permanent_delete', 'activate', 'deactivate', 'reset_clicks' );
 		if ( ! in_array( $action, $allowed, true ) ) {
 			return;
 		}
@@ -502,27 +686,54 @@ class GTLM_Admin {
 		switch ( $action ) {
 			case 'trash':
 				$ok = $this->db->trash_link( $link_id );
-				$this->redirect_with_notice( $redirect_url, $ok ? 'trashed' : 'trash_failed' );
+				$this->redirect_with_notice(
+					$redirect_url,
+					$ok ? 'trashed' : 'trash_failed',
+					$ok ? array( $link_id ) : array(),
+					'restore'
+				);
 				break;
 
 			case 'restore':
 				$ok = $this->db->restore_link( $link_id );
-				$this->redirect_with_notice( add_query_arg( 'link_status', 'trash', $redirect_url ), $ok ? 'restored' : 'restore_failed' );
+				$this->redirect_with_notice(
+					add_query_arg( 'link_status', 'trash', $redirect_url ),
+					$ok ? 'restored' : 'restore_failed',
+					$ok ? array( $link_id ) : array(),
+					'trash'
+				);
 				break;
 
 			case 'permanent_delete':
+				// Not undoable: the row is gone.
 				$ok = $this->db->delete_link( $link_id );
 				$this->redirect_with_notice( add_query_arg( 'link_status', 'trash', $redirect_url ), $ok ? 'deleted' : 'delete_failed' );
 				break;
 
+			case 'reset_clicks':
+				// Not undoable: the previous count is gone once it is zeroed.
+				$ok = $this->db->reset_clicks( $link_id ) > 0;
+				$this->redirect_with_notice( $redirect_url, $ok ? 'clicks_reset' : 'clicks_reset_failed' );
+				break;
+
 			case 'activate':
 				$ok = $this->db->toggle_active( $link_id, true );
-				$this->redirect_with_notice( $redirect_url, $ok ? 'activated' : 'activate_failed' );
+				$this->redirect_with_notice(
+					$redirect_url,
+					$ok ? 'activated' : 'activate_failed',
+					$ok ? array( $link_id ) : array(),
+					'deactivate'
+				);
 				break;
 
 			case 'deactivate':
 				$ok = $this->db->toggle_active( $link_id, false );
-				$this->redirect_with_notice( $redirect_url, $ok ? 'deactivated' : 'deactivate_failed' );
+				$this->redirect_with_notice(
+					$redirect_url,
+					$ok ? 'deactivated' : 'deactivate_failed',
+					$ok ? array( $link_id ) : array(),
+					'activate'
+				);
 				break;
 		}
 	}
@@ -704,6 +915,8 @@ class GTLM_Admin {
 				'default_rel'               => '' !== $rel ? explode( ',', $rel ) : array(),
 				'default_noindex'           => ! empty( $_POST['default_noindex'] ) ? 1 : 0,
 				'delete_data_on_uninstall'  => ! empty( $_POST['delete_data_on_uninstall'] ) ? 1 : 0,
+				'trash_retention_days'      => isset( $_POST['trash_retention_days'] ) ? absint( wp_unslash( $_POST['trash_retention_days'] ) ) : 30,
+				'enable_click_tracking'     => ! empty( $_POST['enable_click_tracking'] ) ? 1 : 0,
 				'enable_advanced_redirects' => ! empty( $_POST['enable_advanced_redirects'] ) ? 1 : 0,
 				'enable_geo_targeting'      => ! empty( $_POST['enable_geo_targeting'] ) ? 1 : 0,
 				'geo_detection_method'      => sanitize_key( (string) wp_unslash( $_POST['geo_detection_method'] ?? 'auto' ) ),
@@ -845,7 +1058,7 @@ class GTLM_Admin {
 
 	private function sanitize_rel_from_post( mixed $rel ): string {
 		if ( is_string( $rel ) ) {
-			$rel = array_filter( array_map( 'trim', explode( ',', $rel ) ) );
+			$rel = preg_split( '/[\s,]+/', $rel, -1, PREG_SPLIT_NO_EMPTY );
 		}
 
 		if ( ! is_array( $rel ) ) {
@@ -915,6 +1128,12 @@ class GTLM_Admin {
 	public function default_hidden_columns( array $hidden, \WP_Screen $screen ): array {
 		if ( 'toplevel_page_gtlm-links' === $screen->id ) {
 			$hidden = array_merge( $hidden, array( 'id', 'rel', 'tags', 'link_mode' ) );
+
+			// Hide the Clicks column until tracking is switched on, so an
+			// unused feature does not take up a column by default.
+			if ( ! $this->settings->click_tracking_enabled() ) {
+				$hidden[] = 'total_clicks';
+			}
 		}
 
 		return $hidden;
@@ -924,8 +1143,109 @@ class GTLM_Admin {
 		return (string) apply_filters( 'gtlm_capabilities', 'edit_posts', $context );
 	}
 
-	private function redirect_with_notice( string $url, string $notice ): void {
-		wp_safe_redirect( add_query_arg( array( 'gtlm_notice' => sanitize_key( $notice ) ), $url ) );
+	/**
+	 * Redirect back to a list view with a notice, optionally offering an undo.
+	 *
+	 * @param string             $url    Destination.
+	 * @param string             $notice Notice key.
+	 * @param array<int, int>    $undo_ids  Links the undo would act on.
+	 * @param string             $undo_action Inverse action to run.
+	 * @param int                $count  Number of affected links, for plural notices.
+	 */
+	private function redirect_with_notice( string $url, string $notice, array $undo_ids = array(), string $undo_action = '', int $count = 0 ): void {
+		$args = array( 'gtlm_notice' => sanitize_key( $notice ) );
+
+		if ( $count > 0 ) {
+			$args['gtlm_count'] = $count;
+		}
+
+		$undo_ids = array_values( array_filter( array_map( 'absint', $undo_ids ) ) );
+
+		if ( '' !== $undo_action && ! empty( $undo_ids ) ) {
+			$ids_arg                 = implode( ',', $undo_ids );
+			$args['gtlm_undo']       = sanitize_key( $undo_action );
+			$args['gtlm_undo_ids']   = $ids_arg;
+			$args['gtlm_undo_nonce'] = wp_create_nonce( 'gtlm_undo_' . $undo_action . '_' . $ids_arg );
+		}
+
+		wp_safe_redirect( add_query_arg( $args, $url ) );
 		exit;
+	}
+
+	/**
+	 * Reverse the previous action.
+	 *
+	 * Undo is offered for reversible state changes only. A permanent delete
+	 * removes the row, so it is never undoable -- matching core's behaviour
+	 * for posts.
+	 */
+	private function handle_undo_action(): void {
+		if ( ! isset( $_GET['gtlm_do_undo'], $_GET['gtlm_undo_ids'], $_GET['gtlm_undo_nonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		$action  = sanitize_key( (string) wp_unslash( $_GET['gtlm_do_undo'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$ids_arg = sanitize_text_field( (string) wp_unslash( $_GET['gtlm_undo_ids'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$nonce   = sanitize_text_field( (string) wp_unslash( $_GET['gtlm_undo_nonce'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( ! wp_verify_nonce( $nonce, 'gtlm_undo_' . $action . '_' . $ids_arg ) ) {
+			return;
+		}
+
+		$ids = array_values( array_filter( array_map( 'absint', explode( ',', $ids_arg ) ) ) );
+		if ( empty( $ids ) || ! in_array( $action, array( 'trash', 'restore', 'activate', 'deactivate' ), true ) ) {
+			return;
+		}
+
+		$done = 0;
+		foreach ( $ids as $id ) {
+			$ok = false;
+			switch ( $action ) {
+				case 'trash':
+					$ok = $this->db->trash_link( $id );
+					break;
+				case 'restore':
+					$ok = $this->db->restore_link( $id );
+					break;
+				case 'activate':
+					$ok = $this->db->toggle_active( $id, true );
+					break;
+				case 'deactivate':
+					$ok = $this->db->toggle_active( $id, false );
+					break;
+			}
+			if ( $ok ) {
+				++$done;
+			}
+		}
+
+		$view = ( 'trash' === $action ) ? 'trash' : '';
+		$url  = admin_url( 'admin.php?page=gtlm-links' );
+		if ( '' !== $view ) {
+			$url = add_query_arg( 'link_status', $view, $url );
+		}
+
+		$this->redirect_with_notice( $url, $done > 0 ? 'undone' : 'undo_failed', array(), '', $done );
+	}
+
+	/**
+	 * Empty the trash in one action.
+	 */
+	private function handle_empty_trash_action(): void {
+		if ( ! isset( $_GET['gtlm_action'] ) || 'empty_trash' !== sanitize_key( (string) wp_unslash( $_GET['gtlm_action'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		check_admin_referer( 'gtlm_empty_trash' );
+
+		$deleted = $this->db->empty_trash();
+
+		$this->redirect_with_notice(
+			add_query_arg( 'link_status', 'trash', admin_url( 'admin.php?page=gtlm-links' ) ),
+			'trash_emptied',
+			array(),
+			'',
+			$deleted
+		);
 	}
 }

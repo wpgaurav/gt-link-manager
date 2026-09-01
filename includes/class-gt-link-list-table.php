@@ -47,6 +47,16 @@ class GTLM_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * @return array<int, string>
+	 */
+	protected function get_table_classes(): array {
+		$classes   = parent::get_table_classes();
+		$classes[] = 'gtlm-links-table';
+
+		return $classes;
+	}
+
+	/**
 	 * Column definitions shared between get_columns() and screen options registration.
 	 *
 	 * @return array<string, string>
@@ -65,6 +75,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'status'        => esc_html__( 'Status', 'gt-link-manager' ),
 			'category'      => esc_html__( 'Category', 'gt-link-manager' ),
 			'tags'          => esc_html__( 'Tags', 'gt-link-manager' ),
+			'total_clicks'  => esc_html__( 'Clicks', 'gt-link-manager' ),
 			'created_at'    => esc_html__( 'Created', 'gt-link-manager' ),
 		);
 	}
@@ -90,6 +101,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'rel'           => array( 'rel', false ),
 			'status'        => array( 'is_active', false ),
 			'category'      => array( 'category_id', false ),
+			'total_clicks'  => array( 'total_clicks', false ),
 			'created_at'    => array( 'created_at', false ),
 		);
 	}
@@ -179,7 +191,19 @@ class GTLM_List_Table extends WP_List_Table {
 	 * @param array<string, mixed> $item Item.
 	 */
 	protected function column_cb( $item ): string {
-		return sprintf( '<input type="checkbox" name="link_ids[]" value="%d" />', (int) $item['id'] );
+		$id = (int) $item['id'];
+
+		return sprintf(
+			'<label class="screen-reader-text" for="cb-select-%1$d">%2$s</label><input type="checkbox" id="cb-select-%1$d" name="link_ids[]" value="%1$d" />',
+			$id,
+			esc_html(
+				sprintf(
+					/* translators: %s: link name. */
+					__( 'Select %s', 'gt-link-manager' ),
+					(string) ( $item['name'] ?? '' )
+				)
+			)
+		);
 	}
 
 	/**
@@ -275,6 +299,23 @@ class GTLM_List_Table extends WP_List_Table {
 			$actions['view']     = '<a href="' . esc_url( $branded_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View', 'gt-link-manager' ) . '</a>';
 		}
 
+		// Only offer a reset when there is a non-zero count to reset.
+		if ( GTLM_Settings::get_instance()->click_tracking_enabled() && (int) ( $item['total_clicks'] ?? 0 ) > 0 ) {
+			$reset_url = wp_nonce_url(
+				add_query_arg(
+					array(
+						'page'   => 'gtlm-links',
+						'action' => 'reset_clicks',
+						'link'   => (int) $item['id'],
+					),
+					admin_url( 'admin.php' )
+				),
+				'gtlm_reset_clicks_' . (int) $item['id']
+			);
+
+			$actions['reset_clicks'] = '<a href="' . esc_url( $reset_url ) . '">' . esc_html__( 'Reset Clicks', 'gt-link-manager' ) . '</a>';
+		}
+
 		return '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( (string) $item['name'] ) . '</a></strong>' . $this->row_actions( $actions );
 	}
 
@@ -283,14 +324,28 @@ class GTLM_List_Table extends WP_List_Table {
 	 */
 	protected function column_branded_url( $item ): string {
 		$mode = (string) ( $item['link_mode'] ?? 'standard' );
-		if ( 'direct' === $mode ) {
-			$url = home_url( '/' . (string) $item['slug'] );
-		} elseif ( 'regex' === $mode ) {
-			return '<code title="' . esc_attr__( 'Regex pattern', 'gt-link-manager' ) . '">' . esc_html( (string) $item['slug'] ) . '</code>';
-		} else {
-			$url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
+
+		if ( 'regex' === $mode ) {
+			return '<code class="gtlm-url-cell" title="' . esc_attr__( 'Regex pattern', 'gt-link-manager' ) . '">' . esc_html( (string) $item['slug'] ) . '</code>';
 		}
-		return '<code>' . esc_html( $url ) . '</code>';
+
+		if ( 'direct' === $mode ) {
+			$path = '/' . ltrim( (string) $item['slug'], '/' );
+		} else {
+			$path = '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'];
+		}
+
+		$url = home_url( $path );
+
+		// Show the path rather than the absolute URL: it is what identifies the
+		// link, it stays readable in a narrow column, and the full URL is still
+		// available from the title attribute and the Copy URL row action.
+		return sprintf(
+			'<a class="gtlm-url-cell" href="%1$s" target="_blank" rel="noopener noreferrer" title="%2$s"><code>%3$s</code></a>',
+			esc_url( $url ),
+			esc_attr( $url ),
+			esc_html( $path )
+		);
 	}
 
 	/**
@@ -311,7 +366,29 @@ class GTLM_List_Table extends WP_List_Table {
 	 */
 	protected function column_url( $item ): string {
 		$url = (string) $item['url'];
-		return '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $url ) . '</a>';
+
+		return sprintf(
+			'<a class="gtlm-url-cell" href="%1$s" target="_blank" rel="noopener noreferrer" title="%2$s">%3$s</a>',
+			esc_url( $url ),
+			esc_attr( $url ),
+			esc_html( $url )
+		);
+	}
+
+	/**
+	 * Click counter cell.
+	 *
+	 * Shows an em dash rather than a misleading 0 when tracking is switched
+	 * off, so an untracked link is not mistaken for one nobody clicked.
+	 *
+	 * @param array<string, mixed> $item Item.
+	 */
+	protected function column_total_clicks( $item ): string {
+		if ( ! GTLM_Settings::get_instance()->click_tracking_enabled() ) {
+			return '<span aria-hidden="true">&mdash;</span><span class="screen-reader-text">' . esc_html__( 'Click tracking is off', 'gt-link-manager' ) . '</span>';
+		}
+
+		return esc_html( number_format_i18n( (int) ( $item['total_clicks'] ?? 0 ) ) );
 	}
 
 	/**
@@ -394,7 +471,8 @@ class GTLM_List_Table extends WP_List_Table {
 		echo '<div class="alignleft actions">';
 
 		if ( ! empty( $months ) ) {
-			echo '<select name="m">';
+			echo '<label class="screen-reader-text" for="gtlm-filter-m">' . esc_html__( 'Filter by date', 'gt-link-manager' ) . '</label>';
+			echo '<select name="m" id="gtlm-filter-m">';
 			echo '<option value="0">' . esc_html__( 'All dates', 'gt-link-manager' ) . '</option>';
 			global $wp_locale;
 			foreach ( $months as $m ) {
@@ -405,20 +483,23 @@ class GTLM_List_Table extends WP_List_Table {
 			echo '</select>';
 		}
 
-		echo '<select name="category_id"><option value="0">' . esc_html__( 'All categories', 'gt-link-manager' ) . '</option>';
+		echo '<label class="screen-reader-text" for="gtlm-filter-category">' . esc_html__( 'Filter by category', 'gt-link-manager' ) . '</label>';
+		echo '<select name="category_id" id="gtlm-filter-category"><option value="0">' . esc_html__( 'All categories', 'gt-link-manager' ) . '</option>';
 		foreach ( $this->categories as $cat ) {
 			echo '<option value="' . (int) $cat['id'] . '" ' . selected( $category, (int) $cat['id'], false ) . '>' . esc_html( (string) $cat['name'] ) . '</option>';
 		}
 		echo '</select>';
 
-		echo '<select name="redirect_type">';
+		echo '<label class="screen-reader-text" for="gtlm-filter-type">' . esc_html__( 'Filter by redirect type', 'gt-link-manager' ) . '</label>';
+		echo '<select name="redirect_type" id="gtlm-filter-type">';
 		echo '<option value="0">' . esc_html__( 'All types', 'gt-link-manager' ) . '</option>';
 		echo '<option value="301" ' . selected( $redirect_type, 301, false ) . '>301</option>';
 		echo '<option value="302" ' . selected( $redirect_type, 302, false ) . '>302</option>';
 		echo '<option value="307" ' . selected( $redirect_type, 307, false ) . '>307</option>';
 		echo '</select>';
 
-		echo '<select name="rel">';
+		echo '<label class="screen-reader-text" for="gtlm-filter-rel">' . esc_html__( 'Filter by rel value', 'gt-link-manager' ) . '</label>';
+		echo '<select name="rel" id="gtlm-filter-rel">';
 		echo '<option value="">' . esc_html__( 'All rel values', 'gt-link-manager' ) . '</option>';
 		echo '<option value="nofollow" ' . selected( $rel, 'nofollow', false ) . '>nofollow</option>';
 		echo '<option value="sponsored" ' . selected( $rel, 'sponsored', false ) . '>sponsored</option>';
@@ -426,7 +507,8 @@ class GTLM_List_Table extends WP_List_Table {
 		echo '</select>';
 
 		$link_mode = isset( $_GET['link_mode'] ) ? sanitize_key( (string) wp_unslash( $_GET['link_mode'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		echo '<select name="link_mode">';
+		echo '<label class="screen-reader-text" for="gtlm-filter-mode">' . esc_html__( 'Filter by link mode', 'gt-link-manager' ) . '</label>';
+		echo '<select name="link_mode" id="gtlm-filter-mode">';
 		echo '<option value="">' . esc_html__( 'All modes', 'gt-link-manager' ) . '</option>';
 		echo '<option value="standard" ' . selected( $link_mode, 'standard', false ) . '>' . esc_html__( 'Standard', 'gt-link-manager' ) . '</option>';
 		echo '<option value="direct" ' . selected( $link_mode, 'direct', false ) . '>' . esc_html__( 'Direct', 'gt-link-manager' ) . '</option>';
@@ -437,7 +519,8 @@ class GTLM_List_Table extends WP_List_Table {
 		echo '</div>';
 
 		echo '<div class="alignleft actions">';
-		echo '<select name="bulk_category_id">';
+		echo '<label class="screen-reader-text" for="gtlm-bulk-category">' . esc_html__( 'Category for bulk action', 'gt-link-manager' ) . '</label>';
+		echo '<select name="bulk_category_id" id="gtlm-bulk-category">';
 		echo '<option value="0">' . esc_html__( 'Category for bulk action', 'gt-link-manager' ) . '</option>';
 		foreach ( $this->categories as $cat ) {
 			echo '<option value="' . (int) $cat['id'] . '" ' . selected( $bulk_category, (int) $cat['id'], false ) . '>' . esc_html( (string) $cat['name'] ) . '</option>';
@@ -447,7 +530,6 @@ class GTLM_List_Table extends WP_List_Table {
 	}
 
 	public function prepare_items(): void {
-		$this->process_bulk_action();
 
 		$per_page     = $this->get_items_per_page( 'gtlm_links_per_page', 20 );
 		$current_page = $this->get_pagenum();
@@ -487,84 +569,5 @@ class GTLM_List_Table extends WP_List_Table {
 				'per_page'    => $per_page,
 			)
 		);
-	}
-
-	private function process_bulk_action(): void {
-		$action = $this->current_action();
-		if ( ! $action ) {
-			return;
-		}
-
-		if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( (string) wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-' . $this->_args['plural'] ) ) {
-			return;
-		}
-
-		$link_ids = isset( $_REQUEST['link_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_REQUEST['link_ids'] ) ) : array();
-		$link_ids = array_filter( $link_ids );
-		if ( empty( $link_ids ) ) {
-			return;
-		}
-
-		foreach ( $link_ids as $link_id ) {
-			if ( 'bulk_trash' === $action ) {
-				$this->db->trash_link( $link_id );
-				continue;
-			}
-
-			if ( 'bulk_restore' === $action ) {
-				$this->db->restore_link( $link_id );
-				continue;
-			}
-
-			if ( 'bulk_permanent_delete' === $action ) {
-				$this->db->delete_link( $link_id );
-				continue;
-			}
-
-			if ( 'bulk_activate' === $action ) {
-				$this->db->toggle_active( $link_id, true );
-				continue;
-			}
-
-			if ( 'bulk_deactivate' === $action ) {
-				$this->db->toggle_active( $link_id, false );
-				continue;
-			}
-
-			$link = $this->db->get_link_by_id( $link_id );
-			if ( null === $link ) {
-				continue;
-			}
-
-			if ( in_array( $action, array( 'bulk_301', 'bulk_302', 'bulk_307' ), true ) ) {
-				$this->db->update_link(
-					$link_id,
-					array_merge( $link, array( 'redirect_type' => (int) str_replace( 'bulk_', '', $action ) ) )
-				);
-				continue;
-			}
-
-			if ( in_array( $action, array( 'bulk_rel_none', 'bulk_rel_nofollow', 'bulk_rel_sponsored', 'bulk_rel_ugc' ), true ) ) {
-				$map = array(
-					'bulk_rel_none'      => '',
-					'bulk_rel_nofollow'  => 'nofollow',
-					'bulk_rel_sponsored' => 'sponsored',
-					'bulk_rel_ugc'       => 'ugc',
-				);
-				$this->db->update_link(
-					$link_id,
-					array_merge( $link, array( 'rel' => $map[ $action ] ?? '' ) )
-				);
-				continue;
-			}
-
-			if ( 'bulk_set_category' === $action ) {
-				$category_id = isset( $_REQUEST['bulk_category_id'] ) ? absint( $_REQUEST['bulk_category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				$this->db->update_link(
-					$link_id,
-					array_merge( $link, array( 'category_id' => $category_id ) )
-				);
-			}
-		}
 	}
 }

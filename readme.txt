@@ -2,9 +2,9 @@
 Contributors: gauravtiwari
 Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,7 +38,8 @@ Most link management plugins use custom post types, which means every redirect l
 * **Branded URL preview** — see the full branded URL as you type, with one-click copy
 * **Normal and Regex Redirects** supported too. Don't want to use a prefix like `/go/` ? Sure thing. Use the GT Link Manager as an alternative to Rank Math Redirections, Yoast Redirects, Redirection plugin etc. **Tested to be faster** than these top tools.
 * **Geolocation targeting** — send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from the header your CDN already sends — Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module — so there is **no GeoIP database to install, no external API call, and no added latency**. Adds roughly 20 microseconds to a geo-enabled redirect and nothing measurable to the rest.
-* **Click tracking** — log clicks via the `gtlm_before_redirect` hook; integrate with GA4, Plausible, Fathom, and more
+* **Click counting** — an optional per-link click counter, off by default. It stores one running total per link and nothing else: no IP address, no user agent, no referrer, no timestamp, nothing tied to a visitor. The count is written after the redirect has already been sent, so it does not slow the redirect down. Leave it off and the plugin logs nothing about requests at all.
+* **Click tracking integrations** — for richer analytics, hook `gtlm_before_redirect` and send events to GA4, Plausible, Fathom, and more
 * **Developer-friendly** — actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
 
 = Developer Hooks =
@@ -58,6 +59,11 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_geo_country_groups` — filter country groups usable in rules (ships with `EU`)
 * `gtlm_geo_matched_rule` — filter the resolved geo rule before the redirect is sent
 * `gtlm_geo_blocked` — action fired when a visitor is blocked by a geo rule's 404 fallback
+* `gtlm_link_not_found` — action fired when a prefixed link cannot be resolved and a 404 is sent
+* `gtlm_404_on_missing_link` — filter to disable the 404 for unresolved prefixed links and fall through to WordPress instead
+* `gtlm_trash_purged` — action fired after trashed links are automatically purged, with the count and retention window
+* `gtlm_count_click` — filter to skip counting a particular click (exclude logged-in editors, add bot filtering)
+* `gtlm_click_recorded` — action fired after a click has been counted
 
 = Free Training Course =
 
@@ -144,6 +150,23 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 5. **Import/Export** — CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.8.0 =
+* Fixed: the links table collapsed narrow columns when many were shown at once. With every column visible, Mode and Clicks were squeezed to a few pixels and their values wrapped one character per line. Every column now has a minimum width, the wide ones wrap instead of being clipped, and the table scrolls sideways on its own rather than stretching the admin page.
+* New: Optional click counting, off by default. Turn it on under Settings and each link gets a running total of how many times it has been followed, shown as a sortable Clicks column and included in CSV export. It stores one number per link and nothing else -- no IP address, user agent, referrer, or timestamp -- and the count is written after the redirect has already been sent, so the redirect itself is not slowed down. The plugin's suggested privacy-policy text updates itself to match whichever setting you choose. Use `gtlm_count_click` to skip clicks you do not want counted.
+* Fixed: a deleted, trashed, or deactivated short link returned HTTP 200 with the site's front page instead of a 404. The prefix rewrite rule matches the whole namespace, so an unresolved slug fell through to the home page, and search engines could index every dead link as duplicate front-page content. Unresolved prefixed links now return a real 404 rendered by the theme's own template. Direct and regex mode still fall through untouched, and the `gtlm_404_on_missing_link` filter restores the old behaviour.
+* Fixed: `rel` values separated by spaces were silently discarded. The plugin writes space-separated rel into Link headers and core Button blocks, but only accepted commas on input, so round-tripping a value emptied it. Commas, spaces, and arrays are all accepted now, and the allowed-token validation is unchanged.
+* Fixed: the Active, Inactive, and Trash views were implemented but never rendered, leaving them reachable only by typing the URL by hand. They now appear above the links table.
+* Fixed: bulk actions ran while the page rendered, which gave no confirmation message and re-ran the action on a browser refresh. They now run before output and redirect to a clean URL with a result message.
+* New: Undo. Trashing, restoring, activating, and deactivating a link now offer a one-click Undo in the success notice, for single links and bulk selections alike.
+* New: Trash retention. Links left in the Trash can be permanently deleted after a configurable number of days, set under Settings. New installs start at 30 days. **Existing sites are left at 0 (keep forever) on upgrade**, so nothing already sitting in your Trash is deleted because you updated; switch it on yourself when you want it.
+* New: Empty Trash button on the Trash view.
+* Improved: the admin screens now inherit the WordPress admin surface instead of painting over it. Custom admin colour schemes, high-contrast mode, and reduced-motion preferences are all respected.
+* Improved: accessibility. Row checkboxes and every filter dropdown have proper labels, keyboard focus is visible, and the notice area sits where WordPress expects it.
+* Improved: long URLs no longer break across three lines in the links table. The Branded URL column shows the readable path, with the full URL on hover and in the Copy URL action.
+* Improved: a fresh install now records its schema version during activation instead of re-running the migration on the first admin page load.
+* Compatibility: Tested against WordPress 7.1. Verified on a WordPress 7.1 and PHP 8.4 install: redirects, geolocation targeting, the REST API, CSV import and export, the links list table, and both block editor inserters all behave as before, with no deprecation notices raised.
+* Compatibility: Confirmed the GT Link format and the core Button control still work inside the iframed block editor canvas, including search, insertion, and rel handling.
 
 = 1.7.1 =
 * Fixed: The GT Link toolbar now works with the core Button block by updating the Button's native URL and rel attributes.
@@ -308,6 +331,9 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.8.0 =
+Tested with WordPress 7.1. Fixes a soft 404 that made every dead, trashed, or deactivated short link return the site's front page at HTTP 200, and fixes space-separated rel values being silently dropped. Adds optional click counting (off by default), Undo for trash and status changes, optional automatic Trash cleanup (off for existing sites, so nothing in your Trash is deleted by updating), and an accessibility and native-UI pass on the admin screens. Adds one column to the links table on upgrade; existing links are untouched.
 
 = 1.7.1 =
 Fixes the GT Link inserter for the core Button block while preserving the Button block's native link settings.

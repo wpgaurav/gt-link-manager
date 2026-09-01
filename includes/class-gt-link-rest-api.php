@@ -357,6 +357,7 @@ class GTLM_REST_API {
 					'category_id'       => (int) $row['category_id'],
 					'tags'              => (string) ( $row['tags'] ?? '' ),
 					'notes'             => (string) ( $row['notes'] ?? '' ),
+					'total_clicks'      => (int) ( $row['total_clicks'] ?? 0 ),
 					'trashed_at'        => $row['trashed_at'] ?? null,
 					'created_at'        => (string) ( $row['created_at'] ?? '' ),
 					'updated_at'        => (string) ( $row['updated_at'] ?? '' ),
@@ -861,7 +862,9 @@ class GTLM_REST_API {
 	 */
 	private function normalize_rel( mixed $rel ): array {
 		if ( is_string( $rel ) ) {
-			$rel = array_filter( array_map( 'trim', explode( ',', $rel ) ) );
+			// Accept commas or whitespace: the plugin emits space-separated rel
+			// in Link headers and core Button attributes, so both must round-trip.
+			$rel = preg_split( '/[\s,]+/', $rel, -1, PREG_SPLIT_NO_EMPTY );
 		}
 
 		if ( ! is_array( $rel ) ) {

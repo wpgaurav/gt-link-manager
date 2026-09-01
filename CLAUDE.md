@@ -60,6 +60,10 @@ All service classes use a static `init()` factory that takes dependencies, const
 
 Insert/update placeholder arrays are derived from the payload via `GTLM_DB::COLUMN_FORMATS` + `formats_for()`. Do not reintroduce hardcoded positional `$format` arrays — they silently corrupt writes when a column is added.
 
+`total_clicks` is a counter, not part of a link's configuration. It is written only by `increment_clicks()` (a single atomic `UPDATE ... SET total_clicks = total_clicks + 1`, never read-modify-write) and `reset_clicks()`. It is exposed read-only in REST and CSV export, and is deliberately absent from the REST write args so it cannot be set by a client. It *is* in `COLUMN_FORMATS` because bulk actions round-trip whole rows through `update_link( array_merge( $link, ... ) )`.
+
+Adding a column means updating **three** places, not one: the `CREATE TABLE` in `GTLM_Activator`, the `LINK_COLUMNS` select list, and `$allowed_orderby` in `list_links()` if it should be sortable. Missing the second silently returns 0/empty; missing the third silently falls back to sorting by `id`.
+
 **`{prefix}_gtlm_categories`**: id, name, slug (UNIQUE), description, parent_id, count
 
 ### REST API (`gt-link-manager/v1`)
@@ -101,6 +105,11 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 | `gtlm_geo_country_groups` | filter | Define country groups usable in rules (ships with `EU`) |
 | `gtlm_geo_matched_rule` | filter | Override the resolved geo rule; return `null` to block |
 | `gtlm_geo_blocked` | action | Fires when a geo 404 fallback blocks a request |
+| `gtlm_link_not_found` | action | Fires when a prefixed link cannot be resolved |
+| `gtlm_404_on_missing_link` | filter | Return false to fall through to WP instead of 404ing an unresolved prefixed link |
+| `gtlm_trash_purged` | action | Fires after the retention cron purges trashed links |
+| `gtlm_count_click` | filter | Return false to skip counting a click |
+| `gtlm_click_recorded` | action | Fires after a click has been counted |
 
 ### Geolocation notes
 
@@ -109,13 +118,36 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 - Geo links should use 302. A 301 is cached by the browser and pins a visitor to their first detected country; the editor warns on 301.
 - The redirect path resolves the link *first*, then checks `geo_mode` — detection must never run for links that don't opt in.
 
+### Click counting
+
+Opt-in via the `enable_click_tracking` setting, off by default. That default is a privacy commitment, not a UX choice: with it off, the plugin's registered privacy-policy content states that it does not log requests, and that statement has to stay true. `GTLM_Admin::register_privacy_content()` swaps the redirect paragraph based on the setting -- if you change what is recorded, change that text in the same commit.
+
+The write happens in `GTLM_Redirect::record_click()`, called *after* `header( 'Location: ... )`, and calls `fastcgi_finish_request()` first where available so the counter never sits on the visitor's clock. Measured on the synchronous fallback path (no FPM): 9.0ms median vs 9.1ms baseline.
+
+## Deploying to gauravtiwari.org
+
+Production runs on an xCloud-managed server. **The WordPress root is `/var/www/gauravtiwari.org`** — the docroot itself, not a `public_html` or `htdocs` subdirectory. There is no `~/domains`; searching the filesystem for `wp-load.php` finds only backups. The server's own `~/.bashrc` cds there on login.
+
+- SSH with `GA_SSH_COMMAND` from `~/.env`. Values in that file are single-quoted, so `set -a; . ~/.env; set +a` works.
+- WP-CLI lives at `/usr/local/bin/wp` and needs `--skip-plugins --skip-themes` on this install.
+- Back the plugin up before overwriting, matching the convention already on the box:
+  `~/gtlm-backups/gt-link-manager-<version>-<YYYYmmdd-HHMMSS>.tar.gz`
+- The live install is large (~1,300 links, a few hundred geo-targeted). Check trashed/inactive counts before shipping any change to redirect resolution, because those are the rows whose HTTP behaviour changes.
+
 ## Conventions
 
 - PHP 8.0+, WordPress 6.4+
 - Tabs for indentation in PHP
 - All admin UI is rendered inline in PHP (no separate template files)
+- The links table is wrapped in `.gtlm-table-scroll` and carries a `gtlm-links-table` class. Core ships list tables as `widefat fixed` (`table-layout: fixed`), where per-cell `min-width` is ignored and leftover width is divided until narrow columns collapse to a few pixels and wrap one character per line. This table overrides to `table-layout: auto` with a per-column floor and a table `min-width`, so it scrolls sideways instead. The wrapper needs `clear: both` (core's search box is floated) and `contain: paint` (without it the clipped table still widens the whole admin page).
+- Admin CSS defers to the WordPress admin surface: no page-background override, no restyled core inputs or buttons. Accents use `var(--wp-admin-theme-color, #2271b1)` so custom admin colour schemes keep working, and surfaces use core's palette (`#f0f0f1`, `#c3c4c7`, `#1d2327`, `#50575e`).
 - Soft delete: `trashed_at` column (NULL = not trashed). Hard delete requires explicit action.
 - All SQL in `GTLM_DB` — other classes call DB methods, never write SQL directly
 - Version is maintained in two places: plugin header and `GTLM_VERSION` constant in `gt-link-manager.php`
-- DB migrations run automatically on admin load when `gtlm_db_version` option < plugin version
+- DB migrations run automatically on admin load when `gtlm_db_version` option < plugin version. Activation records the version itself, so a fresh install does not re-run `dbDelta` on first admin load.
+- Bulk actions are handled in `GTLM_Admin::handle_bulk_actions()` on `admin_init`, never in the list table's `prepare_items()`. Acting during render meant no notice and a re-run on refresh. They act, then redirect with a result and an undo payload.
+- Reversible actions carry an undo payload through `redirect_with_notice()`; `render_undo_link()` renders it. Permanent delete is never undoable.
+- Trashed links are purged by the daily `gtlm_purge_trash` cron using the `trash_retention_days` setting (0 = keep forever). Fresh installs default to 30 days; `maybe_upgrade()` pins **existing** installs to 0, because retroactively applying a new retention policy to a years-old trash is data loss the site owner never agreed to.
+- Unresolved links under the configured prefix must return a real 404. The rewrite rule claims the whole prefix namespace, so falling through renders the front page at HTTP 200 -- a soft 404 across every dead link. Only prefix matches 404; direct and regex mode inspect arbitrary paths that may be real pages.
+- `rel` input accepts commas, whitespace, or arrays. The plugin emits space-separated rel, so a comma-only parser silently drops values it produced itself.
 - Code prefix is `gtlm` (4+ chars) per wp.org plugin directory requirements

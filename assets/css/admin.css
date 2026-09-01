@@ -1,63 +1,27 @@
 /* ═══════════════════════════════════════════════════════════════
    GT Link Manager – Admin Styles
-   All values hardcoded (no CSS custom properties).
 
-   Palette:
-     bg:          #f4f7fb    card:       #ffffff
-     border:      #d9e2ec    text:       #102a43
-     muted:       #627d98    success-bg: #ecfdf3
-     success-txt: #166534    radius:     10px
+   Uses the WordPress admin palette so custom admin colour schemes,
+   high-contrast mode, and core's own chrome all keep working:
+     page bg:  #f0f0f1   card:    #ffffff
+     border:   #c3c4c7   hairline #dcdcde
+     text:     #1d2327   muted:   #50575e
+   Accents come from var(--wp-admin-theme-color) with a core fallback.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Page background ─────────────────────────────────────────── */
-body.toplevel_page_gtlm-links #wpcontent,
-body.gtlm-links_page_gtlm-links-edit #wpcontent,
-body.gtlm-links_page_gtlm-links-categories #wpcontent,
-body.gtlm-links_page_gtlm-links-settings #wpcontent,
-body.gtlm-links_page_gtlm-links-import-export #wpcontent,
-body.gtlm-links_page_gtlm-links-license #wpcontent {
-	background: #f4f7fb;
-}
+/* ── Native chrome ───────────────────────────────────────────
+   These screens deliberately inherit the WordPress admin surface:
+   no background override, no restyled inputs, no restyled buttons.
+   Anything painted here is plugin-specific furniture only, and uses
+   the admin theme colour so custom admin colour schemes keep working.
+   ──────────────────────────────────────────────────────────────── */
 
-/* ── Wrap ────────────────────────────────────────────────────── */
-body.toplevel_page_gtlm-links .wrap,
-body.gtlm-links_page_gtlm-links-edit .wrap,
-body.gtlm-links_page_gtlm-links-categories .wrap,
-body.gtlm-links_page_gtlm-links-settings .wrap,
-body.gtlm-links_page_gtlm-links-import-export .wrap,
-body.gtlm-links_page_gtlm-links-license .wrap {
-	max-width: 1260px;
-	padding-bottom: 20px;
-}
-
-body.toplevel_page_gtlm-links .wrap h1,
-body.gtlm-links_page_gtlm-links-edit .wrap h1,
-body.gtlm-links_page_gtlm-links-categories .wrap h1,
-body.gtlm-links_page_gtlm-links-settings .wrap h1,
-body.gtlm-links_page_gtlm-links-import-export .wrap h1,
-body.gtlm-links_page_gtlm-links-license .wrap h1 {
-	color: #102a43;
-	font-weight: 700;
-	letter-spacing: 0.1px;
-	margin-bottom: 14px;
-}
-
-body.toplevel_page_gtlm-links .wrap > p,
-body.gtlm-links_page_gtlm-links-edit .wrap > p,
-body.gtlm-links_page_gtlm-links-categories .wrap > p,
-body.gtlm-links_page_gtlm-links-settings .wrap > p,
-body.gtlm-links_page_gtlm-links-import-export .wrap > p,
-body.gtlm-links_page_gtlm-links-license .wrap > p {
-	color: #627d98;
-	max-width: 840px;
-}
-
-/* ── Card ────────────────────────────────────────────────────── */
+/* ── Card (mirrors core .postbox) ────────────────────────────── */
 .gtlm-card {
-	background: #ffffff;
-	border: 1px solid #d9e2ec;
-	border-radius: 10px;
-	padding: 24px 28px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	padding: 12px 16px;
 	margin-top: 16px;
 	margin-bottom: 16px;
 }
@@ -67,7 +31,6 @@ body.gtlm-links_page_gtlm-links-license .wrap > p {
 	padding-top: 0;
 	font-size: 14px;
 	font-weight: 600;
-	color: #102a43;
 }
 
 .gtlm-card > p:first-of-type {
@@ -81,163 +44,66 @@ body.gtlm-links_page_gtlm-links-license .wrap > p {
 
 /* ── Submit buttons row ──────────────────────────────────────── */
 .gtlm-submit-row {
-	display: flex !important;
-	flex-direction: row !important;
+	display: flex;
+	flex-direction: row;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: 8px;
 	padding-top: 16px;
 	margin-top: 4px;
-	border-top: 1px solid #d9e2ec;
+	border-top: 1px solid #dcdcde;
 }
 
 .gtlm-submit-row .button,
 .gtlm-submit-row input[type="submit"] {
-	margin: 0 !important;
-	float: none !important;
+	margin: 0;
+	float: none;
 }
 
-/* ── Form table (standalone, outside card) ───────────────────── */
-body.toplevel_page_gtlm-links .form-table,
-body.gtlm-links_page_gtlm-links-edit .form-table,
-body.gtlm-links_page_gtlm-links-categories .form-table,
-body.gtlm-links_page_gtlm-links-settings .form-table,
-body.gtlm-links_page_gtlm-links-import-export .form-table,
-body.gtlm-links_page_gtlm-links-license .form-table {
-	background: #ffffff;
-	border: 1px solid #d9e2ec;
-	border-radius: 10px;
-	padding: 16px 18px;
-	margin-top: 10px;
-	margin-bottom: 12px;
-}
-
-/* Form table inside card — strip the double card */
-body.toplevel_page_gtlm-links .gtlm-card .form-table,
-body.gtlm-links_page_gtlm-links-edit .gtlm-card .form-table,
-body.gtlm-links_page_gtlm-links-categories .gtlm-card .form-table,
-body.gtlm-links_page_gtlm-links-settings .gtlm-card .form-table,
-body.gtlm-links_page_gtlm-links-import-export .gtlm-card .form-table,
-body.gtlm-links_page_gtlm-links-license .gtlm-card .form-table {
+/* Form table inside a card should not draw a second frame. */
+.gtlm-card .form-table {
 	background: none;
 	border: none;
 	padding: 0;
-	border-radius: 0;
 	margin: 0;
 }
 
-/* Widefat inside card */
-.gtlm-card .widefat {
-	border: 1px solid #d9e2ec;
-	border-radius: 8px;
-	overflow: hidden;
-	margin-top: 8px;
+/* ── Visible keyboard focus ──────────────────────────────────── */
+.gtlm-card :focus-visible,
+.gtlm-geo-rules :focus-visible,
+.gtlm-undo:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+	outline-offset: 1px;
+	box-shadow: none;
 }
 
-/* ── Form table cells ────────────────────────────────────────── */
-body.toplevel_page_gtlm-links .form-table th,
-body.gtlm-links_page_gtlm-links-edit .form-table th,
-body.gtlm-links_page_gtlm-links-categories .form-table th,
-body.gtlm-links_page_gtlm-links-settings .form-table th,
-body.gtlm-links_page_gtlm-links-import-export .form-table th,
-body.gtlm-links_page_gtlm-links-license .form-table th {
-	color: #102a43;
-	font-weight: 600;
-	font-size: 13px;
-	width: 200px;
-	padding: 14px 10px 14px 0;
-	vertical-align: middle;
+/* ── Motion preferences ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+	.gtlm-highlight,
+	.gtlm-card,
+	.gtlm-geo-rule,
+	#gtlm-import-progress-wrap {
+		animation: none !important;
+		transition: none !important;
+	}
 }
 
-body.toplevel_page_gtlm-links .form-table td,
-body.gtlm-links_page_gtlm-links-edit .form-table td,
-body.gtlm-links_page_gtlm-links-categories .form-table td,
-body.gtlm-links_page_gtlm-links-settings .form-table td,
-body.gtlm-links_page_gtlm-links-import-export .form-table td,
-body.gtlm-links_page_gtlm-links-license .form-table td {
-	color: #627d98;
-	padding: 14px 10px;
-}
-
-/* Subtle row separator inside cards */
-.gtlm-card .form-table tr + tr th,
-.gtlm-card .form-table tr + tr td {
-	border-top: 1px solid #f0f4f8;
-}
-
-/* ── Form inputs ─────────────────────────────────────────────── */
-body.toplevel_page_gtlm-links .form-table input[type="text"],
-body.toplevel_page_gtlm-links .form-table input[type="url"],
-body.toplevel_page_gtlm-links .form-table input[type="number"],
-body.toplevel_page_gtlm-links .form-table select,
-body.toplevel_page_gtlm-links .form-table textarea,
-body.gtlm-links_page_gtlm-links-edit .form-table input[type="text"],
-body.gtlm-links_page_gtlm-links-edit .form-table input[type="url"],
-body.gtlm-links_page_gtlm-links-edit .form-table input[type="number"],
-body.gtlm-links_page_gtlm-links-edit .form-table select,
-body.gtlm-links_page_gtlm-links-edit .form-table textarea,
-body.gtlm-links_page_gtlm-links-categories .form-table input[type="text"],
-body.gtlm-links_page_gtlm-links-categories .form-table input[type="url"],
-body.gtlm-links_page_gtlm-links-categories .form-table input[type="number"],
-body.gtlm-links_page_gtlm-links-categories .form-table select,
-body.gtlm-links_page_gtlm-links-categories .form-table textarea,
-body.gtlm-links_page_gtlm-links-settings .form-table input[type="text"],
-body.gtlm-links_page_gtlm-links-settings .form-table input[type="url"],
-body.gtlm-links_page_gtlm-links-settings .form-table input[type="number"],
-body.gtlm-links_page_gtlm-links-settings .form-table select,
-body.gtlm-links_page_gtlm-links-settings .form-table textarea,
-body.gtlm-links_page_gtlm-links-import-export .form-table input[type="text"],
-body.gtlm-links_page_gtlm-links-import-export .form-table input[type="url"],
-body.gtlm-links_page_gtlm-links-import-export .form-table input[type="number"],
-body.gtlm-links_page_gtlm-links-import-export .form-table select,
-body.gtlm-links_page_gtlm-links-import-export .form-table textarea,
-body.gtlm-links_page_gtlm-links-license .form-table input[type="text"],
-body.gtlm-links_page_gtlm-links-license .form-table input[type="url"],
-body.gtlm-links_page_gtlm-links-license .form-table input[type="number"],
-body.gtlm-links_page_gtlm-links-license .form-table select,
-body.gtlm-links_page_gtlm-links-license .form-table textarea {
-	border-color: #c9d6e2;
-	min-height: 36px;
-	border-radius: 6px;
-}
-
-/* ── Buttons ─────────────────────────────────────────────────── */
-body.toplevel_page_gtlm-links .button-primary,
-body.gtlm-links_page_gtlm-links-edit .button-primary,
-body.gtlm-links_page_gtlm-links-categories .button-primary,
-body.gtlm-links_page_gtlm-links-settings .button-primary,
-body.gtlm-links_page_gtlm-links-import-export .button-primary,
-body.gtlm-links_page_gtlm-links-license .button-primary {
-	background: var(--wp-admin-theme-color, #2271b1);
-	border-color: var(--wp-admin-theme-color, #2271b1);
-}
-
-body.toplevel_page_gtlm-links .button-primary:hover,
-body.gtlm-links_page_gtlm-links-edit .button-primary:hover,
-body.gtlm-links_page_gtlm-links-categories .button-primary:hover,
-body.gtlm-links_page_gtlm-links-settings .button-primary:hover,
-body.gtlm-links_page_gtlm-links-import-export .button-primary:hover,
-body.gtlm-links_page_gtlm-links-license .button-primary:hover {
-	background: var(--wp-admin-theme-color-darker-10, #135e96);
-	border-color: var(--wp-admin-theme-color-darker-10, #135e96);
-}
-
-body.toplevel_page_gtlm-links .wrap .button,
-body.gtlm-links_page_gtlm-links-edit .wrap .button,
-body.gtlm-links_page_gtlm-links-categories .wrap .button,
-body.gtlm-links_page_gtlm-links-settings .wrap .button,
-body.gtlm-links_page_gtlm-links-import-export .wrap .button,
-body.gtlm-links_page_gtlm-links-license .wrap .button {
-	min-height: 34px;
-	line-height: 32px;
-	border-radius: 6px;
+/* ── Forced colours / high contrast ──────────────────────────── */
+@media (forced-colors: active) {
+	.gtlm-card,
+	.gtlm-status,
+	.gtlm-geo-chip,
+	.gtlm-geo-order-badge {
+		border: 1px solid CanvasText;
+	}
 }
 
 /* ── List table ──────────────────────────────────────────────── */
 body.toplevel_page_gtlm-links .wp-list-table,
 body.gtlm-links_page_gtlm-links-categories .widefat,
 body.gtlm-links_page_gtlm-links-import-export .widefat {
-	border: 1px solid #d9e2ec;
-	border-radius: 10px;
+	border: 1px solid #c3c4c7;
+	border-radius: 0;
 	overflow: hidden;
 	background: #ffffff;
 	margin-top: 10px;
@@ -246,10 +112,10 @@ body.gtlm-links_page_gtlm-links-import-export .widefat {
 body.toplevel_page_gtlm-links .wp-list-table thead th,
 body.gtlm-links_page_gtlm-links-categories .widefat thead th,
 body.gtlm-links_page_gtlm-links-import-export .widefat thead th {
-	background: #f8fafc;
-	color: #334e68;
+	background: #f6f7f7;
+	color: #1d2327;
 	font-weight: 600;
-	border-bottom: 1px solid #d9e2ec;
+	border-bottom: 1px solid #c3c4c7;
 }
 
 body.toplevel_page_gtlm-links .wp-list-table tbody tr:hover,
@@ -265,7 +131,7 @@ body.toplevel_page_gtlm-links .wp-list-table .column-name strong a {
 body.toplevel_page_gtlm-links .subsubsub,
 body.toplevel_page_gtlm-links .tablenav,
 body.gtlm-links_page_gtlm-links-import-export .tablenav {
-	color: #627d98;
+	color: #50575e;
 }
 
 body.toplevel_page_gtlm-links .tablenav,
@@ -285,9 +151,9 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 /* ── Quick edit ──────────────────────────────────────────────── */
 .gtlm-quick-edit-row td {
-	background: #f8fafc;
-	border-top: 1px solid #dbe2ea;
-	border-bottom: 1px solid #dbe2ea;
+	background: #f6f7f7;
+	border-top: 1px solid #c3c4c7;
+	border-bottom: 1px solid #c3c4c7;
 }
 
 .gtlm-quick-edit-wrap {
@@ -309,7 +175,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	align-items: center;
 	gap: 4px;
 	font-weight: 500;
-	color: #334e68;
+	color: #1d2327;
 }
 
 .gtlm-qe-rel label {
@@ -321,7 +187,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	align-items: center;
 	gap: 8px;
 	font-weight: 500;
-	color: #334e68;
+	color: #1d2327;
 }
 
 .gtlm-quick-edit-wrap input[type="url"] {
@@ -382,7 +248,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	padding: 10px 12px;
 	background: #ecfdf3;
 	border: 1px solid #bbf7d0;
-	border-radius: 8px;
+	border-radius: 4px;
 	color: #166534;
 }
 
@@ -406,17 +272,17 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 .gtlm-diagnostics-table th {
 	text-align: left;
-	color: #102a43;
+	color: #1d2327;
 	font-weight: 600;
 	padding: 8px 12px 8px 0;
 	width: 160px;
-	border-bottom: 1px solid #f0f4f8;
+	border-bottom: 1px solid #dcdcde;
 }
 
 .gtlm-diagnostics-table td {
-	color: #627d98;
+	color: #50575e;
 	padding: 8px 0;
-	border-bottom: 1px solid #f0f4f8;
+	border-bottom: 1px solid #dcdcde;
 }
 
 .gtlm-diagnostics-table tr:last-child th,
@@ -427,8 +293,8 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 /* ── License page ────────────────────────────────────────────── */
 .gtlm-license-card {
 	background: #ffffff;
-	border: 1px solid #d9e2ec;
-	border-radius: 10px;
+	border: 1px solid #c3c4c7;
+	border-radius: 0;
 	padding: 20px 24px;
 	max-width: 600px;
 	margin-top: 20px;
@@ -436,7 +302,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 .gtlm-license-card h2 {
 	margin-top: 0;
-	color: #102a43;
+	color: #1d2327;
 	font-weight: 600;
 }
 
@@ -471,16 +337,16 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 }
 
 .gtlm-update-notice--current {
-	background: #f8fafc;
+	background: #f6f7f7;
 	border: 1px solid #e2e8f0;
-	color: #627d98;
+	color: #50575e;
 }
 
 .gtlm-license-key {
 	font-size: 14px;
 	padding: 4px 8px;
-	background: #f8fafc;
-	border: 1px solid #d9e2ec;
+	background: #f6f7f7;
+	border: 1px solid #c3c4c7;
 	border-radius: 4px;
 }
 
@@ -489,7 +355,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 }
 
 .gtlm-license-card hr {
-	border-color: #d9e2ec;
+	border-color: #c3c4c7;
 }
 
 /* ── Row highlight after save ────────────────────────────────── */
@@ -579,7 +445,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 .gtlm-card .form-table .gtlm-geo-rules thead th {
 	padding-block: 8px;
 	vertical-align: bottom;
-	color: #102a43;
+	color: #1d2327;
 	font-weight: 600;
 	white-space: nowrap;
 }
@@ -788,5 +654,127 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	.gtlm-geo-rules tr.gtlm-geo-rule .gtlm-geo-move {
 		flex-direction: row;
 		gap: 8px;
+	}
+}
+
+/* ── Links table layout ──────────────────────────────────────────
+   This table can show up to 13 columns. Percentage widths were the
+   wrong tool: any column left unallocated (Mode, Clicks) collapsed to
+   a few pixels and wrapped one character per line. Instead every
+   column gets a floor, the wide ones get a ceiling and wrap normally,
+   and the table scrolls sideways rather than crushing anything.
+   ──────────────────────────────────────────────────────────────── */
+
+/* 0. Core ships this table as `widefat fixed`, i.e. table-layout: fixed,
+      where per-cell min-width is ignored and leftover space is divided
+      up until narrow columns collapse. Auto layout is what makes the
+      floors below actually hold. The table min-width then guarantees
+      the scroll container has something to scroll. */
+.wp-list-table.gtlm-links-table {
+	table-layout: auto;
+	min-width: 1100px;
+}
+
+/* 1. Horizontal scroll instead of column crush.
+      clear:both matters: core's search box is floated right, and without
+      it this container flows alongside the float at a fraction of the
+      available width. */
+.gtlm-table-scroll {
+	clear: both;
+	width: 100%;
+	position: relative;
+	overflow-x: auto;
+	overflow-y: hidden;
+	/* Without paint containment the clipped table still contributes to the
+	   document's scroll width, so the whole admin page scrolls sideways
+	   instead of just this container. */
+	contain: paint;
+	-webkit-overflow-scrolling: touch;
+	padding-bottom: 2px;
+}
+
+/* 2. A floor for every column. */
+.wp-list-table.gtlm-links-table th,
+.wp-list-table.gtlm-links-table td {
+	min-width: 80px;
+	white-space: normal;
+	overflow-wrap: break-word;
+	word-break: normal;
+}
+
+/* The checkbox column is a fixed control and must stay narrow. */
+.wp-list-table.gtlm-links-table th.check-column,
+.wp-list-table.gtlm-links-table td.check-column {
+	min-width: 2.2em;
+	width: 2.2em;
+}
+
+/* 3. Ceilings on the columns that carry long values, so one very long
+      URL cannot push every other column off screen. */
+.wp-list-table.gtlm-links-table .column-name {
+	min-width: 200px;
+	max-width: 320px;
+}
+
+.wp-list-table.gtlm-links-table .column-branded_url {
+	min-width: 160px;
+	max-width: 260px;
+}
+
+.wp-list-table.gtlm-links-table .column-url {
+	min-width: 200px;
+	max-width: 340px;
+}
+
+.wp-list-table.gtlm-links-table .column-notes,
+.wp-list-table.gtlm-links-table .column-tags {
+	max-width: 200px;
+}
+
+.wp-list-table.gtlm-links-table .column-created_at {
+	min-width: 110px;
+}
+
+/* URLs wrap at sensible points instead of being clipped. The full
+   value stays available via the title attribute and Copy URL. */
+.wp-list-table.gtlm-links-table .gtlm-url-cell {
+	display: inline-block;
+	max-width: 100%;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	word-break: normal;
+}
+
+.wp-list-table.gtlm-links-table .gtlm-url-cell code {
+	background: none;
+	padding: 0;
+	font-size: 12px;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.wp-list-table.gtlm-links-table .row-actions {
+	line-height: 1.6;
+	white-space: normal;
+}
+
+/* Below the point where core stacks the table into cards, the floors
+   and ceilings would fight that layout, so drop them. */
+@media screen and (max-width: 782px) {
+	.gtlm-table-scroll {
+		overflow-x: visible;
+	}
+
+	.wp-list-table.gtlm-links-table {
+		min-width: 0;
+	}
+
+	.wp-list-table.gtlm-links-table th,
+	.wp-list-table.gtlm-links-table td,
+	.wp-list-table.gtlm-links-table .column-name,
+	.wp-list-table.gtlm-links-table .column-branded_url,
+	.wp-list-table.gtlm-links-table .column-url {
+		min-width: 0;
+		max-width: none;
 	}
 }

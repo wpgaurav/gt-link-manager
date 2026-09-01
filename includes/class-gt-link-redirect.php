@@ -14,6 +14,13 @@ class GTLM_Redirect {
 
 	private GTLM_Settings $settings;
 
+	/**
+	 * Set when the request matched the link prefix but no link could be served.
+	 * Consumed on 'wp' to turn the request into a real 404 instead of letting
+	 * WordPress resolve the leftover gtlm_slug query to the front page.
+	 */
+	private bool $is_missing_link = false;
+
 	public static function init( GTLM_DB $db, GTLM_Settings $settings ): void {
 		$instance = new self( $db, $settings );
 		$instance->hooks();
@@ -61,6 +68,11 @@ class GTLM_Redirect {
 
 		// Step 1: Try standard prefix-based lookup (fastest path).
 		$slug = $this->extract_slug_from_request();
+
+		// A non-empty slug means the request path matched the configured
+		// prefix, so this URL is ours to answer for -- including answering 404.
+		$prefix_matched = ( '' !== $slug );
+
 		if ( '' !== $slug ) {
 			$link = $this->db->get_link_by_slug( $slug );
 			if ( is_array( $link ) ) {
@@ -91,11 +103,14 @@ class GTLM_Redirect {
 		}
 
 		if ( null === $link || empty( $link['url'] ) ) {
+			$this->mark_missing_link( $prefix_matched );
 			return;
 		}
 
-		// Skip trashed or inactive links.
+		// Skip trashed or inactive links. A trashed or deactivated link must
+		// read as gone, not silently fall through to the front page.
 		if ( ! empty( $link['trashed_at'] ) || empty( $link['is_active'] ) ) {
+			$this->mark_missing_link( $prefix_matched );
 			return;
 		}
 
@@ -128,6 +143,7 @@ class GTLM_Redirect {
 
 		$target_url = trim( $target_url );
 		if ( '' === $target_url ) {
+			$this->mark_missing_link( $prefix_matched );
 			return;
 		}
 
@@ -138,6 +154,7 @@ class GTLM_Redirect {
 
 		$target_url = wp_sanitize_redirect( $target_url );
 		if ( '' === $target_url || ! wp_http_validate_url( $target_url ) ) {
+			$this->mark_missing_link( $prefix_matched );
 			return;
 		}
 
@@ -185,7 +202,129 @@ class GTLM_Redirect {
 		nocache_headers();
 		header( 'X-Redirect-By: GT Link Manager', true );
 		header( 'Location: ' . $target_url, true, $status );
+
+		$this->record_click( $link );
+
 		exit;
+	}
+
+	/**
+	 * Count the click, after the visitor already has their redirect.
+	 *
+	 * The redirect is the product; a counter must not slow it down. The
+	 * response is flushed and the connection closed first where the SAPI
+	 * supports it (PHP-FPM), so the write happens on time the visitor is no
+	 * longer waiting for. Hosts without that support fall back to a plain
+	 * synchronous write, which is still only reached after the Location
+	 * header has been sent.
+	 *
+	 * Only a per-link total is stored: no IP address, no user agent, no
+	 * referrer, nothing that identifies a visitor.
+	 *
+	 * @param array<string, mixed> $link Link row.
+	 */
+	private function record_click( array $link ): void {
+		if ( ! $this->settings->click_tracking_enabled() ) {
+			return;
+		}
+
+		$link_id = (int) ( $link['id'] ?? 0 );
+		if ( $link_id <= 0 ) {
+			return;
+		}
+
+		/**
+		 * Filter whether this particular click should be counted.
+		 *
+		 * Return false to skip it -- for example to exclude logged-in
+		 * editors, or to plug in bot filtering.
+		 *
+		 * @param bool                 $count Whether to count the click.
+		 * @param array<string, mixed> $link  Link row.
+		 */
+		if ( ! (bool) apply_filters( 'gtlm_count_click', true, $link ) ) {
+			return;
+		}
+
+		// Close the connection first so the write is off the visitor's clock.
+		if ( function_exists( 'fastcgi_finish_request' ) ) {
+			fastcgi_finish_request();
+		}
+
+		$this->db->increment_clicks( $link_id );
+
+		/**
+		 * Fires after a click has been counted.
+		 *
+		 * @param int                  $link_id Link ID.
+		 * @param array<string, mixed> $link    Link row.
+		 */
+		do_action( 'gtlm_click_recorded', $link_id, $link );
+	}
+
+	/**
+	 * Flag a request that matched the link prefix but resolved to nothing.
+	 *
+	 * The rewrite rule maps the whole prefix namespace to a gtlm_slug query
+	 * var, so an unmatched slug would otherwise resolve to the front page and
+	 * return 200. That turns every dead, trashed, or deactivated short link
+	 * into a soft 404 that search engines index as duplicate home-page content.
+	 *
+	 * Only prefix-based requests are flagged. Direct and regex mode inspect
+	 * arbitrary paths that may legitimately belong to a real page, so those
+	 * must still fall through to WordPress untouched.
+	 *
+	 * @param bool $prefix_matched Whether the request path matched the prefix.
+	 */
+	private function mark_missing_link( bool $prefix_matched ): void {
+		if ( ! $prefix_matched ) {
+			return;
+		}
+
+		/**
+		 * Filter whether an unresolved prefixed link should return 404.
+		 *
+		 * Return false to restore the previous behaviour of falling through
+		 * to WordPress.
+		 *
+		 * @param bool $send_404 Whether to send a 404.
+		 */
+		if ( ! (bool) apply_filters( 'gtlm_404_on_missing_link', true ) ) {
+			return;
+		}
+
+		$this->is_missing_link = true;
+
+		// Stop core from guessing a permalink and 301-ing the dead link to an
+		// unrelated post.
+		add_filter( 'do_redirect_guess_404_permalink', '__return_false' );
+
+		add_action( 'wp', array( $this, 'force_missing_link_404' ), 1 );
+	}
+
+	/**
+	 * Turn a flagged request into a real 404 once the query exists.
+	 *
+	 * Deferred to 'wp' rather than terminating on 'init' so the active theme
+	 * renders its own 404 template instead of a blank body.
+	 */
+	public function force_missing_link_404(): void {
+		global $wp_query;
+
+		if ( ! $this->is_missing_link || ! $wp_query instanceof WP_Query ) {
+			return;
+		}
+
+		/**
+		 * Fires when a prefixed link could not be resolved.
+		 *
+		 * @param string $slug Requested slug.
+		 */
+		do_action( 'gtlm_link_not_found', $this->extract_slug_from_request() );
+
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
 	}
 
 	/**
@@ -354,7 +493,7 @@ class GTLM_Redirect {
 	 * @return array<int, string>
 	 */
 	private function parse_rel( string $rel ): array {
-		$parts = array_filter( array_map( 'trim', explode( ',', strtolower( $rel ) ) ) );
+		$parts = preg_split( '/[\s,]+/', strtolower( $rel ), -1, PREG_SPLIT_NO_EMPTY );
 		$parts = array_map( 'sanitize_key', $parts );
 
 		return array_values( array_unique( $parts ) );

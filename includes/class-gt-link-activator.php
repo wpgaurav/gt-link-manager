@@ -23,6 +23,14 @@ class GTLM_Activator {
 		self::register_rewrite_rules();
 		flush_rewrite_rules();
 
+		if ( ! wp_next_scheduled( 'gtlm_purge_trash' ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'gtlm_purge_trash' );
+		}
+
+		// Record the schema version now so the first admin load does not
+		// re-run dbDelta and the backfills against a freshly built table.
+		update_option( 'gtlm_db_version', GTLM_VERSION, true );
+
 		do_action( 'gtlm_activated' );
 	}
 
@@ -55,6 +63,7 @@ class GTLM_Activator {
 			category_id BIGINT(20) UNSIGNED DEFAULT NULL,
 			tags VARCHAR(255) DEFAULT '',
 			notes TEXT,
+			total_clicks BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
 			trashed_at DATETIME DEFAULT NULL,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -132,6 +141,31 @@ class GTLM_Activator {
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"UPDATE {$table} SET geo_mode = %s WHERE geo_mode IS NULL OR geo_mode = ''",
 				'off'
+			)
+		);
+
+		// Upgrades must not inherit the trash retention default.
+		//
+		// A fresh install opts into 30-day cleanup knowingly, because the
+		// trash starts empty. An existing site may have links sitting in the
+		// trash for years, and silently deleting them on the first cron run
+		// after an update is data loss the owner never agreed to. Existing
+		// installs are pinned to 0 (keep forever), which is exactly how the
+		// plugin behaved before this setting existed. The owner can opt in
+		// from Settings whenever they want.
+		$settings = get_option( 'gtlm_settings' );
+		if ( is_array( $settings ) && ! array_key_exists( 'trash_retention_days', $settings ) ) {
+			$settings['trash_retention_days'] = 0;
+			update_option( 'gtlm_settings', $settings, false );
+		}
+
+		// Backfill: rows created before 1.8.0 have NULL total_clicks.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$wpdb->query(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET total_clicks = %d WHERE total_clicks IS NULL",
+				0
 			)
 		);
 

@@ -42,14 +42,39 @@ class GTLM_Admin_Pages {
 		echo '<div class="wrap">';
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'GT Links', 'gt-link-manager' ) . '</h1>';
 		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add New', 'gt-link-manager' ) . '</a>';
+
+		if ( 'trash' === $view && $this->db->count_links( array( 'trashed' => true ) ) > 0 ) {
+			$empty_url = wp_nonce_url(
+				add_query_arg(
+					array(
+						'page'        => 'gtlm-links',
+						'link_status' => 'trash',
+						'gtlm_action' => 'empty_trash',
+					),
+					admin_url( 'admin.php' )
+				),
+				'gtlm_empty_trash'
+			);
+			echo ' <a href="' . esc_url( $empty_url ) . '" class="page-title-action gtlm-empty-trash">' . esc_html__( 'Empty Trash', 'gt-link-manager' ) . '</a>';
+		}
+
+		echo '<hr class="wp-header-end" />';
 		$this->render_notice();
+		// get_views() was implemented but never rendered, which left the
+		// Active, Inactive, and Trash views reachable only by typing the URL.
+		$table->views();
+
 		echo '<form method="get">';
 		echo '<input type="hidden" name="page" value="gtlm-links" />';
 		if ( '' !== $view ) {
 			echo '<input type="hidden" name="link_status" value="' . esc_attr( $view ) . '" />';
 		}
 		$table->search_box( esc_html__( 'Search links', 'gt-link-manager' ), 'gtlm-links-search' );
+		// Scroll container: with every column shown this table is wider than
+		// the admin content area, and squeezing it collapses narrow columns.
+		echo '<div class="gtlm-table-scroll">';
 		$table->display();
+		echo '</div>';
 		echo '</form>';
 		echo '</div>';
 	}
@@ -246,6 +271,9 @@ class GTLM_Admin_Pages {
 		$this->render_checkbox_field( 'default_noindex', __( 'Default Noindex', 'gt-link-manager' ), __( 'Apply noindex to new links by default', 'gt-link-manager' ), ! empty( $settings['default_noindex'] ) );
 		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Delete Data on Uninstall', 'gt-link-manager' ), __( 'Remove all links, categories, and settings when the plugin is deleted', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
 		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced Redirects', 'gt-link-manager' ), __( 'Enable direct (prefix-free) and regex (pattern-based) redirect modes', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
+		$this->render_retention_field( (int) ( $settings['trash_retention_days'] ?? 30 ) );
+		$this->render_checkbox_field( 'enable_click_tracking', __( 'Click Tracking', 'gt-link-manager' ), __( 'Count how many times each link is followed', 'gt-link-manager' ), ! empty( $settings['enable_click_tracking'] ) );
+		echo '<tr><th scope="row"></th><td><p class="description">' . esc_html__( 'Stores a single running total per link. No IP address, user agent, referrer, or timestamp is recorded, and nothing identifies a visitor. The count is written after the redirect has already been sent, so it does not slow the redirect down. Leave this off and the plugin logs nothing at all about requests.', 'gt-link-manager' ) . '</p></td></tr>';
 		echo '</tbody></table>';
 
 		echo '<h2>' . esc_html__( 'Geolocation Targeting', 'gt-link-manager' ) . '</h2>';
@@ -378,7 +406,46 @@ class GTLM_Admin_Pages {
 			'import_bad_columns'     => array( 'error', __( 'CSV columns are invalid. Required: name and url (or Destination URL in LinkCentral preset).', 'gt-link-manager' ) ),
 			'preview_ready'          => array( 'success', __( 'Preview generated. Review mapping and run import.', 'gt-link-manager' ) ),
 			'export_done'            => array( 'success', __( 'Export started.', 'gt-link-manager' ) ),
+			'undone'                 => array( 'success', __( 'Action undone.', 'gt-link-manager' ) ),
+			'undo_failed'            => array( 'error', __( 'Could not undo that action.', 'gt-link-manager' ) ),
+			'bulk_none'              => array( 'warning', __( 'No links were selected.', 'gt-link-manager' ) ),
+			'bulk_updated'           => array( 'success', __( 'Links updated.', 'gt-link-manager' ) ),
+			'clicks_reset'           => array( 'success', __( 'Click count reset.', 'gt-link-manager' ) ),
+			'clicks_reset_failed'    => array( 'error', __( 'Could not reset the click count.', 'gt-link-manager' ) ),
 		);
+
+		$count = isset( $_GET['gtlm_count'] ) ? absint( $_GET['gtlm_count'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		// Bulk results report a count, so their text is built here where the
+		// number is known and can drive a correct plural.
+		$number = number_format_i18n( $count );
+
+		switch ( $notice ) {
+			case 'bulk_trashed':
+				/* translators: %s: number of links. */
+				$map[ $notice ] = array( 'success', sprintf( _n( '%s link moved to the Trash.', '%s links moved to the Trash.', $count, 'gt-link-manager' ), $number ) );
+				break;
+			case 'bulk_restored':
+				/* translators: %s: number of links. */
+				$map[ $notice ] = array( 'success', sprintf( _n( '%s link restored from the Trash.', '%s links restored from the Trash.', $count, 'gt-link-manager' ), $number ) );
+				break;
+			case 'bulk_deleted':
+				/* translators: %s: number of links. */
+				$map[ $notice ] = array( 'success', sprintf( _n( '%s link permanently deleted.', '%s links permanently deleted.', $count, 'gt-link-manager' ), $number ) );
+				break;
+			case 'bulk_activated':
+				/* translators: %s: number of links. */
+				$map[ $notice ] = array( 'success', sprintf( _n( '%s link activated.', '%s links activated.', $count, 'gt-link-manager' ), $number ) );
+				break;
+			case 'bulk_deactivated':
+				/* translators: %s: number of links. */
+				$map[ $notice ] = array( 'success', sprintf( _n( '%s link deactivated.', '%s links deactivated.', $count, 'gt-link-manager' ), $number ) );
+				break;
+			case 'trash_emptied':
+				/* translators: %s: number of links. */
+				$map[ $notice ] = array( 'success', sprintf( _n( 'Trash emptied. %s link deleted.', 'Trash emptied. %s links deleted.', $count, 'gt-link-manager' ), $number ) );
+				break;
+		}
 
 		if ( ! isset( $map[ $notice ] ) ) {
 			return;
@@ -386,11 +453,59 @@ class GTLM_Admin_Pages {
 
 		$type = (string) $map[ $notice ][0];
 		$text = (string) $map[ $notice ][1];
-		echo '<div class="notice notice-' . esc_attr( $type ) . ' is-dismissible"><p>' . esc_html( $text ) . '</p></div>';
+
+		echo '<div class="notice notice-' . esc_attr( $type ) . ' is-dismissible"><p>';
+		echo esc_html( $text );
+		$this->render_undo_link();
+		echo '</p></div>';
+	}
+
+	/**
+	 * Render the "Undo" affordance carried by the previous redirect.
+	 *
+	 * Mirrors the core pattern of offering a one-click reversal inline in the
+	 * success notice, so a mis-click is recoverable without hunting through
+	 * the Trash view.
+	 */
+	private function render_undo_link(): void {
+		if ( ! isset( $_GET['gtlm_undo'], $_GET['gtlm_undo_ids'], $_GET['gtlm_undo_nonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		$action = sanitize_key( (string) wp_unslash( $_GET['gtlm_undo'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$ids    = sanitize_text_field( (string) wp_unslash( $_GET['gtlm_undo_ids'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$nonce  = sanitize_text_field( (string) wp_unslash( $_GET['gtlm_undo_nonce'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( '' === $action || '' === $ids || '' === $nonce ) {
+			return;
+		}
+
+		$url = add_query_arg(
+			array(
+				'page'            => 'gtlm-links',
+				'gtlm_do_undo'    => $action,
+				'gtlm_undo_ids'   => $ids,
+				'gtlm_undo_nonce' => $nonce,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		echo ' <a href="' . esc_url( $url ) . '" class="gtlm-undo">' . esc_html__( 'Undo', 'gt-link-manager' ) . '</a>';
 	}
 
 	private function render_text_field( string $name, string $label, string $value, bool $required = false, string $type = 'text' ): void {
 		echo '<tr><th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th><td><input name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '" type="' . esc_attr( $type ) . '" class="regular-text" value="' . esc_attr( $value ) . '" ' . ( $required ? 'required' : '' ) . ' /></td></tr>';
+	}
+
+	/**
+	 * Trash retention control.
+	 */
+	private function render_retention_field( int $value ): void {
+		echo '<tr><th scope="row"><label for="trash_retention_days">' . esc_html__( 'Empty Trash Automatically', 'gt-link-manager' ) . '</label></th><td>';
+		echo '<input name="trash_retention_days" id="trash_retention_days" type="number" min="0" max="365" step="1" class="small-text" value="' . esc_attr( (string) $value ) . '" aria-describedby="trash_retention_days-description" /> ';
+		echo '<span>' . esc_html__( 'days', 'gt-link-manager' ) . '</span>';
+		echo '<p class="description" id="trash_retention_days-description">' . esc_html__( 'Permanently delete links that have been in the Trash longer than this. Set to 0 to keep trashed links until you delete them yourself.', 'gt-link-manager' ) . '</p>';
+		echo '</td></tr>';
 	}
 
 	private function render_textarea_field( string $name, string $label, string $value ): void {

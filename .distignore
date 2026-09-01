@@ -31,6 +31,7 @@ CLAUDE.md
 
 # QA
 phpcs.xml.dist
+composer.json
 composer.lock
 vendor/
 
