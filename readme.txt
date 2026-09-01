@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Fast, free branded link manager with custom database tables, early redirects, CS
 
 == Description ==
 
-**GT Link Manager** is a **100% free** high-performance branded link manager for WordPress — no upsells, no premium tiers, no paywalls. It stores links in **custom database tables** (not custom post types), resolves redirects early on `init`, and keeps your site fast — even with thousands of links.
+**GT Link Manager** is a **100% free** high-performance branded link manager for WordPress, no upsells, no premium tiers, no paywalls. It stores links in **custom database tables** (not custom post types), resolves redirects early on `init`, and keeps your site fast, even with thousands of links.
 
 Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix is configurable and can even be removed on individual links).
 
@@ -20,68 +20,159 @@ Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix
 
 = Why GT Link Manager? =
 
-Most link management plugins use custom post types, which means every redirect loads the full WordPress template stack. GT Link Manager takes a different approach — it intercepts the request early, looks up the slug in a **UNIQUE-indexed database column**, sends the redirect header, and exits. No theme loading, no unnecessary queries.
+A branded link is a redirect with a job: it has to resolve fast, survive a thousand siblings, and never become the slowest thing on the page. GT Link Manager stores links in **custom database tables**, not custom post types. It intercepts the request on `init` at priority 0, looks up the slug in a UNIQUE-indexed column, sends the redirect header, and exits.
+
+No theme loading. No template stack. No post query.
+
+Storing links as custom post types means a redirect wakes up more of WordPress than a redirect needs. Custom tables keep the resolution path short, and it stays short whether you have 20 links or 2,000.
 
 = Key Features =
 
-* **Fast direct redirects** — resolves links on `init` (priority 0) via direct DB lookup, no CPT overhead
-* **301, 302, and 307 redirects** — choose the right redirect type for SEO, temporary, or method-preserving redirects
-* **Rel attribute controls** — set `nofollow`, `sponsored`, and `ugc` per link for proper SEO attribution
-* **Noindex support** — sends `X-Robots-Tag: noindex` header to prevent search engines from indexing redirect URLs
-* **Categories and tags** — organize links into categories with parent/child hierarchy and free-form tags
-* **Full admin list table** — search, filter by category/status, sort by any column, and perform bulk actions
-* **Quick Edit** — update URL, slug, redirect type, rel, category, and status inline without leaving the list
-* **Activate / Deactivate** — disable a link without deleting it; inactive links stop redirecting but stay in the database
-* **Trash and restore** — soft-delete links to trash with the option to restore or permanently delete
-* **CSV import and export** — import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets, supports any CSV though as it allows you to map fields manually.
-* **Block editor integration** — a toolbar button lets you search your links and insert them directly into post content
-* **Branded URL preview** — see the full branded URL as you type, with one-click copy
+* **Fast direct redirects.** Resolves links on `init` (priority 0) via direct DB lookup, no CPT overhead
+* **301, 302, and 307 redirects.** Choose the right redirect type for SEO, temporary, or method-preserving redirects
+* **Rel attribute controls.** Set `nofollow`, `sponsored`, and `ugc` per link for proper SEO attribution
+* **Noindex support.** Sends `X-Robots-Tag: noindex` header to prevent search engines from indexing redirect URLs
+* **Categories and tags.** Organize links into categories with parent/child hierarchy and free-form tags
+* **Full admin list table.** Search, filter by category/status, sort by any column, and perform bulk actions
+* **Quick Edit.** Update URL, slug, redirect type, rel, category, and status inline without leaving the list
+* **Activate / Deactivate.** Disable a link without deleting it; inactive links stop redirecting but stay in the database
+* **Trash and restore.** Soft-delete links to trash with the option to restore or permanently delete
+* **CSV import and export.** Import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets, supports any CSV though as it allows you to map fields manually.
+* **Block editor integration.** A toolbar button lets you search your links and insert them directly into post content
+* **Branded URL preview.** See the full branded URL as you type, with one-click copy
 * **Normal and Regex Redirects** supported too. Don't want to use a prefix like `/go/` ? Sure thing. Use the GT Link Manager as an alternative to Rank Math Redirections, Yoast Redirects, Redirection plugin etc. **Tested to be faster** than these top tools.
-* **Geolocation targeting** — send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from the header your CDN already sends — Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module — so there is **no GeoIP database to install, no external API call, and no added latency**. Adds roughly 20 microseconds to a geo-enabled redirect and nothing measurable to the rest.
-* **Click counting** — an optional per-link click counter, off by default. It stores one running total per link and nothing else: no IP address, no user agent, no referrer, no timestamp, nothing tied to a visitor. The count is written after the redirect has already been sent, so it does not slow the redirect down. Leave it off and the plugin logs nothing about requests at all.
-* **Click tracking integrations** — for richer analytics, hook `gtlm_before_redirect` and send events to GA4, Plausible, Fathom, and more
-* **Developer-friendly** — actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
+* **Geolocation targeting.** Send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from a header your CDN already sends, whether that is Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module, so there is **no GeoIP database to install, no external API call, and no added latency**. Adds roughly 20 microseconds to a geo-enabled redirect and nothing measurable to the rest.
+* **Click counting.** An optional per-link counter, off by default. Turn it on and each link keeps a running total, shown as a sortable Clicks column and included in CSV export
+* **Click tracking integrations.** For per-visit analytics, hook `gtlm_before_redirect` and send events to GA4, Plausible, Fathom, Matomo, or Simple Analytics
+* **Developer-friendly.** Actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
 
 = Developer Hooks =
 
 GT Link Manager provides a comprehensive set of hooks for customization:
 
-* `gtlm_before_redirect` — action fired before redirect (use for click tracking or logging)
-* `gtlm_redirect_url` — filter to modify the destination URL
-* `gtlm_redirect_code` — filter to modify the HTTP status code
-* `gtlm_rel_attributes` — filter to modify rel attribute values
-* `gtlm_headers` — filter to modify redirect response headers
-* `gtlm_prefix` — filter to override the URL prefix
-* `gtlm_capabilities` — filter to override the required user capability
-* `gtlm_cache_ttl` — filter to set object cache TTL for link lookups
-* `gtlm_geo_country` — filter the detected country code (plug in any detection method you like)
-* `gtlm_geo_sources` — filter the list of request variables checked for a country
-* `gtlm_geo_country_groups` — filter country groups usable in rules (ships with `EU`)
-* `gtlm_geo_matched_rule` — filter the resolved geo rule before the redirect is sent
-* `gtlm_geo_blocked` — action fired when a visitor is blocked by a geo rule's 404 fallback
-* `gtlm_link_not_found` — action fired when a prefixed link cannot be resolved and a 404 is sent
-* `gtlm_404_on_missing_link` — filter to disable the 404 for unresolved prefixed links and fall through to WordPress instead
-* `gtlm_trash_purged` — action fired after trashed links are automatically purged, with the count and retention window
-* `gtlm_count_click` — filter to skip counting a particular click (exclude logged-in editors, add bot filtering)
-* `gtlm_click_recorded` — action fired after a click has been counted
+* `gtlm_before_redirect`, action fired before redirect (use for click tracking or logging)
+* `gtlm_redirect_url`, filter to modify the destination URL
+* `gtlm_redirect_code`, filter to modify the HTTP status code
+* `gtlm_rel_attributes`, filter to modify rel attribute values
+* `gtlm_headers`, filter to modify redirect response headers
+* `gtlm_prefix`, filter to override the URL prefix
+* `gtlm_capabilities`, filter to override the required user capability
+* `gtlm_cache_ttl`, filter to set object cache TTL for link lookups
+* `gtlm_geo_country`, filter the detected country code (plug in any detection method you like)
+* `gtlm_geo_sources`, filter the list of request variables checked for a country
+* `gtlm_geo_country_groups`, filter country groups usable in rules (ships with `EU`)
+* `gtlm_geo_matched_rule`, filter the resolved geo rule before the redirect is sent
+* `gtlm_geo_blocked`, action fired when a visitor is blocked by a geo rule's 404 fallback
+* `gtlm_link_not_found`, action fired when a prefixed link cannot be resolved and a 404 is sent
+* `gtlm_404_on_missing_link`, filter to disable the 404 for unresolved prefixed links and fall through to WordPress instead
+* `gtlm_trash_purged`, action fired after trashed links are automatically purged, with the count and retention window
+* `gtlm_count_click`, filter to skip counting a particular click (exclude logged-in editors, add bot filtering)
+* `gtlm_click_recorded`, action fired after a click has been counted
+
+= Click Counting =
+
+Click counting is off when you install the plugin, and that default is deliberate. With it off, GT Link Manager logs nothing at all about a request, and the privacy statement it registers under **Settings > Privacy** says exactly that.
+
+Turn it on from **GT Links > Settings** and each link starts keeping one number: how many times it has been followed. That is the whole record. What it stores per click:
+
+* nothing about the visitor
+* no IP address
+* no user agent
+* no referrer
+* no timestamp
+
+A single running total per link cannot be tied back to a person, a session, or a place, which is why enabling it does not drag your site into the analytics-consent conversation.
+
+The count is written after the redirect has already been sent to the browser, using `fastcgi_finish_request()` where the host supports it. On a test install without that function, which is the slower of the 2 paths, a redirect measured 9.0ms with counting on against 9.1ms with it off.
+
+Where the number shows up:
+
+* a sortable **Clicks** column in the links table, hidden until you switch tracking on
+* a **Reset Clicks** row action for a single link
+* the `total_clicks` field in the REST API, read-only
+* a `total_clicks` column in CSV export
+
+Use `gtlm_count_click` to skip clicks you do not want counted, such as your own logged-in visits.
+
+Counting is intentionally shallow. It answers "which of my links get used" and nothing else. Per-visit data, referrers, countries, and time series belong in a real analytics tool, and the **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** has step-by-step guides for wiring `gtlm_before_redirect` into GA4, Plausible, Fathom, Matomo, Simple Analytics, or a click log table of your own.
 
 = Free Training Course =
 
-The **[GT Link Manager Training](https://gauravtiwari.org/course/gt-link-manager-training/)** is a free 25-lesson course (under 2 hours) covering everything from installation to advanced developer integrations:
+The **[GT Link Manager Training](https://gauravtiwari.org/course/gt-link-manager-training/)** is a free course covering installation through developer integrations. Most lessons run 3 to 5 minutes, so you can read the 1 you need instead of the whole thing.
 
-* **Getting Started** — installation, admin interface, link creation, categories, and redirect configuration
-* **Configuration & Features** — settings, redirect mechanics, block editor integration, and bulk import/export
-* **Developer Reference** — REST API, hooks and filters, analytics integrations, webhooks, and advanced redirects
+Straight to the lesson for a specific feature:
+
+* [Getting Started](https://gauravtiwari.org/course/gt-link-manager-training/getting-started-1771422506/getting-started/) covers the admin screens and your first link
+* [Managing Links](https://gauravtiwari.org/course/gt-link-manager-training/getting-started-1771422506/managing-links/) covers editing, quick edit, status, and trash
+* [Link Categories](https://gauravtiwari.org/course/gt-link-manager-training/getting-started-1771422506/categories/) covers organizing a large library
+* [Settings and Configuration](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/settings-configuration/) covers the prefix, defaults, and advanced modes
+* [The Redirect System](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/redirect-system/) covers 301, 302, 307, and how resolution works
+* [Block Editor Integration](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/block-editor-integration/) covers the GT Link toolbar button and the Button block
+* [Import and Export](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/import-export/) covers the Pretty Links and LinkCentral presets and column mapping
+* [Geolocation Targeting](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/geolocation-targeting/) covers per-country rules and CDN header detection
+* [REST API Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/rest-api-reference/) covers every endpoint and its arguments
+* [Hooks and Filters](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/hooks-filters/) covers all the extension points
+* [Troubleshooting](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/troubleshooting-1771422633/) covers redirects that do not fire and slugs that collide
+
+= Source and Issue Tracker =
+
+GT Link Manager is developed in the open. The full source, including the block editor code that ships compiled in the plugin, is on GitHub:
+
+* [Repository](https://github.com/wpgaurav/gt-link-manager) for the code and release history
+* [Issues](https://github.com/wpgaurav/gt-link-manager/issues) for bugs and feature requests
+* [Releases](https://github.com/wpgaurav/gt-link-manager/releases) for changelogs and downloadable builds
+
+A bug report with your WordPress version, PHP version, and the slug that misbehaved is usually enough to reproduce it.
+
+= Support =
+
+Support runs through the **[WordPress.org support forum](https://wordpress.org/support/plugin/gt-link-manager/)** for this plugin. That is the fastest route for every kind of problem, and it is the one to use first.
+
+Post there and the answer stays public, so the next person with the same redirect loop finds it without asking again.
+
+What helps a thread get solved on the first reply:
+
+* your WordPress and PHP versions
+* the link slug and the prefix you configured
+* what you expected the redirect to do, and what it actually did
+* whether a CDN or page cache sits in front of the site
+
+For a suspected bug in the code itself, [GitHub Issues](https://github.com/wpgaurav/gt-link-manager/issues) works too, and a security report should go to the maintainer privately rather than into a public thread.
+
+= What Makes GT Link Manager Stand Out =
+
+Plenty of plugins will shorten a URL for you. These are the things this one does that shaped how it was built.
+
+**Everything is free.** Geolocation targeting, the full REST API, CSV import and export, regex and prefix-free redirects, the block editor tools. There is no Pro tier holding a feature back, no upsell notice in the admin, no telemetry, and no account to create. Nothing here is a trial.
+
+**Redirects resolve before WordPress wakes up.** The lookup runs on `init` at priority 0, against a UNIQUE-indexed slug column in a custom table. Match found, header sent, exit. No theme, no template hierarchy, no post query, and no slowdown as the library grows.
+
+**Dead links return a real 404.** A trashed or deactivated link stops resolving and says so with the correct status code. It does not quietly serve your front page at HTTP 200, which is what turns a retired affiliate link into duplicate home-page content in a search index.
+
+**Geolocation costs nothing when you do not use it, and no database when you do.** Country detection reads a header your CDN already attaches, so there is no GeoIP file to install or keep updated and no external service in the request path. Links that do not opt in never trigger detection at all.
+
+**The REST API covers the whole link lifecycle.** Create, read, update, trash, restore, and bulk-categorise, with a self-describing schema. That makes the plugin scriptable, and it is why AI tooling can manage links without a browser session.
+
+**Click counting stores a number, not a person.** Turn it on and each link keeps a running total. No IP address, no user agent, no referrer, no timestamp. The write happens after the redirect has already gone out.
+
+**Your links stay yours.** CSV import reads other plugins' exports so you can move in, and CSV export gives you everything back, geo rules included, so you can move out. Uninstall removes only what you tell it to remove.
+
+Honest limits, because they matter more than the list above:
+
+* the click counter answers "which links get used" and nothing else. Per-visit detail, referrers, and time series need a real analytics tool, and the hooks are there for it
+* country detection is only as trustworthy as the CDN in front of it. A forged header on an origin with nothing proxying it is still a forged header
+* there is no automatic keyword linking. Links go where you put them
+* it is a young plugin, and a young plugin has seen fewer edge cases than an old one
 
 = Analytics & Advanced Integrations =
 
 The **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** includes step-by-step integration guides for:
 
-* **Analytics** — Google Analytics 4 (GA4), Plausible Analytics, Fathom Analytics, Matomo, and Simple Analytics
-* **Tracking** — custom click logging to a database table, dashboard widget, and UTM parameter passthrough
-* **Automation** — webhook notifications for Zapier, Make, and n8n
-* **Advanced redirects** — role-based redirects (route by user role) and geo-based redirects (route by location)
-* **Customization** — custom response headers, hooks and filters reference
+* **Analytics.** Google Analytics 4 (GA4), Plausible Analytics, Fathom Analytics, Matomo, and Simple Analytics
+* **Tracking.** Custom click logging to a database table, dashboard widget, and UTM parameter passthrough
+* **Automation.** Webhook notifications for Zapier, Make, and n8n
+* **Advanced redirects.** Role-based redirects (route by user role) and geo-based redirects (route by location)
+* **Customization.** Custom response headers, hooks and filters reference
 
 = REST API & AI Tools =
 
@@ -111,7 +202,11 @@ Yes. GT Link Manager is built for **speed and simplicity**. It uses custom datab
 
 = Does it track clicks? =
 
-Click tracking is supported via the `gtlm_before_redirect` action hook, which fires on every redirect. Use it to log clicks to a custom database table or integrate with external analytics tools — the [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) has step-by-step guides for GA4, Plausible, Fathom, Matomo, Simple Analytics, and custom click logging.
+Yes, in 2 ways, and both are optional.
+
+A built-in counter keeps one running total per link. Switch it on under **GT Links > Settings**. It records no IP address, user agent, referrer, or timestamp, and the count is written after the redirect has already gone out.
+
+For per-visit analytics, the `gtlm_before_redirect` action fires on every redirect. The [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) has step-by-step guides for GA4, Plausible, Fathom, Matomo, Simple Analytics, and logging to a click table of your own.
 
 = Can I import from Pretty Links or LinkCentral? =
 
@@ -119,7 +214,7 @@ Yes. Go to **GT Links > Import / Export**, choose the **Pretty Links** or **Link
 
 = How are redirects resolved? =
 
-The plugin hooks into WordPress `init` at **priority 0** (before most plugins load). It parses the request URI, checks for your configured prefix, and looks up the slug in a **UNIQUE-indexed column** in a custom database table. If a match is found, it sends the redirect header and exits immediately — no theme or template loading.
+The plugin hooks into WordPress `init` at **priority 0** (before most plugins load). It parses the request URI, checks for your configured prefix, and looks up the slug in a **UNIQUE-indexed column** in a custom database table. If a match is found, it sends the redirect header and exits immediately, no theme or template loading.
 
 = Can I customize which users can manage links? =
 
@@ -127,7 +222,7 @@ Yes. By default, any user with the `edit_posts` capability can manage links. Use
 
 = Is GT Link Manager really free? =
 
-Yes, 100%. There are no premium tiers, upsells, or paywalls. Every feature — including advanced redirects, the REST API, CSV import/export, and block editor integration — is included for free. There is also a free training course at [gauravtiwari.org](https://gauravtiwari.org/course/gt-link-manager-training/).
+Yes, 100%. There are no premium tiers, upsells, or paywalls. Every feature, including advanced redirects, the REST API, CSV import/export, and block editor integration, is included for free. There is also a free training course at [gauravtiwari.org](https://gauravtiwari.org/course/gt-link-manager-training/).
 
 = Can I manage links with AI tools or the REST API? =
 
@@ -137,19 +232,86 @@ Yes. GT Link Manager includes a full REST API for creating, updating, and deleti
 
 Yes. The [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) has step-by-step guides for GA4, Plausible, Fathom, Matomo, and Simple Analytics. You can also set up webhook notifications for Zapier, Make, and n8n.
 
+= Will it slow my site down? =
+
+No. A branded link resolves with a single indexed lookup on `init` at priority 0, then sends the header and exits before the theme loads. On a test install a redirect measured about 9ms, and turning the click counter on moved that by roughly 0.1ms because the count is written after the redirect has already gone out.
+
+The lookup is against a UNIQUE-indexed column, so 2,000 links resolve as fast as 20.
+
+= Why does a deleted link now return a 404 instead of my home page? =
+
+Because that is the correct answer, and until version 1.8.0 the plugin got it wrong.
+
+A trashed or deactivated link used to fall through to WordPress, which resolved the leftover request to your front page and returned HTTP 200. Search engines read that as your home page living at hundreds of different URLs, and link checkers reported dead links as healthy. Unresolved links under your prefix now return a real 404 rendered by your theme.
+
+If you depended on the old behaviour, `gtlm_404_on_missing_link` turns it off.
+
+= Can I change the prefix after I have created links? =
+
+Yes. Change it under **GT Links > Settings** and every existing link moves to the new prefix immediately, because the prefix is not stored per link. Rewrite rules are flushed for you.
+
+Anything already published pointing at the old prefix will stop working, so treat a prefix change on an established site the way you would treat any permalink change.
+
+= Does it work with a page cache or CDN? =
+
+Yes. Redirect responses send `Cache-Control: no-store, no-cache, must-revalidate` along with the standard WordPress no-cache headers, so a caching layer will not hold on to a redirect and serve it after you have changed the destination.
+
+Geolocation is the one thing to watch. Behind a CDN, a cached 301 pins a visitor to whichever country they were in on their first visit, which is why the link editor warns you when a geo-targeted link is set to 301. Use 302 for those.
+
+= Does it work on multisite? =
+
+It works, per site. Tables are created with the site's own database prefix, so each site in a network keeps its own links, categories, and settings. Links are not shared across the network and there is no network-level admin screen.
+
+= Which redirect types can I use? =
+
+301, 302, and 307.
+
+* **301** is permanent and is what you want for most affiliate and outbound links
+* **302** is temporary, and the right choice for anything geo-targeted, because browsers cache a 301
+* **307** preserves the request method, which matters when something POSTs to the URL
+
+= I trashed a link by mistake. Can I get it back? =
+
+Yes, and you do not have to go hunting. The notice that appears after trashing, restoring, activating, or deactivating a link carries an **Undo** link, and it works for bulk selections as well as single links.
+
+Trashed links also stay in the **Trash** view until you delete them. Automatic cleanup after a set number of days is available under Settings, and it is switched off on existing sites so an update never removes anything you had sitting there.
+
+= Can I use links without the /go/ prefix? =
+
+Yes. Turn on **Advanced Redirects** under Settings and a link can use direct mode, which serves it from the site root as `yoursite.com/your-slug`.
+
+WordPress paths such as `wp-admin`, `wp-json`, `wp-login.php`, and `feed` are blocked as slugs, because claiming one of those would break the site rather than shorten a link.
+
+= My geo rule is not matching. What should I check? =
+
+Country detection reads a header your CDN or server adds to the request, so the first question is whether anything is adding one. Open **GT Links > Settings** and use **Check Detection**. It lists every country header present on the current request with its raw value, and runs a loopback test so you can confirm detection works even on a local install with no CDN in front of it.
+
+If no header is present, nothing is proxying the site and there is no country to read. That is expected rather than a fault, and the plugin says so instead of failing quietly.
+
+= Does it collect any personal data? =
+
+No. The plugin does not set cookies, add tracking scripts, or log requests.
+
+With click counting switched on it stores one running total per link, with no IP address, user agent, referrer, or timestamp attached. Geolocation reads a country code from a request header and uses it for that single redirect without storing it. The plugin registers a suggested privacy-policy section under **Settings > Privacy** that describes whichever of these you have enabled.
+
 = What happens when I uninstall? =
 
-Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** — both database tables and plugin options. Deactivating the plugin preserves all data.
+Uninstalling the plugin (deleting it from **Plugins**) will **remove all data**, both database tables and plugin options. Deactivating the plugin preserves all data.
 
 == Screenshots ==
 
-1. **All Links** — admin list with search, filters, status views, and bulk actions
-2. **Add/Edit Link** — form with branded URL preview, redirect type, rel attributes, and categories
-3. **Categories** — manage link categories with parent/child hierarchy
-4. **Settings** — configure prefix, defaults, flush permalinks, and run diagnostics
-5. **Import/Export** — CSV import with column mapping preview and preset support
+1. **All Links**, admin list with search, filters, status views, and bulk actions
+2. **Add/Edit Link**, form with branded URL preview, redirect type, rel attributes, and categories
+3. **Categories**, manage link categories with parent/child hierarchy
+4. **Settings**, configure prefix, defaults, flush permalinks, and run diagnostics
+5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.8.1 =
+* New: a copy button on the Branded URL column. It appears when you hover the row or focus it with the keyboard, copies the full branded link, and confirms with an inline Copied badge that clears itself.
+* New: the plugin's own icon now appears in the admin menu, replacing the generic WordPress link dashicon. It is painted as a mask filled with the menu's own text colour, so it matches the icons beside it in every state and every admin colour scheme, staying light on dark sidebars and dark on light ones.
+* Updated: refreshed the WordPress.org plugin icon.
 
 = 1.8.0 =
 * Fixed: the links table collapsed narrow columns when many were shown at once. With every column visible, Mode and Clicks were squeezed to a few pixels and their values wrapped one character per line. Every column now has a minimum width, the wide ones wrap instead of being clipped, and the table scrolls sideways on its own rather than stretching the admin page.
@@ -331,6 +493,9 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data** 
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.8.1 =
+Adds a hover-and-click copy button to the Branded URL column and the plugin's own icon in the admin menu, plus an expanded readme and FAQ. No database changes.
 
 = 1.8.0 =
 Tested with WordPress 7.1. Fixes a soft 404 that made every dead, trashed, or deactivated short link return the site's front page at HTTP 200, and fixes space-separated rel values being silently dropped. Adds optional click counting (off by default), Undo for trash and status changes, optional automatic Trash cleanup (off for existing sites, so nothing in your Trash is deleted by updating), and an accessibility and native-UI pass on the admin screens. Adds one column to the links table on upgrade; existing links are untouched.

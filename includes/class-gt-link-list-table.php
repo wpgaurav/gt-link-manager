@@ -339,12 +339,22 @@ class GTLM_List_Table extends WP_List_Table {
 
 		// Show the path rather than the absolute URL: it is what identifies the
 		// link, it stays readable in a narrow column, and the full URL is still
-		// available from the title attribute and the Copy URL row action.
+		// available from the title attribute and the copy button.
 		return sprintf(
-			'<a class="gtlm-url-cell" href="%1$s" target="_blank" rel="noopener noreferrer" title="%2$s"><code>%3$s</code></a>',
+			'<span class="gtlm-branded-cell">'
+				. '<a class="gtlm-url-cell" href="%1$s" target="_blank" rel="noopener noreferrer" title="%2$s"><code>%3$s</code></a>'
+				. '<button type="button" class="gtlm-copy-inline" data-copy-url="%1$s" aria-label="%4$s" title="%4$s">'
+					. '<span class="gtlm-copy-inline__icon dashicons dashicons-admin-page" aria-hidden="true"></span>'
+					. '<span class="gtlm-copy-inline__done" aria-hidden="true">%5$s</span>'
+				. '</button>'
+				. '<span class="screen-reader-text" aria-live="polite"></span>'
+			. '</span>',
 			esc_url( $url ),
 			esc_attr( $url ),
-			esc_html( $path )
+			esc_html( $path ),
+			/* translators: %s: branded link path. */
+			esc_attr( sprintf( __( 'Copy branded URL for %s', 'gt-link-manager' ), $path ) ),
+			esc_html__( 'Copied', 'gt-link-manager' )
 		);
 	}
 

@@ -8,3 +8,5 @@ vendor/
 /todebug.md
 build-release/
 composer.lock
+*.bak
+*.orig

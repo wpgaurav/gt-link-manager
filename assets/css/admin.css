@@ -778,3 +778,93 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 		max-width: none;
 	}
 }
+
+/* ── Inline copy button on the Branded URL column ────────────────
+   Revealed on row hover to keep the column quiet, but also on
+   keyboard focus: a hover-only control is unreachable by keyboard.
+   ──────────────────────────────────────────────────────────────── */
+.gtlm-branded-cell {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	max-width: 100%;
+}
+
+.gtlm-copy-inline {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 24px;
+	padding: 0 4px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background: none;
+	color: #50575e;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 120ms ease-in-out;
+}
+
+.wp-list-table tr:hover .gtlm-copy-inline,
+.gtlm-copy-inline:focus,
+.gtlm-copy-inline:focus-visible,
+.gtlm-copy-inline.is-copied {
+	opacity: 1;
+}
+
+.gtlm-copy-inline:hover {
+	color: var(--wp-admin-theme-color, #2271b1);
+	border-color: #c3c4c7;
+	background: #f6f7f7;
+}
+
+.gtlm-copy-inline:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+	outline-offset: 1px;
+	box-shadow: none;
+}
+
+.gtlm-copy-inline .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 16px;
+}
+
+/* The "Copied" badge replaces the icon in place, so the row does not reflow. */
+.gtlm-copy-inline__done {
+	display: none;
+	font-size: 11px;
+	line-height: 1;
+	font-weight: 600;
+	color: #166534;
+	white-space: nowrap;
+}
+
+.gtlm-copy-inline.is-copied .gtlm-copy-inline__icon {
+	display: none;
+}
+
+.gtlm-copy-inline.is-copied .gtlm-copy-inline__done {
+	display: inline;
+}
+
+.gtlm-copy-inline.is-copied {
+	border-color: #bbf7d0;
+	background: #ecfdf3;
+}
+
+/* Touch devices have no hover, so keep the control permanently visible. */
+@media (hover: none) {
+	.gtlm-copy-inline {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.gtlm-copy-inline {
+		transition: none;
+	}
+}

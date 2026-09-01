@@ -29,6 +29,12 @@ Thumbs.db
 CLAUDE.md
 .claude/
 
+# Editor and scratch artifacts
+*.bak
+*.orig
+*.rej
+*~
+
 # QA
 phpcs.xml.dist
 composer.json

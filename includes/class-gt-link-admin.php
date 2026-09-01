@@ -39,6 +39,7 @@ class GTLM_Admin {
 		add_action( 'admin_init', array( $this, 'handle_actions' ) );
 		add_filter( 'set-screen-option', array( $this, 'set_screen_option' ), 10, 3 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_head', array( $this, 'print_menu_icon_style' ) );
 		add_action( 'wp_ajax_gtlm_quick_edit', array( $this, 'ajax_quick_edit' ) );
 		add_action( 'wp_ajax_gtlm_geo_check', array( $this, 'ajax_geo_check' ) );
 		add_action( 'admin_init', array( $this, 'register_privacy_content' ) );
@@ -70,7 +71,7 @@ class GTLM_Admin {
 			$capability,
 			'gtlm-links',
 			array( $this->pages, 'render_links_page' ),
-			'dashicons-admin-links',
+			'none',
 			26
 		);
 
@@ -83,6 +84,55 @@ class GTLM_Admin {
 		add_submenu_page( 'gtlm-links', esc_html__( 'Categories', 'gt-link-manager' ), esc_html__( 'Categories', 'gt-link-manager' ), $capability, 'gtlm-links-categories', array( $this->pages, 'render_categories_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Settings', 'gt-link-manager' ), esc_html__( 'Settings', 'gt-link-manager' ), 'manage_options', 'gtlm-links-settings', array( $this->pages, 'render_settings_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Import / Export', 'gt-link-manager' ), esc_html__( 'Import / Export', 'gt-link-manager' ), $capability, 'gtlm-links-import-export', array( $this->pages, 'render_import_export_page' ) );
+	}
+
+	/**
+	 * Admin menu icon.
+	 *
+	 * A single-colour SVG data URI rather than the full-colour brand PNG:
+	 * WordPress recolours menu icons per admin colour scheme and for the
+	 * hover/current states, which a raster icon cannot follow. The glyph is
+	 * the chain element of the brand mark, which is the part that stays
+	 * legible once it is reduced to 20px.
+	 */
+	private static function menu_icon(): string {
+		$svg = 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PHBhdGggZD0iTTcuNiA5LjFoNC44djEuOEg3LjZ6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBkPSJNNC4xIDYuNGgxLjRhMy42IDMuNiAwIDEgMSAwIDcuMkg0LjFhMy42IDMuNiAwIDEgMSAwLTcuMlptMCAyLjFhMS41IDEuNSAwIDAgMCAwIDNoMS40YTEuNSAxLjUgMCAwIDAgMC0zWiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE0LjUgNi40aDEuNGEzLjYgMy42IDAgMSAxIDAgNy4yaC0xLjRhMy42IDMuNiAwIDEgMSAwLTcuMlptMCAyLjFhMS41IDEuNSAwIDAgMCAwIDNoMS40YTEuNSAxLjUgMCAwIDAgMC0zWiIvPjwvc3ZnPgo=';
+
+		return 'data:image/svg+xml;base64,' . $svg;
+	}
+
+	/**
+	 * Paint the admin menu icon.
+	 *
+	 * The menu is registered with an icon of 'none' on purpose. When core is
+	 * handed an SVG data URI it prints it as an inline `background-image` with
+	 * `!important`, which no stylesheet can override and which it never
+	 * recolours, so a single-colour glyph stays black on the dark sidebar.
+	 *
+	 * With 'none' there is no inline style to fight. The glyph is painted as a
+	 * mask filled with currentColor, so colour comes from core: the icon
+	 * matches the dashicons beside it in every state, follows every admin
+	 * colour scheme, and goes dark on the light schemes without extra rules.
+	 *
+	 * Printed on every admin screen, because the plugin stylesheet only loads
+	 * on this plugin's pages while the sidebar is on all of them.
+	 */
+	public function print_menu_icon_style(): void {
+		$icon = self::menu_icon();
+
+		$css = '#adminmenu #toplevel_page_gtlm-links .wp-menu-image{'
+			. 'background-color:currentColor;'
+			. '-webkit-mask-image:url("' . $icon . '");'
+			. 'mask-image:url("' . $icon . '");'
+			. '-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;'
+			. '-webkit-mask-position:center;mask-position:center;'
+			. '-webkit-mask-size:20px auto;mask-size:20px auto;'
+			. '}'
+			// The empty dashicon pseudo-element would otherwise reserve width
+			// next to the mask and push the label across.
+			. '#adminmenu #toplevel_page_gtlm-links .wp-menu-image:before{content:"";display:none;}';
+
+		printf( '<style id="gtlm-menu-icon">%s</style>', $css ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Self-generated static CSS with a plugin-controlled data URI.
 	}
 
 	public function add_links_screen_options(): void {

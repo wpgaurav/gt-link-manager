@@ -254,6 +254,33 @@
 			return;
 		}
 
+		var copyInline = event.target.closest('.gtlm-copy-inline');
+		if (copyInline) {
+			event.preventDefault();
+			var inlineUrl = copyInline.getAttribute('data-copy-url') || '';
+			if (!inlineUrl) {
+				return;
+			}
+			copyToClipboard(inlineUrl).then(function (ok) {
+				if (!ok) {
+					return;
+				}
+				copyInline.classList.add('is-copied');
+				// Announce to screen readers, which cannot see the inline badge.
+				var status = copyInline.parentNode.querySelector('.screen-reader-text');
+				if (status) {
+					status.textContent = window.gtlmAdmin.i18n.copied;
+				}
+				window.setTimeout(function () {
+					copyInline.classList.remove('is-copied');
+					if (status) {
+						status.textContent = '';
+					}
+				}, 1400);
+			});
+			return;
+		}
+
 		var copyLink = event.target.closest('.gtlm-copy-url');
 		if (copyLink) {
 			event.preventDefault();
@@ -269,6 +296,46 @@
 			});
 		}
 	});
+
+	/**
+	 * Copy text to the clipboard.
+	 *
+	 * navigator.clipboard is unavailable on plain-HTTP admin screens, which
+	 * are common on local and intranet installs, so fall back to a hidden
+	 * textarea rather than failing silently.
+	 */
+	function copyToClipboard(text) {
+		if (window.navigator.clipboard && window.isSecureContext) {
+			return window.navigator.clipboard.writeText(text).then(function () {
+				return true;
+			}).catch(function () {
+				return legacyCopy(text);
+			});
+		}
+
+		return Promise.resolve(legacyCopy(text));
+	}
+
+	function legacyCopy(text) {
+		var field = document.createElement('textarea');
+		field.value = text;
+		field.setAttribute('readonly', 'readonly');
+		field.style.position = 'fixed';
+		field.style.top = '-1000px';
+		document.body.appendChild(field);
+		field.select();
+
+		var ok = false;
+		try {
+			ok = document.execCommand('copy');
+		} catch (e) {
+			ok = false;
+		}
+
+		document.body.removeChild(field);
+
+		return ok;
+	}
 
 	var nameField = document.getElementById('name');
 	var slugField = document.getElementById('slug');
