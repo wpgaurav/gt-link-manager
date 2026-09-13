@@ -1,0 +1,67 @@
+<?php
+/** Run with wp eval-file in a disposable GTLM_AUDIT_FIXTURE installation only. */
+if (!defined('GTLM_AUDIT_FIXTURE') || !GTLM_AUDIT_FIXTURE) exit(1);
+$db = new GTLM_DB();
+$settings = GTLM_Settings::get_instance();
+$out = ['environment'=>['wordpress'=>$GLOBALS['wp_version'],'php'=>PHP_VERSION,'plugin'=>GTLM_VERSION]];
+$out['defaults_off'] = !$settings->click_tracking_enabled();
+$rc = new ReflectionClass(GTLM_Redirect::class);
+$redirect = $rc->newInstanceWithoutConstructor();
+$rc->getProperty('db')->setValue($redirect, $db);
+$rc->getProperty('settings')->setValue($redirect, $settings);
+$record = $rc->getMethod('record_click');
+$id = $db->insert_link(['name'=>'Audit link','slug'=>'audit-link','url'=>home_url('/target'),'redirect_type'=>302]);
+$link = $db->get_link_by_id($id);
+$q = $GLOBALS['wpdb']->num_queries;
+$record->invoke($redirect,$link);
+$out['off_record_queries'] = $GLOBALS['wpdb']->num_queries - $q;
+$out['off_count'] = $db->get_link_by_id($id)['total_clicks'];
+$settings->update(array_merge($settings->all(),['enable_click_tracking'=>1]));
+$methods = [];
+foreach (['GET','HEAD','POST'] as $method) {
+ $_SERVER['REQUEST_METHOD']=$method;
+ $before=$db->get_link_by_id($id)['total_clicks'];
+ $record->invoke($redirect,$link);
+ $methods[$method]=$db->get_link_by_id($id)['total_clicks']-$before;
+}
+$out['counter_delta_by_method']=$methods;
+$before = did_action('gtlm_click_recorded');
+$record->invoke($redirect,['id'=>987654321]);
+$out['missing_row_update_result']=$db->increment_clicks(987654321);
+$out['missing_row_success_hooks']=did_action('gtlm_click_recorded')-$before;
+$wpdb=$GLOBALS['wpdb'];
+$wpdb->query($wpdb->prepare('UPDATE '.GTLM_DB::links_table().' SET updated_at=%s WHERE id=%d','2001-01-01 00:00:00',$id));
+$before=$db->get_link_by_id($id)['updated_at'];
+$db->increment_clicks($id);
+$out['updated_at_changes_on_click']=['before'=>$before,'after'=>$db->get_link_by_id($id)['updated_at']];
+$stale=$db->get_link_by_id($id);
+$db->increment_clicks($id);
+$before=$db->get_link_by_id($id)['total_clicks'];
+$db->update_link($id,array_merge($stale,['name'=>'Edited']));
+$out['config_edit_preserves_new_clicks']=$db->get_link_by_id($id)['total_clicks']===$before;
+wp_set_current_user(1);
+foreach (['direct'=>'docs/getting-started','regex'=>'^old/(.*)$'] as $mode=>$slug) {
+ $r = new WP_REST_Request('POST','/gt-link-manager/v1/links');
+ $r->set_body_params(['name'=>'Audit '.$mode,'slug'=>$slug,'url'=>home_url('/target'),'link_mode'=>$mode,'regex_replacement'=>home_url('/new/$1'),'redirect_type'=>302]);
+ $response=rest_do_request($r);
+ $d=$response->get_data();
+ $out['rest_'.$mode]=['status'=>$response->get_status(),'input_slug'=>$slug,'stored_slug'=>$d['slug']??null,'data'=>$d];
+}
+$r = new WP_REST_Request('PATCH','/gt-link-manager/v1/links/'.$id);
+$r->set_body_params(['name'=>'Renamed','total_clicks'=>999999]);
+$resp=rest_do_request($r); $row=$db->get_link_by_id($id);
+$out['rest_patch']=['status'=>$resp->get_status(),'count_preserved'=>$row['total_clicks']===$before,'redirect_type'=>$row['redirect_type'],'url'=>$row['url']];
+wp_set_current_user(0);
+$out['anonymous_rest_status']=rest_do_request(new WP_REST_Request('GET','/gt-link-manager/v1/links'))->get_status();
+$_SERVER['REQUEST_URI']='/go/audit-link/unexpected';
+$out['extra_path_segment_slug']=$rc->getMethod('extract_slug_from_request')->invoke($redirect);
+$imp=new GTLM_Import($db,$settings);
+$map=['name'=>0,'slug'=>1,'url'=>2];
+$converted=(new ReflectionMethod(GTLM_Import::class,'row_to_link_data'))->invoke($imp,['Copy','docs/getting-started',home_url('/target')],$map);
+$copyid=$db->insert_link($converted);
+$out['csv_direct_roundtrip']=['input_slug'=>'docs/getting-started','stored_slug'=>$db->get_link_by_id($copyid)['slug'],'stored_mode'=>$db->get_link_by_id($copyid)['link_mode']];
+$out['analytics_objects']=['tables'=>$wpdb->get_col("SHOW TABLES LIKE '%gtlm%'")];
+$out['fixture_link_id']=$id;
+update_option('permalink_structure','/%postname%/');
+update_option('template','audit-theme'); update_option('stylesheet','audit-theme');
+echo wp_json_encode($out,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);

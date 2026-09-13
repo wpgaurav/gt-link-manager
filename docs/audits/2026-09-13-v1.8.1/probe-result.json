@@ -1,0 +1,52 @@
+{
+  "environment": {
+    "wordpress": "7.1",
+    "php": "8.5.9",
+    "plugin": "1.8.1"
+  },
+  "defaults_off": true,
+  "off_record_queries": 0,
+  "off_count": 0,
+  "counter_delta_by_method": {
+    "GET": 1,
+    "HEAD": 1,
+    "POST": 1
+  },
+  "missing_row_update_result": false,
+  "missing_row_success_hooks": 1,
+  "updated_at_changes_on_click": {
+    "before": "2001-01-01 00:00:00",
+    "after": "2026-09-13 17:50:57"
+  },
+  "config_edit_preserves_new_clicks": true,
+  "rest_direct": {
+    "status": 201,
+    "input_slug": "docs/getting-started",
+    "stored_slug": "docsgetting-started"
+  },
+  "rest_regex": {
+    "status": 201,
+    "input_slug": "^old/(.*)$",
+    "stored_slug": "old"
+  },
+  "rest_patch": {
+    "status": 200,
+    "count_preserved": true,
+    "redirect_type": 302,
+    "url": "http://127.0.0.1:18981/target"
+  },
+  "anonymous_rest_status": 401,
+  "extra_path_segment_slug": "audit-link",
+  "csv_direct_roundtrip": {
+    "input_slug": "docs/getting-started",
+    "stored_slug": "docs-getting-started",
+    "stored_mode": "standard"
+  },
+  "analytics_objects": {
+    "tables": [
+      "wp_gtlm_categories",
+      "wp_gtlm_links"
+    ]
+  },
+  "fixture_link_id": 1
+}

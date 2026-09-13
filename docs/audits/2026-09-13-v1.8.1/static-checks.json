@@ -1,0 +1,22 @@
+{
+  "baseline_commit": "ead0ff0",
+  "tag": "v1.8.1",
+  "php_lint": {
+    "files": 16,
+    "failures": 0
+  },
+  "admin_js_syntax": "passed",
+  "phpcs": {
+    "totals": {
+      "errors": 12,
+      "warnings": 0,
+      "fixable": 0
+    },
+    "sources": [
+      "WordPress.Files.FileName.InvalidClassFileName"
+    ]
+  },
+  "zip_sha256": "e2e4552d2ed5362cba88a71e0d277e798b2c6dc594b142725f1718782d40ad5f",
+  "zip_file_count": 21,
+  "zip_source_differences": []
+}

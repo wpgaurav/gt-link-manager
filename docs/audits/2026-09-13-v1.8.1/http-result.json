@@ -1,0 +1,94 @@
+{
+  "/go/audit-link": {
+    "status": 302,
+    "ttfb_ms": 174.354,
+    "total_ms": 174.452,
+    "location": "http://127.0.0.1:18981/target",
+    "set_cookie": false
+  },
+  "/go/does-not-exist": {
+    "status": 404,
+    "ttfb_ms": 14.263,
+    "total_ms": 14.350999999999999,
+    "location": "",
+    "set_cookie": false
+  },
+  "/go/inactive": {
+    "status": 404,
+    "ttfb_ms": 8.197,
+    "total_ms": 8.290000000000001,
+    "location": "",
+    "set_cookie": false
+  },
+  "/go/trashed": {
+    "status": 404,
+    "ttfb_ms": 8.736,
+    "total_ms": 8.827,
+    "location": "",
+    "set_cookie": false
+  },
+  "/go/audit-link/extra": {
+    "status": 302,
+    "ttfb_ms": 3.447,
+    "total_ms": 3.5170000000000003,
+    "location": "http://127.0.0.1:18981/target",
+    "set_cookie": false
+  },
+  "/docs/http": {
+    "status": 307,
+    "ttfb_ms": 3.314,
+    "total_ms": 3.3739999999999997,
+    "location": "http://127.0.0.1:18981/target",
+    "set_cookie": false
+  },
+  "/legacy/123": {
+    "status": 302,
+    "ttfb_ms": 3.624,
+    "total_ms": 3.6809999999999996,
+    "location": "http://127.0.0.1:18981/new/123",
+    "set_cookie": false
+  },
+  "HEAD": {
+    "status": 302,
+    "ttfb_ms": 3.927,
+    "total_ms": 3.993,
+    "location": "http://127.0.0.1:18981/target",
+    "set_cookie": false,
+    "counter_delta": 1
+  },
+  "bot": {
+    "status": 302,
+    "ttfb_ms": 4.2620000000000005,
+    "total_ms": 4.335,
+    "location": "http://127.0.0.1:18981/target",
+    "set_cookie": false,
+    "counter_delta": 1
+  },
+  "prefetch": {
+    "status": 302,
+    "ttfb_ms": 3.584,
+    "total_ms": 3.701,
+    "location": "http://127.0.0.1:18981/target",
+    "set_cookie": false,
+    "counter_delta": 1
+  },
+  "fallback_smoke_benchmark": {
+    "off": {
+      "samples": 60,
+      "median_ms": 2.654,
+      "p95_ms": 2.97
+    },
+    "on": {
+      "samples": 60,
+      "median_ms": 2.881,
+      "p95_ms": 3.204
+    }
+  },
+  "injected_50ms_counter_delay": {
+    "status": 302,
+    "ttfb_ms": 58.22,
+    "total_ms": 58.302,
+    "location": "http://127.0.0.1:18981/target",
+    "set_cookie": false
+  }
+}
