@@ -65,7 +65,7 @@ class GTLM_Analytics_Controller {
 			return new WP_Error( 'gtlm_analytics_dates', __( 'Select a range within the last 90 days in the WordPress site timezone.', 'gt-link-manager' ) );
 		}
 		$dimension = $input['dimension'] ?? 'source';
-		if ( ! in_array( $dimension, array( 'source', 'country', 'device', 'browser', 'os', 'campaign', 'status', 'mode', 'geo' ), true ) ) {
+		if ( ! in_array( $dimension, array( 'source', 'page', 'country', 'device', 'browser', 'os', 'campaign', 'status', 'mode', 'geo' ), true ) ) {
 			return new WP_Error( 'gtlm_analytics_dimension', __( 'Choose a supported breakdown.', 'gt-link-manager' ) );
 		}
 		$result = array(

@@ -28,7 +28,7 @@ class GTLM_Analytics_Collector {
 			}
 		}
 		$config = get_option( 'gtlm_analytics', array() );
-		if ( ! is_array( $config ) || '1' !== ( $config['schema'] ?? '' ) || 'active' !== ( $config['state'] ?? '' ) || (int) ( $config['lease_until'] ?? 0 ) < time() || empty( $config['generation'] ) || in_array( (int) $link['id'], (array) ( $config['exclude_links'] ?? array() ), true ) ) {
+		if ( ! is_array( $config ) || ! in_array( $config['schema'] ?? '', array( '1', '2' ), true ) || 'active' !== ( $config['state'] ?? '' ) || (int) ( $config['lease_until'] ?? 0 ) < time() || empty( $config['generation'] ) || in_array( (int) $link['id'], (array) ( $config['exclude_links'] ?? array() ), true ) ) {
 			return false;
 		}
 		$agent = self::server_value( 'HTTP_USER_AGENT', 512 );
@@ -69,11 +69,13 @@ class GTLM_Analytics_Collector {
 		} elseif ( '' !== $key ) {
 			$country = GTLM_Geo::normalize_code( self::server_value( $key, 8 ) );
 		}
-		$event = array(
+		require_once __DIR__ . '/class-gtlm-analytics-referrer.php';
+		$referrer = GTLM_Analytics_Referrer::parse( self::server_value( 'HTTP_REFERER', 2048 ) );
+		$event    = array(
 			'link_id'     => (int) $link['id'],
 			'occurred_at' => gmdate( 'Y-m-d H:i:s' ),
 			'generation'  => (string) $config['generation'],
-			'source'      => self::referrer_host(),
+			'source'      => $referrer['source'],
 			'country'     => $country,
 			'device'      => $device,
 			'browser'     => $browser,
@@ -83,6 +85,9 @@ class GTLM_Analytics_Collector {
 			'mode'        => in_array( $link['link_mode'] ?? '', array( 'standard', 'direct', 'regex' ), true ) ? $link['link_mode'] : 'standard',
 			'geo'         => null === $geo ? 'off' : ( ! empty( $geo['matched'] ) ? 'matched' : 'fallback' ),
 		);
+		if ( '2' === $config['schema'] ) {
+			$event['page'] = $referrer['page'];
+		}
 		return ( new GTLM_DB() )->append_analytics_event( $event );
 	}
 
@@ -99,19 +104,6 @@ class GTLM_Analytics_Collector {
 			}
 		}
 		return 'unknown';
-	}
-
-	private static function referrer_host(): string {
-		$ref = self::server_value( 'HTTP_REFERER', 2048 );
-		$url = wp_parse_url( $ref );
-		if ( ! is_array( $url ) || ! in_array( strtolower( $url['scheme'] ?? '' ), array( 'http', 'https' ), true ) ) {
-			return '';
-		}
-		$host = strtolower( rtrim( $url['host'] ?? '', '.' ) );
-		if ( strlen( $host ) > 253 || filter_var( trim( $host, '[]' ), FILTER_VALIDATE_IP ) || ! preg_match( '/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/', $host ) ) {
-			return '';
-		}
-		return $host;
 	}
 
 	private static function campaign( array $campaigns ): int {

@@ -14,7 +14,7 @@ require_once __DIR__ . '/class-gtlm-analytics-db.php';
 class GTLM_Analytics {
 	public const OPTION = 'gtlm_analytics';
 	public const CRON   = 'gtlm_analytics_maintenance';
-	public const SCHEMA = '1';
+	public const SCHEMA = '2';
 
 	public static function config(): array {
 		$value = get_option( self::OPTION, array() );
@@ -90,6 +90,34 @@ class GTLM_Analytics {
 		return $options;
 	}
 
+	/** Upgrade only previously opted-in storage, preserving data, consent and generation. */
+	public static function upgrade() {
+		if ( ! GTLM_Settings::get_instance()->analytics_initialized() || self::SCHEMA === ( self::config()['schema'] ?? '' ) ) {
+			return true; }
+		$db = new GTLM_Analytics_DB();
+		if ( ! $db->lock() ) {
+			return new WP_Error( 'gtlm_analytics_busy', __( 'Analytics maintenance is busy. Try again shortly.', 'gt-link-manager' ) ); }
+		try {
+			self::upgrade_config( $db, self::fresh_config() );
+			return true;
+		} catch ( Throwable $error ) {
+			return new WP_Error( 'gtlm_analytics_upgrade', __( 'Analytics storage could not be upgraded. Retry from maintenance.', 'gt-link-manager' ) );
+		} finally {
+			$db->unlock(); }
+	}
+
+	/** The caller holds the analytics control lock. No generation change or history reset. */
+	private static function upgrade_config( GTLM_Analytics_DB $db, array $config ): array {
+		if ( '1' === ( $config['schema'] ?? '' ) ) {
+			if ( ! $db->install() ) {
+				throw new RuntimeException( 'analytics_schema_upgrade_failed' ); }
+			$config['schema']           = self::SCHEMA;
+			$config['pages_started_at'] = gmdate( 'Y-m-d H:i:s' );
+			self::save( $config );
+		}
+		return $config;
+	}
+
 	/** Called from an authenticated deliberate enable/resume action, including CLI. */
 	public static function enable( array $input = array() ) {
 		if ( is_multisite() ) {
@@ -108,6 +136,10 @@ class GTLM_Analytics {
 			if ( ! $db->install() ) {
 				return new WP_Error( 'gtlm_analytics_schema', __( 'Analytics could not initialize its InnoDB tables. Collection remains off; retry or delete the partial analytics storage.', 'gt-link-manager' ) );
 			}
+			if ( '1' === ( $previous['schema'] ?? '' ) ) {
+				$previous['schema']           = self::SCHEMA;
+				$previous['pages_started_at'] = gmdate( 'Y-m-d H:i:s' );
+			}
 			if ( $previous && self::SCHEMA === ( $previous['schema'] ?? '' ) ) {
 				self::work( $db, $previous );
 				if ( ! empty( $db->health()['oldest_pending'] ) ) {
@@ -118,13 +150,14 @@ class GTLM_Analytics {
 				$previous,
 				$options,
 				array(
-					'schema'          => self::SCHEMA,
-					'state'           => 'paused',
-					'generation'      => str_replace( '-', '', wp_generate_uuid4() ),
-					'started_at'      => $previous['started_at'] ?? gmdate( 'Y-m-d H:i:s' ),
-					'last_enabled_at' => gmdate( 'Y-m-d H:i:s' ),
-					'lease_until'     => 0,
-					'periods'         => array_slice( (array) ( $previous['periods'] ?? array() ), -30 ),
+					'schema'           => self::SCHEMA,
+					'state'            => 'paused',
+					'generation'       => str_replace( '-', '', wp_generate_uuid4() ),
+					'started_at'       => $previous['started_at'] ?? gmdate( 'Y-m-d H:i:s' ),
+					'pages_started_at' => $previous['pages_started_at'] ?? gmdate( 'Y-m-d H:i:s' ),
+					'last_enabled_at'  => gmdate( 'Y-m-d H:i:s' ),
+					'lease_until'      => 0,
+					'periods'          => array_slice( (array) ( $previous['periods'] ?? array() ), -30 ),
 				)
 			);
 			$config['periods'][] = array(
@@ -244,7 +277,7 @@ class GTLM_Analytics {
 			return new WP_Error( 'gtlm_analytics_busy', __( 'A maintenance process is already running.', 'gt-link-manager' ) );
 		}
 		try {
-			$config = self::fresh_config();
+			$config = self::upgrade_config( $db, self::fresh_config() );
 			if ( ! $config || self::SCHEMA !== ( $config['schema'] ?? '' ) ) {
 				return new WP_Error( 'gtlm_analytics_disabled', __( 'Analytics has not been initialized.', 'gt-link-manager' ) );
 			}
@@ -306,7 +339,7 @@ class GTLM_Analytics {
 		}
 		$enabled = GTLM_Settings::get_instance()->advanced_analytics_enabled();
 		$state   = ! $enabled ? 'paused' : ( (int) ( $config['lease_until'] ?? 0 ) < time() ? 'lease_expired' : $config['state'] );
-		foreach ( array( 'started_at', 'last_enabled_at', 'last_processed_at' ) as $key ) {
+		foreach ( array( 'started_at', 'last_enabled_at', 'last_processed_at', 'pages_started_at' ) as $key ) {
 			if ( ! empty( $config[ $key ] ) ) {
 				$config[ $key ] = wp_date( DATE_ATOM, strtotime( $config[ $key ] . ' UTC' ) );
 			}

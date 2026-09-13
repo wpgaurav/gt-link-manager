@@ -909,3 +909,11 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 .gtlm-main-settings > p { color:#50575e; }
 .gtlm-main-settings h2 { margin:24px 0 8px; }
 .gtlm-main-settings .form-table { margin-top:0; }
+
+.gtlm-analytics-pages { margin:0 0 28px; }
+.gtlm-analytics-pages .description { margin-bottom:14px; }
+.gtlm-analytics-pages td:first-child { overflow-wrap:anywhere; }
+.gtlm-page-url { display:block; color:#50575e; margin-top:4px; font-size:12px; }
+
+.gtlm-analytics-pages table { table-layout:fixed; }
+.gtlm-analytics-pages th:last-child { width:88px; }

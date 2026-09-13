@@ -3,7 +3,7 @@
  * Plugin Name:       GT Link Manager
  * Plugin URI:        https://wordpress.org/plugins/gt-link-manager/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
- * Version:           1.9.0-rc.2
+ * Version:           1.9.0-rc.3
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Gaurav Tiwari
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GTLM_VERSION' ) ) {
-	define( 'GTLM_VERSION', '1.9.0-rc.2' );
+	define( 'GTLM_VERSION', '1.9.0-rc.3' );
 }
 
 if ( ! defined( 'GTLM_FILE' ) ) {
@@ -69,6 +69,7 @@ function gtlm_bootstrap(): void {
 	if ( $settings->analytics_initialized() ) {
 		add_filter( 'cron_schedules', 'gtlm_analytics_schedules' ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval -- Opt-in bounded five-minute aggregation with a 15-minute health lease.
 		add_action( 'gtlm_analytics_maintenance', 'gtlm_run_analytics_maintenance' );
+		add_action( 'admin_init', 'gtlm_upgrade_analytics' );
 		// Recover a missing job only in control/worker contexts, never on a visitor redirect.
 		if ( ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) && ! wp_next_scheduled( 'gtlm_analytics_maintenance' ) ) {
 			wp_schedule_event( time() + 300, 'gtlm_five_minutes', 'gtlm_analytics_maintenance' );
@@ -142,4 +143,12 @@ function gtlm_run_analytics_maintenance(): void {
 	}
 	require_once GTLM_PATH . 'includes/class-gtlm-analytics.php';
 	GTLM_Analytics::process();
+}
+
+/** Administrative schema migration only; redirects keep using their compatible event format. */
+function gtlm_upgrade_analytics(): void {
+	if ( ! GTLM_Settings::get_instance()->analytics_initialized() ) {
+		return; }
+	require_once GTLM_PATH . 'includes/class-gtlm-analytics.php';
+	GTLM_Analytics::upgrade();
 }

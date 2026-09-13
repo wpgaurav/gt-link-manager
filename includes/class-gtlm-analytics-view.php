@@ -49,7 +49,7 @@ class GTLM_Analytics_View {
 		echo '<form method="post" class="gtlm-analytics-settings">';
 		wp_nonce_field( 'gtlm_analytics_settings' );
 		echo '<input type="hidden" name="gtlm_analytics_action" value="save_settings"><h2>' . esc_html__( 'Click analytics', 'gt-link-manager' ) . '</h2>';
-		echo '<label class="gtlm-setting-check"><input type="checkbox" name="enabled" value="1" ' . checked( $enabled, true, false ) . '> <strong>' . esc_html__( 'Enable advanced analytics', 'gt-link-manager' ) . '</strong></label><p class="description">' . esc_html__( 'Records click times, referring websites and basic device information. No visitor scripts, cookies or IP addresses.', 'gt-link-manager' ) . '</p>';
+		echo '<label class="gtlm-setting-check"><input type="checkbox" name="enabled" value="1" ' . checked( $enabled, true, false ) . '> <strong>' . esc_html__( 'Enable advanced analytics', 'gt-link-manager' ) . '</strong></label><p class="description">' . esc_html__( 'Records click times, referring pages and basic device information. No visitor scripts, cookies or IP addresses.', 'gt-link-manager' ) . '</p>';
 		echo '<div class="gtlm-setting-field"><label for="gtlm-history"><strong>' . esc_html__( 'Keep reports for', 'gt-link-manager' ) . '</strong></label><select name="summary_days" id="gtlm-history">';
 		$periods = array_unique( array( 30, 60, 90, (int) $config['summary_days'] ) );
 		sort( $periods );
@@ -75,7 +75,7 @@ class GTLM_Analytics_View {
 		echo '</tbody></table></div><p><button type="button" class="button" id="gtlm-add-campaign">' . esc_html__( 'Add campaign', 'gt-link-manager' ) . '</button></p><template id="gtlm-campaign-template">';
 		self::campaign_row( '__index__', array( 'id' => 0 ) );
 		echo '</template></details>';
-		echo '<details class="gtlm-settings-detail"><summary>' . esc_html__( 'Privacy and data', 'gt-link-manager' ) . '</summary><p>' . esc_html__( 'Only eligible GET redirects are recorded. Recognized bots, prefetches and signed-in link managers are excluded. Referrer paths, query strings, raw user agents and IP addresses are not stored. Summaries use minute buckets so reports can follow WordPress time accurately.', 'gt-link-manager' ) . '</p><p>' . esc_html__( 'Turning analytics off stops new collection. Existing reports are kept until they expire or you delete them. Basic lifetime click counts are unchanged.', 'gt-link-manager' ) . '</p></details>';
+		echo '<details class="gtlm-settings-detail"><summary>' . esc_html__( 'Privacy and data', 'gt-link-manager' ) . '</summary><p>' . esc_html__( 'Only eligible GET redirects are recorded. Recognized bots, prefetches and signed-in link managers are excluded. Referring page URLs are stored without credentials, query strings or fragments. Raw user agents and IP addresses are not stored. Summaries use minute buckets so reports can follow WordPress time accurately.', 'gt-link-manager' ) . '</p><p>' . esc_html__( 'Turning analytics off stops new collection. Existing reports are kept until they expire or you delete them. Basic lifetime click counts are unchanged.', 'gt-link-manager' ) . '</p></details>';
 		submit_button( __( 'Save settings', 'gt-link-manager' ) );
 		echo '</form>';
 		if ( $initialized ) {
@@ -153,6 +153,13 @@ class GTLM_Analytics_View {
 		echo '<details><summary>' . esc_html__( 'View click totals', 'gt-link-manager' ) . '</summary>';
 		self::table( array( __( 'Time', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), array_map( static fn( $row ) => array( $row['day'], number_format_i18n( (int) $row['clicks'] ) ), $report['trend'] ) );
 		echo '</details></section>';
+		echo '<section class="gtlm-analytics-pages"><h2>' . esc_html__( 'Clicked from', 'gt-link-manager' ) . '</h2><p class="description">' . esc_html__( 'Top posts and URLs that referred clicks to the selected links. Browsers may share only a website or no referrer. Older clicks have no page details. Query strings and fragments are not stored.', 'gt-link-manager' ) . '</p>';
+		$pages = array();
+		foreach ( $report['pages'] as $page ) {
+			$pages[] = array( self::page_label( $page['value'] ), number_format_i18n( (int) $page['clicks'] ) );
+		}
+		self::table( array( __( 'Post or URL', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $pages );
+		echo '</section>';
 		echo '<div class="gtlm-analytics-grid"><section class="gtlm-analytics-breakdown"><h2>' . esc_html__( 'Top links', 'gt-link-manager' ) . '</h2>';
 		$rows = array();
 		foreach ( array_slice( $report['links'], 0, 10 ) as $row ) {
@@ -207,6 +214,32 @@ class GTLM_Analytics_View {
 		} echo '<button class="button">' . esc_html__( 'Export CSV', 'gt-link-manager' ) . '</button></form></footer><p class="description">' . esc_html__( 'Counts are eligible redirect requests, not unique visitors. Filters and paused collection can leave gaps. Categories reflect current membership.', 'gt-link-manager' ) . '</p>';
 	}
 
+	/** Resolve titles only in this bounded admin table; no post query runs while collecting clicks. */
+	private static function page_label( string $url ) {
+		if ( '' === $url ) {
+			return __( 'Page unavailable', 'gt-link-manager' ); }
+		if ( '_other' === $url ) {
+			return __( 'Other pages', 'gt-link-manager' ); }
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) || ! in_array( $parts['scheme'] ?? '', array( 'http', 'https' ), true ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+			return __( 'Page unavailable', 'gt-link-manager' ); }
+		$result = array(
+			'label'   => $url,
+			'url'     => $url,
+			'new_tab' => true,
+		);
+		$site   = wp_parse_url( home_url( '/' ) );
+		if ( strtolower( $parts['host'] ) === strtolower( $site['host'] ?? '' ) && ( $parts['port'] ?? null ) === ( $site['port'] ?? null ) ) {
+			$id   = url_to_postid( $url );
+			$post = $id ? get_post( $id ) : null;
+			if ( $post && 'publish' === $post->post_status && is_post_type_viewable( $post->post_type ) && '' === $post->post_password ) {
+				$result['label']       = wp_strip_all_tags( $post->post_title );
+				$result['description'] = $url;
+			}
+		}
+		return $result;
+	}
+
 	private static function campaign_row( string $index, array $campaign ): void {
 		echo '<tr><td><input type="hidden" name="campaigns[' . esc_attr( $index ) . '][id]" value="' . (int) $campaign['id'] . '">';
 		foreach ( array(
@@ -229,7 +262,12 @@ class GTLM_Analytics_View {
 			foreach ( $row as $value ) {
 				echo '<td>';
 				if ( is_array( $value ) ) {
-					echo '<a href="' . esc_url( $value['url'] ) . '">' . esc_html( $value['label'] ) . '</a>';
+					echo '<a href="' . esc_url( $value['url'] ) . '"' . ( ! empty( $value['new_tab'] ) ? ' target="_blank" rel="noopener noreferrer"' : '' ) . '>' . esc_html( $value['label'] );
+					if ( ! empty( $value['new_tab'] ) ) {
+						echo '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span>'; }
+					echo '</a>';
+					if ( ! empty( $value['description'] ) ) {
+						echo '<span class="gtlm-page-url">' . esc_html( $value['description'] ) . '</span>'; }
 				} else {
 					echo esc_html( (string) $value );
 				} echo '</td>';

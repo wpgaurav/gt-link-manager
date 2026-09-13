@@ -73,7 +73,7 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 
 Advanced analytics is a separate, explicit opt-in under GT Links > Analytics. Before opt-in, the plugin creates no analytics tables, options, stored events, or analytics jobs. Basic click counts can stay on or off independently.
 
-Reports include daily/hourly trends, top links, referring hosts, optional trusted-header countries, coarse device/browser/OS families, and allowlisted campaigns. Dates, filters, grouping, status timestamps and CSV exports use the WordPress site timezone, including fractional offsets and daylight-saving changes.
+Reports include daily/hourly trends, top links, referring hosts and pages, optional trusted-header countries, coarse device/browser/OS families, and allowlisted campaigns. Dates, filters, grouping, status timestamps and CSV exports use the WordPress site timezone, including fractional offsets and daylight-saving changes.
 
 No visitor JavaScript, cookies, beacons, IP storage, fingerprinting, or external analytics/GeoIP requests are added. A compact database append is performed for eligible GET redirects. PHP-FPM can finish the response first; other hosts perform this write synchronously. Recognized bots, prefetches and signed-in link managers are excluded. These are observed requests, not unique people, conversions or destination page loads.
 
@@ -308,7 +308,7 @@ If no header is present, nothing is proxying the site and there is no country to
 
 The plugin does not add visitor tracking scripts or cookies. Request data is recorded only when the site owner explicitly enables advanced analytics.
 
-Basic click counting stores a running total independently. Advanced analytics can retain a timestamp, referring hostname, coarse client families, configured campaign ID and optional country, under finite retention. It does not retain IP addresses, raw user agents or full referring URLs. The suggested guidance under **Settings > Privacy** reflects the features and retention you enable.
+Basic click counting stores a running total independently. Advanced analytics can retain a timestamp, referring hostname and page URL, coarse client families, configured campaign ID and optional country, under finite retention. It does not retain IP addresses, raw user agents, or referring URL credentials, query strings or fragments. The suggested guidance under **Settings > Privacy** reflects the features and retention you enable.
 
 = What happens when I uninstall? =
 
@@ -323,6 +323,10 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.9.0-rc.3 =
+* Show the referring post or URL in a Clicked from table, with no visitor scripts or per-click post lookup.
+* Upgrade existing analytics safely and keep unavailable historical page details explicit.
 
 = 1.9.0-rc.2 =
 * Simplify link settings and separate the analytics overview from collection settings.

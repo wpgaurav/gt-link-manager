@@ -351,25 +351,22 @@ class GTLM_DB {
 		global $wpdb;
 		$old = $wpdb->suppress_errors( true );
 		try {
-			$table = $wpdb->prefix . 'gtlm_analytics_events';
+			$table        = $wpdb->prefix . 'gtlm_analytics_events';
+			$page_columns = array_key_exists( 'page', $event ) ? ',page' : '';
+			$page_value   = array_key_exists( 'page', $event ) ? ',%s' : '';
+			$values       = array( $event['link_id'], $event['occurred_at'], $event['generation'], $event['source'], $event['country'], $event['device'], $event['browser'], $event['os'], $event['campaign'], $event['status'], $event['mode'], $event['geo'] );
+			if ( array_key_exists( 'page', $event ) ) {
+				$values[] = $event['page'];
+			}
+			// Schema-1 requests can finish safely during an administrative schema upgrade.
 			// Fixed, bounded ASCII fields avoid wpdb::insert's per-request column metadata lookup.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- One write after explicit analytics consent.
 			return 1 === $wpdb->query(
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- The values array holds exactly 12 fields, or 13 when the fixed page column/placeholder is included.
 				$wpdb->prepare(
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Trusted WordPress table prefix.
-					"INSERT INTO {$table} (link_id,occurred_at,generation,source,country,device,browser,os,campaign,status,mode,geo) VALUES (%d,%s,%s,%s,%s,%s,%s,%s,%d,%d,%s,%s)",
-					$event['link_id'],
-					$event['occurred_at'],
-					$event['generation'],
-					$event['source'],
-					$event['country'],
-					$event['device'],
-					$event['browser'],
-					$event['os'],
-					$event['campaign'],
-					$event['status'],
-					$event['mode'],
-					$event['geo']
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Trusted table prefix and fixed optional column/placeholder.
+					"INSERT INTO {$table} (link_id,occurred_at,generation,source,country,device,browser,os,campaign,status,mode,geo{$page_columns}) VALUES (%d,%s,%s,%s,%s,%s,%s,%s,%d,%d,%s,%s{$page_value})",
+					$values
 				)
 			);
 		} finally {

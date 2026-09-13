@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class GTLM_Analytics_DB extends GTLM_DB {
 	public int $expired_events = 0;
 
-	public const DIMENSIONS = array( 'total', 'source', 'country', 'device', 'browser', 'os', 'campaign', 'status', 'mode', 'geo' );
+	public const DIMENSIONS = array( 'total', 'source', 'page', 'country', 'device', 'browser', 'os', 'campaign', 'status', 'mode', 'geo' );
 
 	public static function events_table(): string {
 		global $wpdb;
@@ -53,6 +53,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			generation char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
 			processed tinyint(1) NOT NULL DEFAULT 0,
 			source varchar(253) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+			page varchar(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
 			country char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
 			device varchar(16) NOT NULL DEFAULT 'unknown',
 			browser varchar(16) NOT NULL DEFAULT 'unknown',
@@ -72,7 +73,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			link_id bigint(20) unsigned NOT NULL,
 			bucket_start datetime NOT NULL,
 			dimension varchar(12) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-			value varchar(253) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+			value varchar(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
 			clicks bigint(20) unsigned NOT NULL DEFAULT 0,
 			PRIMARY KEY  (link_id,bucket_start,dimension,value),
 			KEY date_dimension (bucket_start,dimension)
@@ -88,7 +89,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 				return false;
 			}
 		}
-		return true;
+		return 'varchar(1024)' === $wpdb->get_var( "SHOW COLUMNS FROM {$events} LIKE 'page'", 1 ) && 'varchar(1024)' === $wpdb->get_var( "SHOW COLUMNS FROM {$hourly} LIKE 'value'", 1 );
 	}
 
 	public function drop(): bool {
@@ -128,6 +129,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			}
 			$counts = array();
 			$hosts  = array();
+			$pages  = array();
 			foreach ( $rows as $row ) {
 				if ( $row['occurred_at'] < $cutoff ) {
 					++$this->expired_events;
@@ -151,6 +153,18 @@ class GTLM_Analytics_DB extends GTLM_DB {
 					} else {
 						$hosts[ $key ][ $row['source'] ] = true;
 					}
+				}
+				$page_key = $row['link_id'] . ':' . $day;
+				if ( '' !== $row['page'] ) {
+					if ( ! isset( $pages[ $page_key ] ) ) {
+						$values = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT value FROM {$hourly} WHERE link_id = %d AND bucket_start >= %s AND bucket_start < %s AND dimension = 'page' AND value <> '_other' AND value <> '' LIMIT 100", $row['link_id'], $day . ' 00:00:00', gmdate( 'Y-m-d H:i:s', strtotime( $day . ' UTC' ) + DAY_IN_SECONDS ) ) );
+						if ( '' !== $wpdb->last_error ) {
+							throw new RuntimeException( 'analytics_pages_failed' ); }
+						$pages[ $page_key ] = array_fill_keys( $values, true );
+					}
+					if ( ! isset( $pages[ $page_key ][ $row['page'] ] ) && count( $pages[ $page_key ] ) >= 100 ) {
+						$row['page'] = '_other'; } else {
+						$pages[ $page_key ][ $row['page'] ] = true; }
 				}
 				foreach ( self::DIMENSIONS as $dimension ) {
 					$value = 'total' === $dimension ? '' : (string) $row[ $dimension ];
@@ -265,11 +279,16 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
+		// Include historical clicks whose page was never captured, without inventing URLs.
+		$pages = $wpdb->get_results( "SELECT value, SUM(clicks) clicks FROM (SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension='page' GROUP BY h.value UNION ALL SELECT '', {$total} - COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension='page') page_counts GROUP BY value HAVING SUM(clicks) > 0 ORDER BY clicks DESC, value LIMIT 20", ARRAY_A );
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_pages_report_failed' ); }
 		return array(
 			'total'     => $total,
 			'previous'  => $previous,
 			'trend'     => $trend,
 			'links'     => $top,
+			'pages'     => $pages,
 			'breakdown' => $breakdown,
 			'filters'   => $filters,
 			'timezone'  => wp_timezone_string(),
