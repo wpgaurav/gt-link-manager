@@ -1,33 +1,3192 @@
+# Copyright (C) 2026 Gaurav Tiwari
+# This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: GT Link Manager 0.1.0\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-10 00:00+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Project-Id-Version: GT Link Manager 1.9.0-rc.2\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gt-link-manager\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Codex\n"
+"POT-Creation-Date: 2026-09-13T15:35:31+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: gt-link-manager\n"
 
+#. Plugin Name of the plugin
 #: gt-link-manager.php
+#: includes/class-gt-link-admin.php:370
+msgid "GT Link Manager"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: gt-link-manager.php
+msgid "https://wordpress.org/plugins/gt-link-manager/"
+msgstr ""
+
+#. Description of the plugin
+#: gt-link-manager.php
+msgid "Fast pretty-link manager with direct redirects and low overhead."
+msgstr ""
+
+#. Author of the plugin
+#: gt-link-manager.php
+msgid "Gaurav Tiwari"
+msgstr ""
+
+#. Author URI of the plugin
+#: gt-link-manager.php
+msgid "https://gauravtiwari.org/"
+msgstr ""
+
+#: gt-link-manager.php:134
+msgid "Every five minutes"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:27
+#: includes/class-gt-link-admin-pages.php:84
+#: includes/class-gt-link-admin-pages.php:179
+#: includes/class-gt-link-admin-pages.php:258
+#: includes/class-gt-link-admin-pages.php:352
+msgid "You are not allowed to access this page."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:43
+#: includes/class-gt-link-admin.php:76
+#: includes/class-gt-link-admin.php:77
 msgid "GT Links"
 msgstr ""
 
-#: includes/class-gt-link-admin.php
+#: includes/class-gt-link-admin-pages.php:44
+#: includes/class-gt-link-admin.php:90
 msgid "Add New"
 msgstr ""
 
-#: includes/class-gt-link-admin.php
+#: includes/class-gt-link-admin-pages.php:58
+msgid "Empty Trash"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:72
+msgid "Search links"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:113
+msgid "Edit Link"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:113
+msgid "Add New Link"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:121
+msgid "Link Name"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:122
+msgid "Destination URL"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:130
+#: includes/class-gt-link-admin-pages.php:207
+#: includes/class-gt-link-admin-pages.php:217
+#: includes/class-gt-link-import.php:164
+msgid "Slug"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:134
+#: includes/class-gt-link-import.php:175
+msgid "Regex Replacement"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:136
+msgid "Use $1, $2 for capture groups. If empty, capture groups are substituted in the Destination URL."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:139
+#: includes/class-gt-link-import.php:176
+msgid "Priority"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:141
+msgid "Lower numbers are matched first."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:147
+msgid "Branded URL Preview"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:148
+#: includes/class-gt-link-admin.php:221
+#: includes/class-gt-link-list-table.php:298
+msgid "Copy URL"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:153
+#: includes/class-gt-link-import.php:168
+msgid "Noindex"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:153
+msgid "Prevent indexing this redirect"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:163
+msgid "Tags (comma-separated)"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:164
+#: includes/class-gt-link-import.php:171
+msgid "Notes"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:168
+msgid "Save Link"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:169
+msgid "Save & View All"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:170
+msgid "Save & Add Another"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:196
+msgid "Link Categories"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:200
+msgid "Edit Category"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:200
+msgid "Add Category"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:206
+#: includes/class-gt-link-admin-pages.php:217
+#: includes/class-gt-link-import.php:163
+#: includes/class-gt-link-list-table.php:68
+msgid "Name"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:209
+msgid "Description"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:211
+msgid "Save Category"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:216
+msgid "All Categories"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:217
+msgid "Parent"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:217
+msgid "Count"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:217
+#: includes/class-gt-link-admin-pages.php:616
+msgid "Actions"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:220
+msgid "No categories found."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:243
+#: includes/class-gt-link-list-table.php:291
+msgid "Edit"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:243
+msgid "Delete"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:264
+msgid "GT Links settings"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:264
+msgid "Choose defaults for new links. Existing links keep their own settings."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:268
+msgid "Link defaults"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:269
+msgid "Link prefix"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:270
+msgid "Redirect type"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:271
+msgid "Link attributes"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:272
+msgid "Search engines"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:272
+msgid "Keep new short links out of search results"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:273
+msgid "Basic click counts"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:274
+msgid "Lifetime totals"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:274
+msgid "Keep a running click total next to each link"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:275
+msgid "For date trends, sources and devices, use the separate analytics feature."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:275
+msgid "Open analytics settings"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:276
+msgid "Country-based redirects"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:276
+msgid "Send visitors to different destinations using the country rules on each link."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:277
+msgid "Country routing"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:277
+msgid "Allow links to use country rules"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:279
+msgid "Custom header (optional)"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:280
+msgid "Troubleshooting"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:280
+msgid "Show country details in redirect response headers"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:282
+msgid "Advanced redirects and data cleanup"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:283
+msgid "Advanced redirects"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:283
+msgid "Allow prefix-free paths and regular expressions"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:285
+msgid "Uninstall cleanup"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:285
+msgid "Delete all plugin data when the plugin is uninstalled"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:287
+#: includes/class-gtlm-analytics-view.php:79
+msgid "Save settings"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:288
+msgid "Tools and diagnostics"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:290
+msgid "Tools"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:296
+msgid "Flush Permalinks"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:302
+msgid "Run Diagnostics"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:309
+msgid "Diagnostics"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:311
+msgid "No diagnostics run yet."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:314
+#: includes/class-gt-link-admin-pages.php:319
+#: includes/class-gt-link-admin-pages.php:320
+msgid "OK"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:314
+#: includes/class-gt-link-admin-pages.php:319
+msgid "Failed"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:314
+msgid "Skipped"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:317
+msgid "Checked At"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:318
+msgid "Prefix"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:319
+msgid "Tables"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:320
+msgid "Rewrite Rule"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:320
+msgid "Missing"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:321
+msgid "Runtime Redirect"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:323
+msgid "Details"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:330
+#: includes/class-gt-link-admin-pages.php:598
+msgid "Geolocation"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:332
+msgid "Disabled"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:336
+msgid "Enabled, but no country header found"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:340
+msgid "Country Headers Seen"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:341
+msgid "None — your CDN is not forwarding a country header."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:366
+msgid "Saved successfully."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:367
+msgid "Deleted permanently."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:368
+msgid "Link moved to trash."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:369
+msgid "Link restored from trash."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:370
+msgid "Link activated."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:371
+msgid "Link deactivated."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:372
+msgid "Category saved."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:373
+msgid "Category deleted."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:374
+msgid "Settings updated."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:375
+msgid "Permalinks flushed."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:376
+msgid "Diagnostics completed."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:377
+msgid "Please enter required fields."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:378
+#: includes/class-gt-link-rest-api.php:665
+#: includes/class-gt-link-rest-api.php:687
+msgid "Category name is required."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:379
+msgid "Save failed. Please check values."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:380
+msgid "Invalid regex pattern. Please check the syntax."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:381
+msgid "This path is reserved by WordPress and cannot be used for direct links."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:382
+msgid "Delete failed."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:383
+msgid "Could not move to trash."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:384
+#: includes/class-gt-link-rest-api.php:523
+msgid "Could not restore link."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:385
+msgid "Could not activate link."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:386
+msgid "Could not deactivate link."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:387
+msgid "Category save failed."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:388
+msgid "Category delete failed."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:389
+msgid "No settings changed."
+msgstr ""
+
+#. translators: 1: imported, 2: updated, 3: skipped
+#: includes/class-gt-link-admin-pages.php:394
+#, php-format
+msgid "Import complete. Imported: %1$d, Updated: %2$d, Skipped: %3$d."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:400
+msgid "Import failed. Please check the file and try again."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:401
+msgid "CSV columns are invalid. Required: name and url (or Destination URL in LinkCentral preset)."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:402
+msgid "Preview generated. Review mapping and run import."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:403
+msgid "Export started."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:404
+msgid "Action undone."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:405
+msgid "Could not undo that action."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:406
+msgid "No links were selected."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:407
+msgid "Links updated."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:408
+msgid "Click count reset."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:409
+msgid "Could not reset the click count."
+msgstr ""
+
+#. translators: %s: number of links.
+#: includes/class-gt-link-admin-pages.php:421
+#, php-format
+msgid "%s link moved to the Trash."
+msgid_plural "%s links moved to the Trash."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of links.
+#: includes/class-gt-link-admin-pages.php:425
+#, php-format
+msgid "%s link restored from the Trash."
+msgid_plural "%s links restored from the Trash."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of links.
+#: includes/class-gt-link-admin-pages.php:429
+#, php-format
+msgid "%s link permanently deleted."
+msgid_plural "%s links permanently deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of links.
+#: includes/class-gt-link-admin-pages.php:433
+#, php-format
+msgid "%s link activated."
+msgid_plural "%s links activated."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of links.
+#: includes/class-gt-link-admin-pages.php:437
+#, php-format
+msgid "%s link deactivated."
+msgid_plural "%s links deactivated."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: number of links.
+#: includes/class-gt-link-admin-pages.php:441
+#, php-format
+msgid "Trash emptied. %s link deleted."
+msgid_plural "Trash emptied. %s links deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-gt-link-admin-pages.php:488
+msgid "Undo"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:499
+msgid "Empty Trash Automatically"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:501
+msgid "days"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:502
+msgid "Permanently delete links that have been in the Trash longer than this. Set to 0 to keep trashed links until you delete them yourself."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:518
+#: includes/class-gt-link-import.php:101
+#: includes/class-gt-link-import.php:169
+#: includes/class-gt-link-list-table.php:76
+#: includes/class-gtlm-analytics-view.php:129
+msgid "Category"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:518
+#: includes/class-gt-link-admin-pages.php:554
+msgid "None"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:527
+#: includes/class-gt-link-import.php:107
+#: includes/class-gt-link-import.php:166
+msgid "Redirect Type"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:539
+msgid "Rel Attributes"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:554
+msgid "Parent Category"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:592
+msgid "Inherit"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:599
+msgid "Send visitors to a different URL based on their country"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:600
+msgid "Everyone else keeps using the Destination URL above."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:603
+msgid "Country Rules"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:606
+msgid "This link uses a 301. Browsers cache a 301 permanently, which pins each visitor to whichever country they were in on their first click — so geo rules stop working for returning visitors. Switch Redirect Type to 302 above."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:609
+msgid "Rules are checked from the top down and the first country match wins, so put your most specific rules first. A country listed twice only ever matches its highest rule."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:612
+#: includes/class-gt-link-admin-pages.php:698
+msgid "Order"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:613
+#: includes/class-gt-link-admin-pages.php:707
+msgid "When the visitor is in…"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:614
+#: includes/class-gt-link-admin-pages.php:734
+msgid "Send them to"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:615
+#: includes/class-gt-link-admin-pages.php:736
+#: includes/class-gt-link-list-table.php:75
+msgid "Status"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:637
+msgid "Last"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:638
+msgid "Everyone else"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:638
+msgid "Including visitors whose country cannot be determined"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:640
+msgid "The main Destination URL"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:641
+msgid "Nothing — show a 404"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:645
+msgid "+ Add Rule"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:651
+msgid "Preview"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:652
+msgid "A visitor from"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:654
+msgid "— pick a country —"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:660
+msgid "Previews your unsaved rules in the browser. No request is made."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:663
+msgid "Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:664
+msgid "A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:703
+msgid "Move rule up"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:703
+msgid "Move up"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:704
+msgid "Move rule down"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:704
+msgid "Move down"
+msgstr ""
+
+#. translators: %s: market name, e.g. "US + CA"
+#: includes/class-gt-link-admin-pages.php:712
+#, php-format
+msgid "Add %s to this rule"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:716
+msgid "Type to filter countries…"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:716
+msgid "Filter the country list"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:718
+msgid "Countries this rule applies to"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:719
+msgid "Groups"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:724
+#: includes/class-gtlm-analytics-view.php:171
+msgid "Countries"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:734
+msgid "Destination URL for this rule"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:736
+msgid "Redirect status code for this rule"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:742
+msgid "Remove rule"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:742
+#: includes/class-gtlm-analytics-view.php:220
+msgid "Remove"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:755
+msgid "US + CA"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:759
+msgid "EU"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:763
+msgid "UK"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:767
+#: includes/data/countries.php:120
+msgid "India"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:771
+msgid "AU + NZ"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:786
+msgid "Auto-detect (recommended)"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:787
+msgid "Cloudflare only"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:788
+msgid "Custom header only"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:791
+msgid "Detection Method"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:795
+msgid "Auto-detect checks Cloudflare first, then CloudFront, Vercel, App Engine, and common web-server GeoIP variables. Choose \"Cloudflare only\" to ignore every other source — the strictest option, because Cloudflare overwrites its own country header at the edge and it cannot be forged by a visitor."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:810
+msgid "Detected Now"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:821
+msgid "No country detected"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:831
+msgid "Expected here — nothing is proxying this site, so no country header exists to read. This is normal on a local, staging, or direct-to-origin install. Geolocation will start resolving once the site is served through a CDN. Use \"Check Detection\" below to confirm the plugin itself works regardless."
+msgstr ""
+
+#. translators: %s: comma-separated proxy names
+#: includes/class-gt-link-admin-pages.php:836
+#, php-format
+msgid "%s is in front of this site but did not send a country header. On Cloudflare, turn on IP Geolocation for the zone (Rules → Settings, or Network → IP Geolocation). On another CDN, forward its country header and name it above."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:844
+msgid "Check Detection"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:845
+msgid "Test a country code:"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:849
+msgid "The check reports every country header present on the request right now, so you can confirm your CDN setup. Entering a code additionally validates that it is usable in a rule."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:855
+msgid "Privacy"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:856
+msgid "Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor's IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination."
+msgstr ""
+
+#. translators: %s: link to the Privacy Settings screen
+#: includes/class-gt-link-admin-pages.php:859
+#, php-format
+msgid "Suggested wording for your privacy policy is available under %s."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:860
+msgid "Settings → Privacy → Policy Guide"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:862
+msgid "If you added click tracking through the gtlm_before_redirect hook, that integration receives the country and may store it — disclose it there."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:869
+msgid "Standard (with prefix)"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:870
+msgid "Direct (no prefix)"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:871
+msgid "Regex (pattern match)"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:874
+#: includes/class-gt-link-import.php:174
+msgid "Link Mode"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:878
+msgid "URL: yoursite.com/prefix/slug"
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:879
+msgid "URL: yoursite.com/path — redirects without the prefix."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:880
+msgid "Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:89
+msgid "All Links"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:91
 msgid "Categories"
 msgstr ""
 
-#: includes/class-gt-link-admin.php
+#: includes/class-gt-link-admin.php:92
+#: includes/class-gt-link-list-table.php:327
+#: includes/class-gtlm-analytics-view.php:26
+msgid "Analytics"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:93
+#: includes/class-gtlm-analytics-view.php:30
 msgid "Settings"
 msgstr ""
 
-#: includes/class-gt-link-admin.php
+#: includes/class-gt-link-admin.php:94
+#: includes/class-gt-link-import.php:74
 msgid "Import / Export"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:157
+msgid "Links per page"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:218
+msgid "Saved"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:219
+msgid "Save failed"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:220
+#: includes/class-gt-link-list-table.php:367
+msgid "Copied"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:222
+msgid "No countries selected yet — this rule will be ignored."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:223
+msgid "Remove this country"
+msgstr ""
+
+#. translators: %s: country name
+#: includes/class-gt-link-admin.php:225
+#, php-format
+msgid "Remove %s"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:226
+msgid "Listed more than once, so only the highest rule applies:"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:227
+msgid "A rule has countries but no destination URL, so it will be discarded on save."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:228
+msgid "rule"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:229
+msgid "404 — blocked"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:230
+msgid "the main Destination URL"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:231
+msgid "Checking…"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:232
+msgid "via"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:233
+msgid "No country on this request"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:234
+msgid "Geolocation is currently disabled, so links ignore their rules. Tick \"Enable Geolocation\" and save."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:235
+#: includes/class-gtlm-analytics-view.php:70
+msgid "Source"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:236
+msgid "Request variable"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:237
+#: includes/class-gtlm-analytics-view.php:180
+msgid "Value"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:238
+msgid "not a usable country code"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:239
+msgid "nothing is proxying this site, so none is expected here"
+msgstr ""
+
+#. translators: %s: comma-separated proxy names
+#: includes/class-gt-link-admin.php:241
+#, php-format
+msgid "in front: %s — but it sent no country header"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:242
+msgid "Self-test passed"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:243
+msgid "Self-test inconclusive"
+msgstr ""
+
+#. translators: 1: country code, 2: header name
+#: includes/class-gt-link-admin.php:245
+#, php-format
+msgid "sent %1$s as %2$s to this site and the plugin detected %1$s. Detection works; it is only waiting on a CDN to supply real visitor countries."
+msgstr ""
+
+#. translators: 1: country code sent, 2: country code detected
+#: includes/class-gt-link-admin.php:247
+#, php-format
+msgid "sent %1$s but the plugin read %2$s."
+msgstr ""
+
+#. translators: 1: country code sent, 2: header name, 3: country code the CDN substituted
+#: includes/class-gt-link-admin.php:249
+#, php-format
+msgid "sent %1$s as %2$s, and your CDN replaced it with %3$s. Detection works, and the country header cannot be forged by a visitor."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:250
+msgid "valid in a rule"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:251
+msgid "is not a country code you can target"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:344
+msgid "When a visitor follows a short link, the plugin looks up the destination and issues an HTTP redirect. It does not log the visitor's IP address, user agent, or the referring page."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:345
+msgid "Click tracking is enabled on this site. The plugin keeps one running total per link, counting how many times that link has been followed. The count is not tied to a visitor, a session, a time, or a location: it is a single number per link and cannot be used to identify anyone or to reconstruct an individual visit."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:348
+msgid "When a visitor follows a short link, the plugin looks up the destination and issues an HTTP redirect. It does not log the request, the visitor's IP address, or the referring page."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:352
+msgid "GT Link Manager stores the short links you create. It does not create user accounts, set cookies, or add tracking scripts."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:353
+msgid "Redirects"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:355
+msgid "Geolocation targeting"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:356
+msgid "If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare's CF-IPCountry header. The plugin never reads or processes the visitor's IP address, never contacts an external geolocation service, and never stores or transmits the country. The value exists only for the duration of that single request and is used solely to choose which URL to redirect to."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:357
+msgid "Because the country is derived from data your CDN already collects, the relevant disclosure usually belongs with your CDN provider rather than with this plugin. Check your CDN's own privacy documentation."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:358
+msgid "Note: if you have added click tracking or analytics through the plugin's gtlm_before_redirect hook, that code receives the detected country and may store or transmit it. Any such storage is the responsibility of the integration you added, not of this plugin."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:361
+msgid "GT Link Manager stores configured links and redirects visitors. Basic lifetime click counts, if enabled, are independent of advanced analytics."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:362
+msgid "This site has opted in to advanced link analytics. Eligible redirect requests may store a short-lived timestamp, link ID, referring hostname, coarse device/browser/OS families, an allowlisted campaign ID, redirect type, and optionally a country code supplied by a trusted proxy. Dated aggregate summaries are retained under the configured retention policy. Pausing collection retains previously collected reports until their retention period ends or they are deleted."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:363
+msgid "The plugin does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or full referring URLs, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required."
+msgstr ""
+
+#. translators: 1: event days, 2: summary days.
+#: includes/class-gt-link-admin.php:367
+#, php-format
+msgid "Configured retention: click records for %1$d days and aggregate summaries for %2$d days. Maintenance must run for scheduled deletion to take place."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:382
+msgid "You are not allowed to do this."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:386
+msgid "Security check failed. Reload the page and try again."
+msgstr ""
+
+#. translators: %d: HTTP status code
+#: includes/class-gt-link-admin.php:499
+#, php-format
+msgid "The loopback request returned HTTP %d. If your site blocks server-to-self requests, this check cannot run — it does not mean geolocation is broken."
+msgstr ""
+
+#: includes/class-gt-link-admin.php:1035
+msgid "No link available for runtime redirect test."
+msgstr ""
+
+#. translators: 1: HTTP code, 2: location
+#: includes/class-gt-link-admin.php:1057
+#, php-format
+msgid "Response: %1$d, Location: %2$s"
+msgstr ""
+
+#: includes/class-gt-link-admin.php:1166
+#: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:30
+#: blocks/link-inserter/src/index.js:224
+#: blocks/link-inserter/src/index.js:277
+msgid "GT Link"
+msgstr ""
+
+#. translators: %s: number of links
+#: includes/class-gt-link-admin.php:1186
+#, php-format
+msgid "%s GT Link"
+msgid_plural "%s GT Links"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-gt-link-geo.php:638
+msgid "European Union"
+msgstr ""
+
+#: includes/class-gt-link-import.php:82
+msgid "Cancel import"
+msgstr ""
+
+#: includes/class-gt-link-import.php:94
+msgid "Export"
+msgstr ""
+
+#: includes/class-gt-link-import.php:99
+msgid "Search"
+msgstr ""
+
+#: includes/class-gt-link-import.php:101
+#: includes/class-gt-link-list-table.php:507
+#: includes/class-gtlm-analytics-view.php:129
+msgid "All categories"
+msgstr ""
+
+#: includes/class-gt-link-import.php:107
+#: includes/class-gt-link-list-table.php:515
+msgid "All types"
+msgstr ""
+
+#: includes/class-gt-link-import.php:108
+#: includes/class-gt-link-import.php:167
+#: includes/class-gt-link-list-table.php:74
+msgid "Rel"
+msgstr ""
+
+#: includes/class-gt-link-import.php:108
+#: includes/class-gt-link-list-table.php:523
+msgid "All rel values"
+msgstr ""
+
+#: includes/class-gt-link-import.php:110
+#: includes/class-gtlm-analytics-view.php:207
+msgid "Export CSV"
+msgstr ""
+
+#: includes/class-gt-link-import.php:117
+msgid "Import (Step 1: Upload & Preview)"
+msgstr ""
+
+#: includes/class-gt-link-import.php:122
+msgid "CSV File"
+msgstr ""
+
+#: includes/class-gt-link-import.php:123
+msgid "Preset"
+msgstr ""
+
+#: includes/class-gt-link-import.php:123
+msgid "Generic"
+msgstr ""
+
+#: includes/class-gt-link-import.php:123
+msgid "LinkCentral"
+msgstr ""
+
+#: includes/class-gt-link-import.php:123
+msgid "Pretty Links"
+msgstr ""
+
+#: includes/class-gt-link-import.php:125
+msgid "Preview CSV"
+msgstr ""
+
+#: includes/class-gt-link-import.php:126
+msgid "Processing file..."
+msgstr ""
+
+#: includes/class-gt-link-import.php:140
+msgid "Import (Step 2: Map Columns & Run)"
+msgstr ""
+
+#: includes/class-gt-link-import.php:141
+msgid "Map CSV columns to GT Link fields, then import."
+msgstr ""
+
+#: includes/class-gt-link-import.php:143
+msgid "Preview (first 5 rows)"
+msgstr ""
+
+#: includes/class-gt-link-import.php:150
+msgid "No sample rows found."
+msgstr ""
+
+#: includes/class-gt-link-import.php:165
+msgid "URL"
+msgstr ""
+
+#: includes/class-gt-link-import.php:170
+#: includes/class-gt-link-list-table.php:77
+msgid "Tags"
+msgstr ""
+
+#: includes/class-gt-link-import.php:172
+msgid "Geo Rules (JSON)"
+msgstr ""
+
+#: includes/class-gt-link-import.php:173
+msgid "Geo Mode"
+msgstr ""
+
+#: includes/class-gt-link-import.php:177
+#: includes/class-gt-link-list-table.php:419
+msgid "Active"
+msgstr ""
+
+#: includes/class-gt-link-import.php:190
+msgid "Ignore"
+msgstr ""
+
+#: includes/class-gt-link-import.php:198
+msgid "Duplicate Slug Handling"
+msgstr ""
+
+#: includes/class-gt-link-import.php:199
+msgid "Skip existing"
+msgstr ""
+
+#: includes/class-gt-link-import.php:200
+msgid "Overwrite existing"
+msgstr ""
+
+#: includes/class-gt-link-import.php:201
+msgid "Auto-suffix slug"
+msgstr ""
+
+#: includes/class-gt-link-import.php:205
+msgid "Run Import"
+msgstr ""
+
+#: includes/class-gt-link-import.php:206
+msgid "Import in progress..."
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:67
+msgid "ID"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:69
+msgid "Branded URL"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:70
+msgid "Destination"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:71
+msgid "Mode"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:72
+msgid "Geo"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:73
+msgid "Type"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:78
+#: includes/class-gtlm-analytics-view.php:154
+#: includes/class-gtlm-analytics-view.php:166
+#: includes/class-gtlm-analytics-view.php:180
+msgid "Clicks"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:79
+msgid "Created"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:115
+#: includes/class-gt-link-list-table.php:256
+msgid "Restore"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:116
+#: includes/class-gt-link-list-table.php:257
+msgid "Delete Permanently"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:121
+msgid "Move to Trash"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:122
+#: includes/class-gt-link-list-table.php:277
+msgid "Activate"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:123
+#: includes/class-gt-link-list-table.php:277
+msgid "Deactivate"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:124
+msgid "Set 301"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:125
+msgid "Set 302"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:126
+msgid "Set 307"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:127
+msgid "Clear rel"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:128
+msgid "Set rel: nofollow"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:129
+msgid "Set rel: sponsored"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:130
+msgid "Set rel: ugc"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:131
+msgid "Set category"
+msgstr ""
+
+#. translators: %s: number of links
+#: includes/class-gt-link-list-table.php:152
+#, php-format
+msgid "All %s"
+msgstr ""
+
+#. translators: %s: number of links
+#: includes/class-gt-link-list-table.php:159
+#, php-format
+msgid "Active %s"
+msgstr ""
+
+#. translators: %s: number of links
+#: includes/class-gt-link-list-table.php:166
+#, php-format
+msgid "Inactive %s"
+msgstr ""
+
+#. translators: %s: number of links
+#: includes/class-gt-link-list-table.php:173
+#, php-format
+msgid "Trash %s"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:182
+msgid "No links in the trash."
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:186
+#: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:157
+msgid "No links found."
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:187
+msgid "Create your first link"
+msgstr ""
+
+#. translators: %s: link name.
+#: includes/class-gt-link-list-table.php:202
+#, php-format
+msgid "Select %s"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:292
+msgid "Quick Edit"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:294
+msgid "Trash"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:299
+msgid "View"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:316
+msgid "Reset Clicks"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:339
+msgid "Regex pattern"
+msgstr ""
+
+#. translators: %s: branded link path.
+#: includes/class-gt-link-list-table.php:366
+#, php-format
+msgid "Copy branded URL for %s"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:377
+#: includes/class-gt-link-list-table.php:533
+msgid "Standard"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:378
+#: includes/class-gt-link-list-table.php:534
+msgid "Direct"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:379
+#: includes/class-gt-link-list-table.php:535
+msgid "Regex"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:408
+msgid "Click tracking is off"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:422
+msgid "Inactive"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:456
+msgid "No geo rules"
+msgstr ""
+
+#. translators: %d: number of country rules
+#: includes/class-gt-link-list-table.php:464
+#, php-format
+msgid "%d rule"
+msgid_plural "%d rules"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-gt-link-list-table.php:494
+msgid "Filter by date"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:496
+msgid "All dates"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:506
+msgid "Filter by category"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:513
+msgid "Filter by redirect type"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:521
+msgid "Filter by rel value"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:530
+msgid "Filter by link mode"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:532
+msgid "All modes"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:538
+msgid "Filter"
+msgstr ""
+
+#: includes/class-gt-link-list-table.php:542
+#: includes/class-gt-link-list-table.php:544
+msgid "Category for bulk action"
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:389
+#: includes/class-gt-link-rest-api.php:447
+msgid "Link not found."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:417
+#: includes/class-gt-link-rest-api.php:452
+msgid "This WordPress path is reserved, or the regular expression is invalid."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:420
+#: includes/class-gt-link-rest-api.php:455
+msgid "Name and URL are required."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:428
+#: includes/class-gt-link-rest-api.php:460
+msgid "Slug already exists."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:433
+msgid "Could not create link."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:465
+msgid "Could not update link."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:481
+#: includes/class-gt-link-rest-api.php:518
+#: includes/class-gt-link-rest-api.php:539
+msgid "Invalid link ID."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:487
+msgid "Could not delete link."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:499
+msgid "Could not trash link."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:544
+msgid "Could not update link status."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:564
+msgid "link_ids is required."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:572
+#: includes/class-gt-link-rest-api.php:682
+msgid "Category not found."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:577
+msgid "No valid link IDs provided."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:670
+msgid "Could not create category."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:692
+msgid "Could not update category."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:704
+msgid "Invalid category ID."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:709
+msgid "Could not delete category."
+msgstr ""
+
+#: includes/class-gt-link-rest-api.php:1048
+msgid "No valid geo rules found. Each rule needs a \"url\" and at least one valid ISO 3166-1 alpha-2 country code or the \"EU\" group."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:19
+msgid "Request too large."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:25
+#: includes/class-gtlm-analytics-controller.php:137
+msgid "Explicitly opt in before enabling analytics."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:32
+msgid "Confirm deletion of all analytics data."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:48
+msgid "Analytics is temporarily unavailable. Redirects remain available."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:59
+msgid "Use valid dates in YYYY-MM-DD format."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:65
+msgid "Select a range within the last 90 days in the WordPress site timezone."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:69
+msgid "Choose a supported breakdown."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:83
+msgid "Choose daily or hourly trends."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:91
+msgid "Use a valid numeric link or category ID."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:100
+msgid "Enable analytics before requesting reports."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:109
+msgid "Analytics storage is not ready."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:129
+msgid "You cannot change analytics settings."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:144
+msgid "Too many campaign rows."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:148
+msgid "Invalid campaign row."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:176
+msgid "Invalid analytics action or missing confirmation."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:182
+msgid "Analytics could not complete this action. Redirects remain available."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:195
+msgid "You cannot export analytics."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:199
+msgid "Analytics is disabled."
+msgstr ""
+
+#: includes/class-gtlm-analytics-controller.php:211
+msgid "This export is too large or unavailable. Select a smaller date range or a single link."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:9
+msgid "You cannot view analytics."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:26
+msgid "Collecting clicks"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:26
+msgid "Waiting for maintenance"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:26
+msgid "Collection paused"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:26
+msgid "Not enabled"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:27
+msgid "Analytics views"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:29
+msgid "Overview"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:38
+msgid "Settings saved."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:41
+msgid "See how your links are used"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:41
+msgid "View click trends, referring websites and device information. Your existing basic click counts stay separate."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:41
+msgid "Analytics is off until you enable it. No analytics data or background jobs are created beforehand."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:41
+msgid "Set up analytics"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:51
+msgid "Click analytics"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:52
+msgid "Enable advanced analytics"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:52
+msgid "Records click times, referring websites and basic device information. No visitor scripts, cookies or IP addresses."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:53
+msgid "Keep reports for"
+msgstr ""
+
+#. translators: %d: Number of days to keep reports.
+#: includes/class-gtlm-analytics-view.php:58
+#, php-format
+msgid "%d days"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:59
+msgid "Older reports are deleted automatically when background processing runs."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:60
+msgid "Include countries"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:60
+msgid "Uses country information already supplied by your CDN or server. Unavailable locations appear as unknown."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:61
+msgid "Time follows WordPress:"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:61
+msgid "Change in WordPress settings"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:62
+msgid "Advanced options"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:62
+msgid "Keep individual click records (days)"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:62
+msgid "The default is 7 days. Dated summaries remain for the report period above."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:62
+msgid "Country source"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:64
+msgid "Use existing country detection"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:65
+msgid "Cloudflare"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:66
+msgid "Custom country header"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:69
+msgid "Custom header name (optional)"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:69
+msgid "Exclude link IDs (comma-separated)"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:70
+msgid "Campaign tracking"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:70
+msgid "Optional: match exact UTM values to a campaign. Add a new row when changing an existing campaign."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:70
+msgid "Medium"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:70
+msgid "Campaign"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:70
+msgid "Action"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:75
+msgid "Add campaign"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:78
+msgid "Privacy and data"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:78
+msgid "Only eligible GET redirects are recorded. Recognized bots, prefetches and signed-in link managers are excluded. Referrer paths, query strings, raw user agents and IP addresses are not stored. Summaries use minute buckets so reports can follow WordPress time accurately."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:78
+msgid "Turning analytics off stops new collection. Existing reports are kept until they expire or you delete them. Basic lifetime click counts are unchanged."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:82
+msgid "Maintenance and deletion"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:84
+msgid "Reports update automatically. Use this if an update is overdue."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:84
+msgid "Update reports now"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:86
+msgid "Permanently delete all analytics data. Links and basic counts will remain."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:86
+msgid "Delete analytics data"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:106
+msgid "Reports could not load. Check analytics maintenance in Settings."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:113
+msgid "Collection is paused because reports have not updated recently. Check maintenance in Settings."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:114
+msgid "Date range"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:116
+msgid "Today"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:117
+msgid "Last 7 days"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:118
+msgid "Last 30 days"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:119
+msgid "Last 90 days"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:120
+msgid "Custom dates"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:123
+msgid "From"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:123
+msgid "To"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:123
+msgid "Group by"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:125
+msgid "Day"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:126
+msgid "Hour"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:132
+msgid "Apply"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:135
+msgid "Showing:"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:135
+msgid "Selected link"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:135
+msgid "Show all links"
+msgstr ""
+
+#. translators: %s: Click count in the previous selected period.
+#: includes/class-gtlm-analytics-view.php:137
+msgid "Recorded clicks"
+msgstr ""
+
+#. translators: %s: Click count in the previous selected period.
+#: includes/class-gtlm-analytics-view.php:137
+msgid "Previous period has no complete history yet"
+msgstr ""
+
+#. translators: %s: Click count in the previous selected period.
+#: includes/class-gtlm-analytics-view.php:137
+#, php-format
+msgid "%s in the previous period"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:146
+msgid "Recorded click trend. Exact values are available below."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:152
+msgid "No recorded clicks in this period. New activity appears after the next report update."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:153
+msgid "View click totals"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:154
+msgid "Time"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:156
+msgid "Top links"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:166
+msgid "Link"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:167
+msgid "Browse all links"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:168
+msgid "Click breakdown"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:170
+msgid "Sources"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:172
+msgid "Devices"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:173
+msgid "Browsers"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:174
+msgid "OS"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:175
+msgid "Campaigns"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:185
+msgid "Direct / unknown"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:185
+msgid "Unknown / unattributed"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:187
+msgid "Other"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:196
+msgid "WordPress time:"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:196
+msgid "Last updated:"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:207
+msgid "Counts are eligible redirect requests, not unique visitors. Filters and paused collection can leave gaps. Categories reflect current membership."
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:213
+msgid "Campaign source"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:214
+msgid "Campaign medium"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:215
+msgid "Campaign name"
+msgstr ""
+
+#: includes/class-gtlm-analytics-view.php:238
+msgid "No data for this selection."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:33
+msgid "Choose a supported finite retention period."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:39
+msgid "Choose a supported country header source."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:43
+msgid "Enter a country header name, such as X-Geo-Country."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:48
+msgid "Use a bounded list of link IDs to exclude."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:52
+msgid "Excluded link IDs must be positive integers."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:58
+msgid "Use at most 100 configured campaigns."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:68
+msgid "Campaign IDs must be unique positive integers."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:76
+msgid "Use short campaign tokens. Existing IDs cannot be reassigned to different UTM values."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:81
+msgid "A campaign needs at least one UTM value."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:88
+msgid "Analytics settings are too large. Reduce campaigns or exclusions."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:96
+msgid "Advanced analytics currently supports single-site installations only. No analytics storage was created."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:100
+msgid "Analytics maintenance is busy. Try again shortly."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:109
+msgid "Analytics could not initialize its InnoDB tables. Collection remains off; retry or delete the partial analytics storage."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:114
+msgid "Process pending analytics before changing collection settings."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:136
+msgid "Analytics storage is at its safety threshold. Prune or delete old data before resuming."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:140
+msgid "Analytics maintenance could not be scheduled. Collection remains off."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:154
+msgid "Analytics setup failed. Redirects remain available and collection is off."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:179
+msgid "Analytics is busy. Try saving again shortly."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:195
+msgid "Collection stopped. Maintenance is busy; retry to finish pausing."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:222
+msgid "Collection stopped. Retry deleting after maintenance finishes."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:226
+msgid "Analytics storage could not be removed. Collection is off."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:244
+msgid "A maintenance process is already running."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:249
+msgid "Analytics has not been initialized."
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:261
+msgid "Analytics maintenance failed. Collection is paused until maintenance succeeds."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:13
+msgid "Private temporary storage is unavailable."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:17
+msgid "The site directory could not be verified."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:23
+msgid "Import storage must be outside the public site directory."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:27
+msgid "Import storage must not be a symbolic link."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:30
+msgid "Private import storage could not be created."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:33
+msgid "Private import storage needs restricted permissions."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:42
+msgid "Choose a CSV file to import."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:46
+msgid "Choose a non-empty CSV file no larger than 5 MB."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:57
+msgid "The import file could not be stored privately."
+msgstr ""
+
+#: includes/class-gtlm-import-file.php:61
+msgid "Import cleanup could not be scheduled. Please try again."
+msgstr ""
+
+#: includes/data/countries.php:16
+msgid "Andorra"
+msgstr ""
+
+#: includes/data/countries.php:17
+msgid "United Arab Emirates"
+msgstr ""
+
+#: includes/data/countries.php:18
+msgid "Afghanistan"
+msgstr ""
+
+#: includes/data/countries.php:19
+msgid "Antigua and Barbuda"
+msgstr ""
+
+#: includes/data/countries.php:20
+msgid "Anguilla"
+msgstr ""
+
+#: includes/data/countries.php:21
+msgid "Albania"
+msgstr ""
+
+#: includes/data/countries.php:22
+msgid "Armenia"
+msgstr ""
+
+#: includes/data/countries.php:23
+msgid "Angola"
+msgstr ""
+
+#: includes/data/countries.php:24
+msgid "Antarctica"
+msgstr ""
+
+#: includes/data/countries.php:25
+msgid "Argentina"
+msgstr ""
+
+#: includes/data/countries.php:26
+msgid "American Samoa"
+msgstr ""
+
+#: includes/data/countries.php:27
+msgid "Austria"
+msgstr ""
+
+#: includes/data/countries.php:28
+msgid "Australia"
+msgstr ""
+
+#: includes/data/countries.php:29
+msgid "Aruba"
+msgstr ""
+
+#: includes/data/countries.php:30
+msgid "Åland Islands"
+msgstr ""
+
+#: includes/data/countries.php:31
+msgid "Azerbaijan"
+msgstr ""
+
+#: includes/data/countries.php:32
+msgid "Bosnia and Herzegovina"
+msgstr ""
+
+#: includes/data/countries.php:33
+msgid "Barbados"
+msgstr ""
+
+#: includes/data/countries.php:34
+msgid "Bangladesh"
+msgstr ""
+
+#: includes/data/countries.php:35
+msgid "Belgium"
+msgstr ""
+
+#: includes/data/countries.php:36
+msgid "Burkina Faso"
+msgstr ""
+
+#: includes/data/countries.php:37
+msgid "Bulgaria"
+msgstr ""
+
+#: includes/data/countries.php:38
+msgid "Bahrain"
+msgstr ""
+
+#: includes/data/countries.php:39
+msgid "Burundi"
+msgstr ""
+
+#: includes/data/countries.php:40
+msgid "Benin"
+msgstr ""
+
+#: includes/data/countries.php:41
+msgid "Saint Barthélemy"
+msgstr ""
+
+#: includes/data/countries.php:42
+msgid "Bermuda"
+msgstr ""
+
+#: includes/data/countries.php:43
+msgid "Brunei Darussalam"
+msgstr ""
+
+#: includes/data/countries.php:44
+msgid "Bolivia"
+msgstr ""
+
+#: includes/data/countries.php:45
+msgid "Bonaire, Sint Eustatius and Saba"
+msgstr ""
+
+#: includes/data/countries.php:46
+msgid "Brazil"
+msgstr ""
+
+#: includes/data/countries.php:47
+msgid "Bahamas"
+msgstr ""
+
+#: includes/data/countries.php:48
+msgid "Bhutan"
+msgstr ""
+
+#: includes/data/countries.php:49
+msgid "Bouvet Island"
+msgstr ""
+
+#: includes/data/countries.php:50
+msgid "Botswana"
+msgstr ""
+
+#: includes/data/countries.php:51
+msgid "Belarus"
+msgstr ""
+
+#: includes/data/countries.php:52
+msgid "Belize"
+msgstr ""
+
+#: includes/data/countries.php:53
+msgid "Canada"
+msgstr ""
+
+#: includes/data/countries.php:54
+msgid "Cocos (Keeling) Islands"
+msgstr ""
+
+#: includes/data/countries.php:55
+msgid "Congo, Democratic Republic of the"
+msgstr ""
+
+#: includes/data/countries.php:56
+msgid "Central African Republic"
+msgstr ""
+
+#: includes/data/countries.php:57
+msgid "Congo"
+msgstr ""
+
+#: includes/data/countries.php:58
+msgid "Switzerland"
+msgstr ""
+
+#: includes/data/countries.php:59
+msgid "Côte d'Ivoire"
+msgstr ""
+
+#: includes/data/countries.php:60
+msgid "Cook Islands"
+msgstr ""
+
+#: includes/data/countries.php:61
+msgid "Chile"
+msgstr ""
+
+#: includes/data/countries.php:62
+msgid "Cameroon"
+msgstr ""
+
+#: includes/data/countries.php:63
+msgid "China"
+msgstr ""
+
+#: includes/data/countries.php:64
+msgid "Colombia"
+msgstr ""
+
+#: includes/data/countries.php:65
+msgid "Costa Rica"
+msgstr ""
+
+#: includes/data/countries.php:66
+msgid "Cuba"
+msgstr ""
+
+#: includes/data/countries.php:67
+msgid "Cabo Verde"
+msgstr ""
+
+#: includes/data/countries.php:68
+msgid "Curaçao"
+msgstr ""
+
+#: includes/data/countries.php:69
+msgid "Christmas Island"
+msgstr ""
+
+#: includes/data/countries.php:70
+msgid "Cyprus"
+msgstr ""
+
+#: includes/data/countries.php:71
+msgid "Czechia"
+msgstr ""
+
+#: includes/data/countries.php:72
+msgid "Germany"
+msgstr ""
+
+#: includes/data/countries.php:73
+msgid "Djibouti"
+msgstr ""
+
+#: includes/data/countries.php:74
+msgid "Denmark"
+msgstr ""
+
+#: includes/data/countries.php:75
+msgid "Dominica"
+msgstr ""
+
+#: includes/data/countries.php:76
+msgid "Dominican Republic"
+msgstr ""
+
+#: includes/data/countries.php:77
+msgid "Algeria"
+msgstr ""
+
+#: includes/data/countries.php:78
+msgid "Ecuador"
+msgstr ""
+
+#: includes/data/countries.php:79
+msgid "Estonia"
+msgstr ""
+
+#: includes/data/countries.php:80
+msgid "Egypt"
+msgstr ""
+
+#: includes/data/countries.php:81
+msgid "Western Sahara"
+msgstr ""
+
+#: includes/data/countries.php:82
+msgid "Eritrea"
+msgstr ""
+
+#: includes/data/countries.php:83
+msgid "Spain"
+msgstr ""
+
+#: includes/data/countries.php:84
+msgid "Ethiopia"
+msgstr ""
+
+#: includes/data/countries.php:85
+msgid "Finland"
+msgstr ""
+
+#: includes/data/countries.php:86
+msgid "Fiji"
+msgstr ""
+
+#: includes/data/countries.php:87
+msgid "Falkland Islands"
+msgstr ""
+
+#: includes/data/countries.php:88
+msgid "Micronesia"
+msgstr ""
+
+#: includes/data/countries.php:89
+msgid "Faroe Islands"
+msgstr ""
+
+#: includes/data/countries.php:90
+msgid "France"
+msgstr ""
+
+#: includes/data/countries.php:91
+msgid "Gabon"
+msgstr ""
+
+#: includes/data/countries.php:92
+msgid "United Kingdom"
+msgstr ""
+
+#: includes/data/countries.php:93
+msgid "Grenada"
+msgstr ""
+
+#: includes/data/countries.php:94
+msgid "Georgia"
+msgstr ""
+
+#: includes/data/countries.php:95
+msgid "French Guiana"
+msgstr ""
+
+#: includes/data/countries.php:96
+msgid "Guernsey"
+msgstr ""
+
+#: includes/data/countries.php:97
+msgid "Ghana"
+msgstr ""
+
+#: includes/data/countries.php:98
+msgid "Gibraltar"
+msgstr ""
+
+#: includes/data/countries.php:99
+msgid "Greenland"
+msgstr ""
+
+#: includes/data/countries.php:100
+msgid "Gambia"
+msgstr ""
+
+#: includes/data/countries.php:101
+msgid "Guinea"
+msgstr ""
+
+#: includes/data/countries.php:102
+msgid "Guadeloupe"
+msgstr ""
+
+#: includes/data/countries.php:103
+msgid "Equatorial Guinea"
+msgstr ""
+
+#: includes/data/countries.php:104
+msgid "Greece"
+msgstr ""
+
+#: includes/data/countries.php:105
+msgid "South Georgia and the South Sandwich Islands"
+msgstr ""
+
+#: includes/data/countries.php:106
+msgid "Guatemala"
+msgstr ""
+
+#: includes/data/countries.php:107
+msgid "Guam"
+msgstr ""
+
+#: includes/data/countries.php:108
+msgid "Guinea-Bissau"
+msgstr ""
+
+#: includes/data/countries.php:109
+msgid "Guyana"
+msgstr ""
+
+#: includes/data/countries.php:110
+msgid "Hong Kong"
+msgstr ""
+
+#: includes/data/countries.php:111
+msgid "Heard Island and McDonald Islands"
+msgstr ""
+
+#: includes/data/countries.php:112
+msgid "Honduras"
+msgstr ""
+
+#: includes/data/countries.php:113
+msgid "Croatia"
+msgstr ""
+
+#: includes/data/countries.php:114
+msgid "Haiti"
+msgstr ""
+
+#: includes/data/countries.php:115
+msgid "Hungary"
+msgstr ""
+
+#: includes/data/countries.php:116
+msgid "Indonesia"
+msgstr ""
+
+#: includes/data/countries.php:117
+msgid "Ireland"
+msgstr ""
+
+#: includes/data/countries.php:118
+msgid "Israel"
+msgstr ""
+
+#: includes/data/countries.php:119
+msgid "Isle of Man"
+msgstr ""
+
+#: includes/data/countries.php:121
+msgid "British Indian Ocean Territory"
+msgstr ""
+
+#: includes/data/countries.php:122
+msgid "Iraq"
+msgstr ""
+
+#: includes/data/countries.php:123
+msgid "Iran"
+msgstr ""
+
+#: includes/data/countries.php:124
+msgid "Iceland"
+msgstr ""
+
+#: includes/data/countries.php:125
+msgid "Italy"
+msgstr ""
+
+#: includes/data/countries.php:126
+msgid "Jersey"
+msgstr ""
+
+#: includes/data/countries.php:127
+msgid "Jamaica"
+msgstr ""
+
+#: includes/data/countries.php:128
+msgid "Jordan"
+msgstr ""
+
+#: includes/data/countries.php:129
+msgid "Japan"
+msgstr ""
+
+#: includes/data/countries.php:130
+msgid "Kenya"
+msgstr ""
+
+#: includes/data/countries.php:131
+msgid "Kyrgyzstan"
+msgstr ""
+
+#: includes/data/countries.php:132
+msgid "Cambodia"
+msgstr ""
+
+#: includes/data/countries.php:133
+msgid "Kiribati"
+msgstr ""
+
+#: includes/data/countries.php:134
+msgid "Comoros"
+msgstr ""
+
+#: includes/data/countries.php:135
+msgid "Saint Kitts and Nevis"
+msgstr ""
+
+#: includes/data/countries.php:136
+msgid "North Korea"
+msgstr ""
+
+#: includes/data/countries.php:137
+msgid "South Korea"
+msgstr ""
+
+#: includes/data/countries.php:138
+msgid "Kuwait"
+msgstr ""
+
+#: includes/data/countries.php:139
+msgid "Cayman Islands"
+msgstr ""
+
+#: includes/data/countries.php:140
+msgid "Kazakhstan"
+msgstr ""
+
+#: includes/data/countries.php:141
+msgid "Laos"
+msgstr ""
+
+#: includes/data/countries.php:142
+msgid "Lebanon"
+msgstr ""
+
+#: includes/data/countries.php:143
+msgid "Saint Lucia"
+msgstr ""
+
+#: includes/data/countries.php:144
+msgid "Liechtenstein"
+msgstr ""
+
+#: includes/data/countries.php:145
+msgid "Sri Lanka"
+msgstr ""
+
+#: includes/data/countries.php:146
+msgid "Liberia"
+msgstr ""
+
+#: includes/data/countries.php:147
+msgid "Lesotho"
+msgstr ""
+
+#: includes/data/countries.php:148
+msgid "Lithuania"
+msgstr ""
+
+#: includes/data/countries.php:149
+msgid "Luxembourg"
+msgstr ""
+
+#: includes/data/countries.php:150
+msgid "Latvia"
+msgstr ""
+
+#: includes/data/countries.php:151
+msgid "Libya"
+msgstr ""
+
+#: includes/data/countries.php:152
+msgid "Morocco"
+msgstr ""
+
+#: includes/data/countries.php:153
+msgid "Monaco"
+msgstr ""
+
+#: includes/data/countries.php:154
+msgid "Moldova"
+msgstr ""
+
+#: includes/data/countries.php:155
+msgid "Montenegro"
+msgstr ""
+
+#: includes/data/countries.php:156
+msgid "Saint Martin"
+msgstr ""
+
+#: includes/data/countries.php:157
+msgid "Madagascar"
+msgstr ""
+
+#: includes/data/countries.php:158
+msgid "Marshall Islands"
+msgstr ""
+
+#: includes/data/countries.php:159
+msgid "North Macedonia"
+msgstr ""
+
+#: includes/data/countries.php:160
+msgid "Mali"
+msgstr ""
+
+#: includes/data/countries.php:161
+msgid "Myanmar"
+msgstr ""
+
+#: includes/data/countries.php:162
+msgid "Mongolia"
+msgstr ""
+
+#: includes/data/countries.php:163
+msgid "Macao"
+msgstr ""
+
+#: includes/data/countries.php:164
+msgid "Northern Mariana Islands"
+msgstr ""
+
+#: includes/data/countries.php:165
+msgid "Martinique"
+msgstr ""
+
+#: includes/data/countries.php:166
+msgid "Mauritania"
+msgstr ""
+
+#: includes/data/countries.php:167
+msgid "Montserrat"
+msgstr ""
+
+#: includes/data/countries.php:168
+msgid "Malta"
+msgstr ""
+
+#: includes/data/countries.php:169
+msgid "Mauritius"
+msgstr ""
+
+#: includes/data/countries.php:170
+msgid "Maldives"
+msgstr ""
+
+#: includes/data/countries.php:171
+msgid "Malawi"
+msgstr ""
+
+#: includes/data/countries.php:172
+msgid "Mexico"
+msgstr ""
+
+#: includes/data/countries.php:173
+msgid "Malaysia"
+msgstr ""
+
+#: includes/data/countries.php:174
+msgid "Mozambique"
+msgstr ""
+
+#: includes/data/countries.php:175
+msgid "Namibia"
+msgstr ""
+
+#: includes/data/countries.php:176
+msgid "New Caledonia"
+msgstr ""
+
+#: includes/data/countries.php:177
+msgid "Niger"
+msgstr ""
+
+#: includes/data/countries.php:178
+msgid "Norfolk Island"
+msgstr ""
+
+#: includes/data/countries.php:179
+msgid "Nigeria"
+msgstr ""
+
+#: includes/data/countries.php:180
+msgid "Nicaragua"
+msgstr ""
+
+#: includes/data/countries.php:181
+msgid "Netherlands"
+msgstr ""
+
+#: includes/data/countries.php:182
+msgid "Norway"
+msgstr ""
+
+#: includes/data/countries.php:183
+msgid "Nepal"
+msgstr ""
+
+#: includes/data/countries.php:184
+msgid "Nauru"
+msgstr ""
+
+#: includes/data/countries.php:185
+msgid "Niue"
+msgstr ""
+
+#: includes/data/countries.php:186
+msgid "New Zealand"
+msgstr ""
+
+#: includes/data/countries.php:187
+msgid "Oman"
+msgstr ""
+
+#: includes/data/countries.php:188
+msgid "Panama"
+msgstr ""
+
+#: includes/data/countries.php:189
+msgid "Peru"
+msgstr ""
+
+#: includes/data/countries.php:190
+msgid "French Polynesia"
+msgstr ""
+
+#: includes/data/countries.php:191
+msgid "Papua New Guinea"
+msgstr ""
+
+#: includes/data/countries.php:192
+msgid "Philippines"
+msgstr ""
+
+#: includes/data/countries.php:193
+msgid "Pakistan"
+msgstr ""
+
+#: includes/data/countries.php:194
+msgid "Poland"
+msgstr ""
+
+#: includes/data/countries.php:195
+msgid "Saint Pierre and Miquelon"
+msgstr ""
+
+#: includes/data/countries.php:196
+msgid "Pitcairn"
+msgstr ""
+
+#: includes/data/countries.php:197
+msgid "Puerto Rico"
+msgstr ""
+
+#: includes/data/countries.php:198
+msgid "Palestine"
+msgstr ""
+
+#: includes/data/countries.php:199
+msgid "Portugal"
+msgstr ""
+
+#: includes/data/countries.php:200
+msgid "Palau"
+msgstr ""
+
+#: includes/data/countries.php:201
+msgid "Paraguay"
+msgstr ""
+
+#: includes/data/countries.php:202
+msgid "Qatar"
+msgstr ""
+
+#: includes/data/countries.php:203
+msgid "Réunion"
+msgstr ""
+
+#: includes/data/countries.php:204
+msgid "Romania"
+msgstr ""
+
+#: includes/data/countries.php:205
+msgid "Serbia"
+msgstr ""
+
+#: includes/data/countries.php:206
+msgid "Russia"
+msgstr ""
+
+#: includes/data/countries.php:207
+msgid "Rwanda"
+msgstr ""
+
+#: includes/data/countries.php:208
+msgid "Saudi Arabia"
+msgstr ""
+
+#: includes/data/countries.php:209
+msgid "Solomon Islands"
+msgstr ""
+
+#: includes/data/countries.php:210
+msgid "Seychelles"
+msgstr ""
+
+#: includes/data/countries.php:211
+msgid "Sudan"
+msgstr ""
+
+#: includes/data/countries.php:212
+msgid "Sweden"
+msgstr ""
+
+#: includes/data/countries.php:213
+msgid "Singapore"
+msgstr ""
+
+#: includes/data/countries.php:214
+msgid "Saint Helena, Ascension and Tristan da Cunha"
+msgstr ""
+
+#: includes/data/countries.php:215
+msgid "Slovenia"
+msgstr ""
+
+#: includes/data/countries.php:216
+msgid "Svalbard and Jan Mayen"
+msgstr ""
+
+#: includes/data/countries.php:217
+msgid "Slovakia"
+msgstr ""
+
+#: includes/data/countries.php:218
+msgid "Sierra Leone"
+msgstr ""
+
+#: includes/data/countries.php:219
+msgid "San Marino"
+msgstr ""
+
+#: includes/data/countries.php:220
+msgid "Senegal"
+msgstr ""
+
+#: includes/data/countries.php:221
+msgid "Somalia"
+msgstr ""
+
+#: includes/data/countries.php:222
+msgid "Suriname"
+msgstr ""
+
+#: includes/data/countries.php:223
+msgid "South Sudan"
+msgstr ""
+
+#: includes/data/countries.php:224
+msgid "Sao Tome and Principe"
+msgstr ""
+
+#: includes/data/countries.php:225
+msgid "El Salvador"
+msgstr ""
+
+#: includes/data/countries.php:226
+msgid "Sint Maarten"
+msgstr ""
+
+#: includes/data/countries.php:227
+msgid "Syria"
+msgstr ""
+
+#: includes/data/countries.php:228
+msgid "Eswatini"
+msgstr ""
+
+#: includes/data/countries.php:229
+msgid "Turks and Caicos Islands"
+msgstr ""
+
+#: includes/data/countries.php:230
+msgid "Chad"
+msgstr ""
+
+#: includes/data/countries.php:231
+msgid "French Southern Territories"
+msgstr ""
+
+#: includes/data/countries.php:232
+msgid "Togo"
+msgstr ""
+
+#: includes/data/countries.php:233
+msgid "Thailand"
+msgstr ""
+
+#: includes/data/countries.php:234
+msgid "Tajikistan"
+msgstr ""
+
+#: includes/data/countries.php:235
+msgid "Tokelau"
+msgstr ""
+
+#: includes/data/countries.php:236
+msgid "Timor-Leste"
+msgstr ""
+
+#: includes/data/countries.php:237
+msgid "Turkmenistan"
+msgstr ""
+
+#: includes/data/countries.php:238
+msgid "Tunisia"
+msgstr ""
+
+#: includes/data/countries.php:239
+msgid "Tonga"
+msgstr ""
+
+#: includes/data/countries.php:240
+msgid "Türkiye"
+msgstr ""
+
+#: includes/data/countries.php:241
+msgid "Trinidad and Tobago"
+msgstr ""
+
+#: includes/data/countries.php:242
+msgid "Tuvalu"
+msgstr ""
+
+#: includes/data/countries.php:243
+msgid "Taiwan"
+msgstr ""
+
+#: includes/data/countries.php:244
+msgid "Tanzania"
+msgstr ""
+
+#: includes/data/countries.php:245
+msgid "Ukraine"
+msgstr ""
+
+#: includes/data/countries.php:246
+msgid "Uganda"
+msgstr ""
+
+#: includes/data/countries.php:247
+msgid "United States Minor Outlying Islands"
+msgstr ""
+
+#: includes/data/countries.php:248
+msgid "United States"
+msgstr ""
+
+#: includes/data/countries.php:249
+msgid "Uruguay"
+msgstr ""
+
+#: includes/data/countries.php:250
+msgid "Uzbekistan"
+msgstr ""
+
+#: includes/data/countries.php:251
+msgid "Holy See"
+msgstr ""
+
+#: includes/data/countries.php:252
+msgid "Saint Vincent and the Grenadines"
+msgstr ""
+
+#: includes/data/countries.php:253
+msgid "Venezuela"
+msgstr ""
+
+#: includes/data/countries.php:254
+msgid "Virgin Islands (British)"
+msgstr ""
+
+#: includes/data/countries.php:255
+msgid "Virgin Islands (U.S.)"
+msgstr ""
+
+#: includes/data/countries.php:256
+msgid "Viet Nam"
+msgstr ""
+
+#: includes/data/countries.php:257
+msgid "Vanuatu"
+msgstr ""
+
+#: includes/data/countries.php:258
+msgid "Wallis and Futuna"
+msgstr ""
+
+#: includes/data/countries.php:259
+msgid "Samoa"
+msgstr ""
+
+#: includes/data/countries.php:260
+msgid "Yemen"
+msgstr ""
+
+#: includes/data/countries.php:261
+msgid "Mayotte"
+msgstr ""
+
+#: includes/data/countries.php:262
+msgid "South Africa"
+msgstr ""
+
+#: includes/data/countries.php:263
+msgid "Zambia"
+msgstr ""
+
+#: includes/data/countries.php:264
+msgid "Zimbabwe"
+msgstr ""
+
+#: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:82
+msgid "Could not load links."
+msgstr ""
+
+#: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:121
+msgid "Search GT Links"
+msgstr ""
+
+#: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:124
+msgid "Type a link name or slug"
 msgstr ""

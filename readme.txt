@@ -69,9 +69,25 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_count_click`, filter to skip counting a particular click (exclude logged-in editors, add bot filtering)
 * `gtlm_click_recorded`, action fired after a click has been counted
 
+= Advanced Analytics (1.9.0 test candidate) =
+
+Advanced analytics is a separate, explicit opt-in under GT Links > Analytics. Before opt-in, the plugin creates no analytics tables, options, stored events, or analytics jobs. Basic click counts can stay on or off independently.
+
+Reports include daily/hourly trends, top links, referring hosts, optional trusted-header countries, coarse device/browser/OS families, and allowlisted campaigns. Dates, filters, grouping, status timestamps and CSV exports use the WordPress site timezone, including fractional offsets and daylight-saving changes.
+
+No visitor JavaScript, cookies, beacons, IP storage, fingerprinting, or external analytics/GeoIP requests are added. A compact database append is performed for eligible GET redirects. PHP-FPM can finish the response first; other hosts perform this write synchronously. Recognized bots, prefetches and signed-in link managers are excluded. These are observed requests, not unique people, conversions or destination page loads.
+
+Click records default to 7 days and aggregate summaries to 90 days, with finite retention controls. Summaries preserve minute buckets to support accurate WordPress-time grouping without keeping individual request records. Maintenance runs in bounded batches. Collection pauses if maintenance becomes unhealthy or its 15-minute health lease expires, and resumes when maintenance succeeds. Storage safeguards use a soft threshold, not a hard disk quota.
+
+Pausing retains reports under their retention policy; deleting analytics removes its data and jobs while preserving links and basic counts. Deactivation pauses collection; reactivation does not silently resume it. Analytics report access defaults to administrators. Advanced analytics currently supports single-site installations; multisite opt-in is rejected before provisioning.
+
+Use the `gtlm_analytics_should_record` filter to suppress collection, including integration with visitor-consent requirements. Site-owner opt-in does not establish a legal consent exemption. Keep WordPress cron running; cached or high-volume sites should use a system runner. Operations are also available with `wp gt-link-manager analytics status`, `process`, `prune`, `enable --yes` and `pause`. `delete --yes` permanently removes analytics only.
+
+This candidate is for testing. It has not been published as a stable WordPress.org release.
+
 = Click Counting =
 
-Click counting is off when you install the plugin, and that default is deliberate. With it off, GT Link Manager logs nothing at all about a request, and the privacy statement it registers under **Settings > Privacy** says exactly that.
+Click counting is off when you install the plugin, and that default is deliberate. With basic counts and advanced analytics both off, GT Link Manager stores no request analytics. Its privacy-policy guidance reflects the enabled features.
 
 Turn it on from **GT Links > Settings** and each link starts keeping one number: how many times it has been followed. That is the whole record. What it stores per click:
 
@@ -81,7 +97,7 @@ Turn it on from **GT Links > Settings** and each link starts keeping one number:
 * no referrer
 * no timestamp
 
-A single running total per link cannot be tied back to a person, a session, or a place, which is why enabling it does not drag your site into the analytics-consent conversation.
+Basic counts are separate from detailed analytics and do not identify visitors. Choose consent requirements according to your site and integrations.
 
 The count is written after the redirect has already been sent to the browser, using `fastcgi_finish_request()` where the host supports it. On a test install without that function, which is the slower of the 2 paths, a redirect measured 9.0ms with counting on against 9.1ms with it off.
 
@@ -94,7 +110,7 @@ Where the number shows up:
 
 Use `gtlm_count_click` to skip clicks you do not want counted, such as your own logged-in visits.
 
-Counting is intentionally shallow. It answers "which of my links get used" and nothing else. Per-visit data, referrers, countries, and time series belong in a real analytics tool, and the **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** has step-by-step guides for wiring `gtlm_before_redirect` into GA4, Plausible, Fathom, Matomo, Simple Analytics, or a click log table of your own.
+Basic counting answers "which of my links get used." Enable the separate advanced analytics feature for dated reports, referring websites, countries, and device families. For external integrations, the **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** has step-by-step guides for wiring `gtlm_before_redirect` into GA4, Plausible, Fathom, Matomo, Simple Analytics, or a click log table of your own.
 
 = Free Training Course =
 
@@ -159,7 +175,7 @@ Plenty of plugins will shorten a URL for you. These are the things this one does
 
 Honest limits, because they matter more than the list above:
 
-* the click counter answers "which links get used" and nothing else. Per-visit detail, referrers, and time series need a real analytics tool, and the hooks are there for it
+* basic counts show lifetime totals; optional advanced analytics adds dated reports, referring websites, and coarse device families
 * country detection is only as trustworthy as the CDN in front of it. A forged header on an origin with nothing proxying it is still a forged header
 * there is no automatic keyword linking. Links go where you put them
 * it is a young plugin, and a young plugin has seen fewer edge cases than an old one
@@ -290,13 +306,13 @@ If no header is present, nothing is proxying the site and there is no country to
 
 = Does it collect any personal data? =
 
-No. The plugin does not set cookies, add tracking scripts, or log requests.
+The plugin does not add visitor tracking scripts or cookies. Request data is recorded only when the site owner explicitly enables advanced analytics.
 
-With click counting switched on it stores one running total per link, with no IP address, user agent, referrer, or timestamp attached. Geolocation reads a country code from a request header and uses it for that single redirect without storing it. The plugin registers a suggested privacy-policy section under **Settings > Privacy** that describes whichever of these you have enabled.
+Basic click counting stores a running total independently. Advanced analytics can retain a timestamp, referring hostname, coarse client families, configured campaign ID and optional country, under finite retention. It does not retain IP addresses, raw user agents or full referring URLs. The suggested guidance under **Settings > Privacy** reflects the features and retention you enable.
 
 = What happens when I uninstall? =
 
-Uninstalling the plugin (deleting it from **Plugins**) will **remove all data**, both database tables and plugin options. Deactivating the plugin preserves all data.
+Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Otherwise links and retained reports stay in place. Deactivation pauses advanced collection and preserves data; reactivation does not silently resume collection.
 
 == Screenshots ==
 
@@ -307,6 +323,19 @@ Uninstalling the plugin (deleting it from **Plugins**) will **remove all data**,
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.9.0-rc.2 =
+* Simplify link settings and separate the analytics overview from collection settings.
+* Protect WordPress endpoints from direct and regex rules across every write path.
+* Protect exported spreadsheet cells and stage CSV imports outside public web directories.
+* Add separately opted-in advanced analytics with no analytics storage or jobs before enablement.
+* Add bounded collection, transactional summaries, retention, health backpressure, admin reports and CSV export.
+* Use the WordPress site timezone for report dates, hourly/daily periods and exports, including DST and fractional offsets.
+* Preserve direct/regex slugs through REST and advanced configuration through CSV imports.
+* Keep click writes atomic while preserving configuration timestamps and emitting success hooks only after successful writes.
+* Validate redirect URLs without DNS and reject unexpected standard-link path suffixes.
+* Load admin/editor and REST services only in their relevant contexts.
+
 
 = 1.8.1 =
 * New: a copy button on the Branded URL column. It appears when you hover the row or focus it with the keyboard, copies the full branded link, and confirms with an inline Copied badge that clears itself.

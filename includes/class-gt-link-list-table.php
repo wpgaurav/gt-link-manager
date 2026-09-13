@@ -316,6 +316,16 @@ class GTLM_List_Table extends WP_List_Table {
 			$actions['reset_clicks'] = '<a href="' . esc_url( $reset_url ) . '">' . esc_html__( 'Reset Clicks', 'gt-link-manager' ) . '</a>';
 		}
 
+		if ( GTLM_Settings::get_instance()->analytics_initialized() && current_user_can( (string) apply_filters( 'gtlm_analytics_capability', 'manage_options' ) ) ) {
+			$analytics_url        = add_query_arg(
+				array(
+					'page'    => 'gtlm-links-analytics',
+					'link_id' => (int) $item['id'],
+				),
+				admin_url( 'admin.php' )
+			);
+			$actions['analytics'] = '<a href="' . esc_url( $analytics_url ) . '">' . esc_html__( 'Analytics', 'gt-link-manager' ) . '</a>';
+		}
 		return '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( (string) $item['name'] ) . '</a></strong>' . $this->row_actions( $actions );
 	}
 

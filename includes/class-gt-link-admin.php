@@ -43,6 +43,13 @@ class GTLM_Admin {
 		add_action( 'wp_ajax_gtlm_quick_edit', array( $this, 'ajax_quick_edit' ) );
 		add_action( 'wp_ajax_gtlm_geo_check', array( $this, 'ajax_geo_check' ) );
 		add_action( 'admin_init', array( $this, 'register_privacy_content' ) );
+		add_action(
+			'admin_post_gtlm_analytics_export',
+			static function (): void {
+				require_once GTLM_PATH . 'includes/class-gtlm-analytics-controller.php';
+				GTLM_Analytics_Controller::export();
+			}
+		);
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_new_link' ), 80 );
 		add_filter( 'dashboard_glance_items', array( $this, 'dashboard_glance_items' ) );
 		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
@@ -82,6 +89,7 @@ class GTLM_Admin {
 		add_submenu_page( 'gtlm-links', esc_html__( 'All Links', 'gt-link-manager' ), esc_html__( 'All Links', 'gt-link-manager' ), $capability, 'gtlm-links', array( $this->pages, 'render_links_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Add New', 'gt-link-manager' ), esc_html__( 'Add New', 'gt-link-manager' ), $capability, 'gtlm-links-edit', array( $this->pages, 'render_edit_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Categories', 'gt-link-manager' ), esc_html__( 'Categories', 'gt-link-manager' ), $capability, 'gtlm-links-categories', array( $this->pages, 'render_categories_page' ) );
+		add_submenu_page( 'gtlm-links', __( 'Analytics', 'gt-link-manager' ), __( 'Analytics', 'gt-link-manager' ), (string) apply_filters( 'gtlm_analytics_capability', 'manage_options' ), 'gtlm-links-analytics', array( $this->pages, 'render_analytics_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Settings', 'gt-link-manager' ), esc_html__( 'Settings', 'gt-link-manager' ), 'manage_options', 'gtlm-links-settings', array( $this->pages, 'render_settings_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Import / Export', 'gt-link-manager' ), esc_html__( 'Import / Export', 'gt-link-manager' ), $capability, 'gtlm-links-import-export', array( $this->pages, 'render_import_export_page' ) );
 	}
@@ -159,7 +167,7 @@ class GTLM_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics' ), true ) ) {
 			return;
 		}
 
@@ -349,6 +357,16 @@ class GTLM_Admin {
 			'<p>' . esc_html__( 'Because the country is derived from data your CDN already collects, the relevant disclosure usually belongs with your CDN provider rather than with this plugin. Check your CDN\'s own privacy documentation.', 'gt-link-manager' ) . '</p>' .
 			'<p>' . esc_html__( 'Note: if you have added click tracking or analytics through the plugin\'s gtlm_before_redirect hook, that code receives the detected country and may store or transmit it. Any such storage is the responsibility of the integration you added, not of this plugin.', 'gt-link-manager' ) . '</p>';
 
+		if ( $this->settings->analytics_initialized() ) {
+			$content  = '<p>' . esc_html__( 'GT Link Manager stores configured links and redirects visitors. Basic lifetime click counts, if enabled, are independent of advanced analytics.', 'gt-link-manager' ) . '</p>';
+			$content .= '<p>' . esc_html__( 'This site has opted in to advanced link analytics. Eligible redirect requests may store a short-lived timestamp, link ID, referring hostname, coarse device/browser/OS families, an allowlisted campaign ID, redirect type, and optionally a country code supplied by a trusted proxy. Dated aggregate summaries are retained under the configured retention policy. Pausing collection retains previously collected reports until their retention period ends or they are deleted.', 'gt-link-manager' ) . '</p>';
+			$content .= '<p>' . esc_html__( 'The plugin does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or full referring URLs, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required.', 'gt-link-manager' ) . '</p>';
+			$config   = get_option( 'gtlm_analytics', array() );
+			if ( is_array( $config ) && isset( $config['event_days'], $config['summary_days'] ) ) {
+				/* translators: 1: event days, 2: summary days. */
+				$content .= '<p>' . esc_html( sprintf( __( 'Configured retention: click records for %1$d days and aggregate summaries for %2$d days. Maintenance must run for scheduled deletion to take place.', 'gt-link-manager' ), $config['event_days'], $config['summary_days'] ) ) . '</p>';
+			}
+		}
 		wp_add_privacy_policy_content( __( 'GT Link Manager', 'gt-link-manager' ), $content );
 	}
 
@@ -510,7 +528,13 @@ class GTLM_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics' ), true ) ) {
+			return;
+		}
+
+		if ( 'gtlm-links-analytics' === $page ) {
+			require_once GTLM_PATH . 'includes/class-gtlm-analytics-controller.php';
+			GTLM_Analytics_Controller::handle_admin();
 			return;
 		}
 
@@ -872,7 +896,7 @@ class GTLM_Admin {
 
 		$ok = $link_id > 0 ? $this->db->update_link( $link_id, $data ) : ( $this->db->insert_link( $data ) > 0 );
 		if ( $link_id <= 0 && $ok ) {
-			$created = $this->db->get_link_by_slug( $data['slug'] );
+			$created = $this->db->get_link_by_exact_slug( $data['slug'] );
 			$link_id = is_array( $created ) ? (int) $created['id'] : 0;
 		}
 

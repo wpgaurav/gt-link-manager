@@ -95,11 +95,66 @@ class GTLM_DB {
 		return $link;
 	}
 
+	/** Protected WordPress endpoints are never link-manager routes. */
+	public static function protected_path( string $path ): bool {
+		for ( $pass = 0; $pass < 3; ++$pass ) {
+			$decoded = rawurldecode( $path );
+			if ( $decoded === $path ) {
+				break;
+			}
+			$path = $decoded;
+		}
+		if ( preg_match( '/[\x00-\x1f\x7f]/', $path ) ) {
+			return true;
+		}
+		$parts = array();
+		foreach ( explode( '/', str_replace( '\\', '/', strtolower( $path ) ) ) as $part ) {
+			if ( '..' === $part ) {
+				array_pop( $parts );
+			} elseif ( '' !== $part && '.' !== $part ) {
+				$parts[] = $part;
+			}
+		}
+		$path = implode( '/', $parts );
+		$home = strtolower( trim( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ), '/' ) );
+		if ( '' !== $home && str_starts_with( $path, $home . '/' ) ) {
+			$path = substr( $path, strlen( $home ) + 1 );
+		}
+		$first = explode( '/', $path )[0];
+		return in_array( $first, array( 'wp-admin', 'wp-content', 'wp-includes', 'wp-login.php', 'wp-cron.php', 'wp-json', 'xmlrpc.php', 'wp-signup.php', 'wp-activate.php', 'wp-trackback.php', 'wp-config.php', 'robots.txt', 'wp-sitemap.xml', 'sitemap.xml', 'feed', 'comments' ), true );
+	}
+
+	/** Validate regex syntax before any write, including admin and imports. */
+	public static function valid_link_definition( array $data ): bool {
+		if ( 'direct' === ( $data['link_mode'] ?? '' ) && self::protected_path( (string) ( $data['slug'] ?? '' ) ) ) {
+			return false;
+		}
+		if ( 'regex' !== ( $data['link_mode'] ?? 'standard' ) ) {
+			return true;
+		}
+		$pattern = (string) ( $data['slug'] ?? '' );
+		// A malformed user-supplied pattern is a validation failure, not a PHP warning.
+		return '' !== $pattern && strlen( $pattern ) <= 255 && false !== @preg_match( '#' . $pattern . '#', '' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+	}
+
+	/** Exact lookup for write/import uniqueness; never apply standard-slug normalization here. */
+	public function get_link_by_exact_slug( string $slug ): ?array {
+		global $wpdb;
+		$table = self::links_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE slug = %s LIMIT 1", $slug ), ARRAY_A );
+		return is_array( $row ) ? $this->normalize_link_row( $row ) : null;
+	}
+
 	/**
 	 * Insert a link record.
 	 */
 	public function insert_link( array $data ): int {
 		global $wpdb;
+
+		if ( ! self::valid_link_definition( $data ) ) {
+			return 0;
+		}
 
 		$insert = $this->normalize_link_for_write( $data );
 		$format = $this->formats_for( $insert );
@@ -135,6 +190,10 @@ class GTLM_DB {
 		}
 
 		global $wpdb;
+
+		if ( ! self::valid_link_definition( $data ) ) {
+			return false;
+		}
 
 		$update = $this->normalize_link_for_write( $data );
 		$format = $this->formats_for( $update );
@@ -279,12 +338,84 @@ class GTLM_DB {
 		$result = $wpdb->query(
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"UPDATE {$table} SET total_clicks = total_clicks + 1 WHERE id = %d",
+				"UPDATE {$table} SET total_clicks = total_clicks + 1, updated_at = updated_at WHERE id = %d",
 				$id
 			)
 		);
 
 		return false !== $result && $result > 0;
+	}
+
+	/** Append a pre-normalized analytics event; called only after explicit opt-in. */
+	public function append_analytics_event( array $event ): bool {
+		global $wpdb;
+		$old = $wpdb->suppress_errors( true );
+		try {
+			$table = $wpdb->prefix . 'gtlm_analytics_events';
+			// Fixed, bounded ASCII fields avoid wpdb::insert's per-request column metadata lookup.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- One write after explicit analytics consent.
+			return 1 === $wpdb->query(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Trusted WordPress table prefix.
+					"INSERT INTO {$table} (link_id,occurred_at,generation,source,country,device,browser,os,campaign,status,mode,geo) VALUES (%d,%s,%s,%s,%s,%s,%s,%s,%d,%d,%s,%s)",
+					$event['link_id'],
+					$event['occurred_at'],
+					$event['generation'],
+					$event['source'],
+					$event['country'],
+					$event['device'],
+					$event['browser'],
+					$event['os'],
+					$event['campaign'],
+					$event['status'],
+					$event['mode'],
+					$event['geo']
+				)
+			);
+		} finally {
+			$wpdb->suppress_errors( $old );
+		}
+	}
+
+	/** Merge settings atomically so an ordinary form cannot resurrect or erase concurrent consent. */
+	public function merge_settings( array $values, array $remove = array(), array $existing_only = array() ): bool {
+		global $wpdb;
+		for ( $attempt = 0; $attempt < 3; ++$attempt ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Compare-and-swap requires the stored value, not an object-cache snapshot.
+			$raw = $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'gtlm_settings'" );
+			if ( null === $raw ) {
+				$initial = array_diff_key( $values, array_flip( $existing_only ) );
+				return $initial ? add_option( 'gtlm_settings', $initial, '', false ) : false;
+			}
+			$old   = maybe_unserialize( $raw );
+			$old   = is_array( $old ) ? $old : array();
+			$patch = $values;
+			foreach ( $existing_only as $key ) {
+				if ( ! array_key_exists( $key, $old ) ) {
+					unset( $patch[ $key ] );
+				}
+			}
+			$next = array_merge( $old, $patch );
+			foreach ( $remove as $key ) {
+				unset( $next[ $key ] );
+			}
+			if ( $old === $next ) {
+				return false;
+			}
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Preserve unrelated changes made between the read and write.
+			$result = $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = 'gtlm_settings' AND BINARY option_value = BINARY %s", maybe_serialize( $next ), $raw ) );
+			if ( false === $result ) {
+				return false;
+			}
+			if ( 1 === $result ) {
+				wp_cache_delete( 'gtlm_settings', 'options' );
+				wp_cache_delete( 'alloptions', 'options' );
+				do_action( 'update_option_gtlm_settings', $old, $next, 'gtlm_settings' );
+				do_action( 'updated_option', 'gtlm_settings', $old, $next );
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -302,13 +433,13 @@ class GTLM_DB {
 			$result = $wpdb->query(
 				$wpdb->prepare(
 					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					"UPDATE {$table} SET total_clicks = 0 WHERE id = %d",
+					"UPDATE {$table} SET total_clicks = 0, updated_at = updated_at WHERE id = %d",
 					$id
 				)
 			);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$result = $wpdb->query( "UPDATE {$table} SET total_clicks = 0 WHERE total_clicks > 0" );
+			$result = $wpdb->query( "UPDATE {$table} SET total_clicks = 0, updated_at = updated_at WHERE total_clicks > 0" );
 		}
 
 		return false === $result ? 0 : (int) $result;
@@ -868,12 +999,13 @@ class GTLM_DB {
 	}
 
 	public function flush_cache_group(): void {
-		if ( function_exists( 'wp_cache_flush_group' ) ) {
+		if ( wp_cache_supports( 'flush_group' ) ) {
 			wp_cache_flush_group( self::CACHE_GROUP );
 			return;
 		}
 
-		wp_cache_flush();
+		// Never flush another plugin's cache. Edits already evict their exact keys.
+		wp_cache_delete( 'regex_rules', self::CACHE_GROUP );
 	}
 
 	/**

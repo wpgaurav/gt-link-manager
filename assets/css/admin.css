@@ -868,3 +868,44 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 		transition: none;
 	}
 }
+
+
+/* Analytics and settings use the existing WordPress admin palette. */
+.gtlm-analytics { max-width: 1280px; }
+.gtlm-analytics-heading, .gtlm-analytics-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.gtlm-analytics-status { color:#50575e; font-size:13px; }
+.gtlm-analytics .nav-tab-wrapper { margin:12px 0 24px; }
+.gtlm-analytics-filters { display:flex; flex-wrap:wrap; gap:16px; align-items:end; margin:24px 0; }
+.gtlm-analytics-filters label, .gtlm-setting-field { display:flex; flex-direction:column; gap:8px; }
+.gtlm-custom-dates { display:flex; gap:16px; }
+.gtlm-custom-dates[hidden] { display:none; }
+.gtlm-analytics-trend { background:#fff; border:1px solid #c3c4c7; padding:24px; margin-bottom:24px; }
+.gtlm-analytics-metric { display:flex; flex-direction:column; gap:8px; }
+.gtlm-analytics-metric > strong { font-size:36px; line-height:1.15; font-weight:600; font-variant-numeric:tabular-nums; }
+.gtlm-analytics-metric > span { color:#50575e; }
+.gtlm-analytics-chart { display:block; width:100%; max-height:260px; color:var(--wp-admin-theme-color,#2271b1); margin:24px 0 8px; }
+.gtlm-chart-dates { display:flex; justify-content:space-between; margin-bottom:16px; color:#50575e; }
+.gtlm-chart-empty { padding:32px 0; color:#50575e; }
+.gtlm-analytics-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; margin-bottom:24px; }
+.gtlm-analytics-breakdown h2 { margin-top:0; }
+.gtlm-breakdown-nav { display:flex; flex-wrap:wrap; gap:8px 16px; margin:0 0 16px; }
+.gtlm-breakdown-nav a[aria-current] { color:#1d2327; font-weight:600; text-decoration:none; }
+.gtlm-analytics-settings { max-width:720px; margin:24px 0; }
+.gtlm-setting-check { display:block; margin:20px 0 8px; }
+.gtlm-setting-field { margin:24px 0; align-items:flex-start; }
+.gtlm-setting-field select { min-width:180px; }
+.gtlm-setting-field input[type=number] { width:100px; }
+.gtlm-analytics-timezone { margin:24px 0; color:#50575e; }
+.gtlm-settings-detail { border-top:1px solid #c3c4c7; padding:16px 0; }
+.gtlm-settings-detail summary { cursor:pointer; font-weight:600; }
+.gtlm-settings-detail > p { line-height:1.6; }
+.gtlm-analytics-settings .description { max-width:65ch; line-height:1.6; }
+.gtlm-analytics-empty { max-width:600px; padding:24px 0; }
+.gtlm-analytics-empty p { font-size:14px; line-height:1.7; }
+.gtlm-campaigns input:not([type=hidden]) { width:100%; min-width:90px; }
+@media(max-width:782px) { .gtlm-analytics-grid { grid-template-columns:1fr; } .gtlm-analytics-heading,.gtlm-analytics-footer { align-items:flex-start; flex-direction:column; } .gtlm-analytics-trend { padding:16px; } .gtlm-analytics-filters { gap:12px; } }
+
+.gtlm-main-settings { max-width:800px; margin-top:16px; }
+.gtlm-main-settings > p { color:#50575e; }
+.gtlm-main-settings h2 { margin:24px 0 8px; }
+.gtlm-main-settings .form-table { margin-top:0; }

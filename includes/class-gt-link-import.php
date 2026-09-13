@@ -9,6 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/class-gtlm-csv.php';
+require_once __DIR__ . '/class-gtlm-import-file.php';
+
 class GTLM_Import {
 	private GTLM_DB $db;
 
@@ -42,10 +45,16 @@ class GTLM_Import {
 		check_admin_referer( 'gtlm_import_export' );
 
 		$action = sanitize_key( (string) wp_unslash( $_POST['gtlm_import_export_action'] ) );
-		if ( ! in_array( $action, array( 'preview_csv', 'import_csv', 'export_csv' ), true ) ) {
+		if ( ! in_array( $action, array( 'preview_csv', 'import_csv', 'export_csv', 'cancel_import' ), true ) ) {
 			return;
 		}
 
+		if ( 'cancel_import' === $action ) {
+			$preview = $this->get_preview_state();
+			if ( $preview ) {
+				$this->cleanup_preview( $preview ); }
+			$this->redirect_notice( 'import_cancelled' );
+		}
 		if ( 'export_csv' === $action ) {
 			$this->export_csv();
 		}
@@ -58,6 +67,7 @@ class GTLM_Import {
 	}
 
 	public function render_page(): void {
+		GTLM_Import_File::cleanup_expired();
 		$preview = $this->get_preview_state();
 
 		echo '<div class="wrap">';
@@ -67,6 +77,9 @@ class GTLM_Import {
 
 		if ( is_array( $preview ) ) {
 			$this->render_import_mapping_form( $preview );
+			echo '<form method="post">';
+			wp_nonce_field( 'gtlm_import_export' );
+			echo '<input type="hidden" name="gtlm_import_export_action" value="cancel_import"><button class="button">' . esc_html__( 'Cancel import', 'gt-link-manager' ) . '</button></form>';
 		} else {
 			$this->render_import_upload_form();
 		}
@@ -147,16 +160,21 @@ class GTLM_Import {
 
 		$defaults = $this->default_map_from_header( $header, $preset );
 		$fields   = array(
-			'name'          => __( 'Name', 'gt-link-manager' ),
-			'slug'          => __( 'Slug', 'gt-link-manager' ),
-			'url'           => __( 'URL', 'gt-link-manager' ),
-			'redirect_type' => __( 'Redirect Type', 'gt-link-manager' ),
-			'rel'           => __( 'Rel', 'gt-link-manager' ),
-			'noindex'       => __( 'Noindex', 'gt-link-manager' ),
-			'category'      => __( 'Category', 'gt-link-manager' ),
-			'tags'          => __( 'Tags', 'gt-link-manager' ),
-			'notes'         => __( 'Notes', 'gt-link-manager' ),
-			'geo_rules'     => __( 'Geo Rules (JSON)', 'gt-link-manager' ),
+			'name'              => __( 'Name', 'gt-link-manager' ),
+			'slug'              => __( 'Slug', 'gt-link-manager' ),
+			'url'               => __( 'URL', 'gt-link-manager' ),
+			'redirect_type'     => __( 'Redirect Type', 'gt-link-manager' ),
+			'rel'               => __( 'Rel', 'gt-link-manager' ),
+			'noindex'           => __( 'Noindex', 'gt-link-manager' ),
+			'category'          => __( 'Category', 'gt-link-manager' ),
+			'tags'              => __( 'Tags', 'gt-link-manager' ),
+			'notes'             => __( 'Notes', 'gt-link-manager' ),
+			'geo_rules'         => __( 'Geo Rules (JSON)', 'gt-link-manager' ),
+			'geo_mode'          => __( 'Geo Mode', 'gt-link-manager' ),
+			'link_mode'         => __( 'Link Mode', 'gt-link-manager' ),
+			'regex_replacement' => __( 'Regex Replacement', 'gt-link-manager' ),
+			'priority'          => __( 'Priority', 'gt-link-manager' ),
+			'is_active'         => __( 'Active', 'gt-link-manager' ),
 		);
 
 		echo '<form method="post" action="" id="gtlm-import-form">';
@@ -212,7 +230,7 @@ class GTLM_Import {
 
 		// total_clicks is exported for reporting but deliberately not importable:
 		// it is a measured value, not configuration.
-		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes', 'geo_mode', 'geo_rules', 'total_clicks' ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
+		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes', 'geo_mode', 'geo_rules', 'total_clicks', 'format_version', 'link_mode', 'regex_replacement', 'priority', 'is_active' ), ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
 
 		$categories = $this->db->get_categories();
 		$cat_map    = array();
@@ -225,19 +243,27 @@ class GTLM_Import {
 			fputcsv(
 				$output,
 				array(
-					(string) $row['name'],
-					(string) $row['slug'],
-					(string) $row['url'],
+					GTLM_CSV::text( (string) $row['name'] ),
+					GTLM_CSV::text( (string) $row['slug'] ),
+					GTLM_CSV::text( (string) $row['url'] ),
 					(int) $row['redirect_type'],
 					(string) $row['rel'],
 					(int) $row['noindex'],
-					$cat_map[ (int) $row['category_id'] ] ?? '',
-					(string) $row['tags'],
-					(string) $row['notes'],
+					GTLM_CSV::text( $cat_map[ (int) $row['category_id'] ] ?? '' ),
+					GTLM_CSV::text( (string) $row['tags'] ),
+					GTLM_CSV::text( (string) $row['notes'] ),
 					(string) ( $row['geo_mode'] ?? 'off' ),
 					(string) ( $row['geo_rules'] ?? '' ),
 					(int) ( $row['total_clicks'] ?? 0 ),
-				)
+					3,
+					(string) $row['link_mode'],
+					GTLM_CSV::text( (string) $row['regex_replacement'] ),
+					(int) $row['priority'],
+					(int) $row['is_active'],
+				),
+				',',
+				'"',
+				''
 			);
 		}
 
@@ -256,34 +282,28 @@ class GTLM_Import {
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		if ( ! function_exists( 'wp_handle_upload' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
+		$uploaded = GTLM_Import_File::stage( $_FILES['import_file'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; upload shape/type/size validated by private staging.
+		if ( is_wp_error( $uploaded ) ) {
+			wp_die( esc_html( $uploaded->get_error_message() ), '', array( 'back_link' => true ) );
 		}
-
-		$uploaded = wp_handle_upload(
-			$_FILES['import_file'], // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			array( 'test_form' => false )
-		);
-
-		if ( ! is_array( $uploaded ) || empty( $uploaded['file'] ) ) {
-			$this->redirect_notice( 'import_failed' );
-		}
-
-		$file_path = (string) $uploaded['file'];
+		$file_path = $uploaded['file_path'];
 		$handle    = fopen( $file_path, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		if ( false === $handle ) {
+			GTLM_Import_File::delete( $uploaded['file_token'] );
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$header = fgetcsv( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
+		$header = fgetcsv( $handle, 0, ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 		if ( ! is_array( $header ) || empty( $header ) ) {
 			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+			GTLM_Import_File::delete( $uploaded['file_token'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$rows = array();
+		$header[0] = preg_replace( '/^\xEF\xBB\xBF/', '', (string) $header[0] );
+		$rows      = array();
 		for ( $i = 0; $i < 5; $i++ ) {
-			$row = fgetcsv( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
+			$row = fgetcsv( $handle, 0, ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 			if ( false === $row || ! is_array( $row ) ) {
 				break;
 			}
@@ -296,6 +316,7 @@ class GTLM_Import {
 
 		$state = array(
 			'token'      => $token,
+			'file_token' => $uploaded['file_token'],
 			'file_path'  => $file_path,
 			'header'     => array_values( array_map( 'sanitize_text_field', $header ) ),
 			'rows'       => $rows,
@@ -319,13 +340,14 @@ class GTLM_Import {
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$file_path = (string) ( $preview['file_path'] ?? '' );
+		$file_path = GTLM_Import_File::path( (string) ( $preview['file_token'] ?? '' ) );
 		if ( '' === $file_path || ! file_exists( $file_path ) ) {
 			$this->redirect_notice( 'import_failed' );
 		}
 
 		$map = isset( $_POST['map'] ) && is_array( $_POST['map'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['map'] ) ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ! isset( $map['name'], $map['url'] ) || (int) $map['name'] < 0 || (int) $map['url'] < 0 ) {
+			$this->cleanup_preview( $preview );
 			$this->redirect_notice( 'import_bad_columns' );
 		}
 
@@ -336,12 +358,15 @@ class GTLM_Import {
 
 		$handle = fopen( $file_path, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		if ( false === $handle ) {
+			$this->cleanup_preview( $preview );
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$header = fgetcsv( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
+		$header         = fgetcsv( $handle, 0, ',', '"', '' );
+		$version_column = is_array( $header ) ? array_search( 'format_version', $header, true ) : false; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 		if ( ! is_array( $header ) ) {
 			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+			$this->cleanup_preview( $preview );
 			$this->redirect_notice( 'import_failed' );
 		}
 
@@ -349,18 +374,22 @@ class GTLM_Import {
 		$updated  = 0;
 		$skipped  = 0;
 
-		while ( ( $row = fgetcsv( $handle ) ) !== false ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
+		while ( ( $row = fgetcsv( $handle, 0, ',', '"', '' ) ) !== false ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
 
+			if ( false !== $version_column && '3' === ( $row[ $version_column ] ?? '' ) ) {
+				$row = array_map( array( 'GTLM_CSV', 'decode' ), $row );
+			}
 			$data = $this->row_to_link_data( $row, $map );
 			if ( '' === $data['name'] || '' === $data['url'] ) {
 				++$skipped;
 				continue;
 			}
 
-			$existing = $this->db->get_link_by_slug( (string) $data['slug'] );
+			$raw_slug = isset( $map['slug'], $row[ $map['slug'] ] ) ? sanitize_text_field( $row[ $map['slug'] ] ) : (string) $data['slug'];
+			$existing = $this->db->get_link_by_exact_slug( $raw_slug ) ?? $this->db->get_link_by_exact_slug( (string) $data['slug'] );
 			if ( is_array( $existing ) ) {
 				if ( 'skip' === $mode ) {
 					++$skipped;
@@ -368,6 +397,7 @@ class GTLM_Import {
 				}
 
 				if ( 'overwrite' === $mode ) {
+					$data = $this->row_to_link_data( $row, $map, $existing );
 					if ( $this->db->update_link( (int) $existing['id'], $data ) ) {
 						++$updated;
 					} else {
@@ -411,16 +441,21 @@ class GTLM_Import {
 		}
 
 		$map = array(
-			'name'          => $normalized['name'] ?? -1,
-			'slug'          => $normalized['slug'] ?? -1,
-			'url'           => $normalized['url'] ?? ( $normalized['destination_url'] ?? -1 ),
-			'redirect_type' => $normalized['redirect_type'] ?? -1,
-			'rel'           => $normalized['rel'] ?? -1,
-			'noindex'       => $normalized['noindex'] ?? -1,
-			'category'      => $normalized['category'] ?? -1,
-			'tags'          => $normalized['tags'] ?? -1,
-			'notes'         => $normalized['notes'] ?? -1,
-			'geo_rules'     => $normalized['geo_rules'] ?? -1,
+			'name'              => $normalized['name'] ?? -1,
+			'slug'              => $normalized['slug'] ?? -1,
+			'url'               => $normalized['url'] ?? ( $normalized['destination_url'] ?? -1 ),
+			'redirect_type'     => $normalized['redirect_type'] ?? -1,
+			'rel'               => $normalized['rel'] ?? -1,
+			'noindex'           => $normalized['noindex'] ?? -1,
+			'category'          => $normalized['category'] ?? -1,
+			'tags'              => $normalized['tags'] ?? -1,
+			'notes'             => $normalized['notes'] ?? -1,
+			'geo_rules'         => $normalized['geo_rules'] ?? -1,
+			'geo_mode'          => $normalized['geo_mode'] ?? -1,
+			'link_mode'         => $normalized['link_mode'] ?? -1,
+			'regex_replacement' => $normalized['regex_replacement'] ?? -1,
+			'priority'          => $normalized['priority'] ?? -1,
+			'is_active'         => $normalized['is_active'] ?? -1,
 		);
 
 		if ( 'linkcentral' === $preset ) {
@@ -453,19 +488,20 @@ class GTLM_Import {
 	 * @param array<string, int> $map Map.
 	 * @return array<string, mixed>
 	 */
-	private function row_to_link_data( array $row, array $map ): array {
-		$get = static function ( string $key ) use ( $row, $map ): string {
+	private function row_to_link_data( array $row, array $map, array $fallback = array() ): array {
+		$get = static function ( string $key ) use ( $row, $map, $fallback ): string {
 			$idx = isset( $map[ $key ] ) ? (int) $map[ $key ] : -1;
 			if ( $idx < 0 || ! isset( $row[ $idx ] ) ) {
-				return '';
+				return (string) ( $fallback[ $key ] ?? '' );
 			}
 
 			return trim( (string) $row[ $idx ] );
 		};
 
-		$name = sanitize_text_field( $get( 'name' ) );
-		$url  = esc_url_raw( $get( 'url' ) );
-		$slug = sanitize_title( $get( 'slug' ) );
+		$name      = sanitize_text_field( $get( 'name' ) );
+		$url       = esc_url_raw( $get( 'url' ) );
+		$link_mode = in_array( $get( 'link_mode' ), array( 'direct', 'regex' ), true ) ? $get( 'link_mode' ) : 'standard';
+		$slug      = 'standard' === $link_mode ? sanitize_title( $get( 'slug' ) ) : sanitize_text_field( $get( 'slug' ) );
 		if ( '' === $slug ) {
 			$slug = sanitize_title( $name );
 		}
@@ -475,7 +511,7 @@ class GTLM_Import {
 			$redirect_type = (int) ( $this->settings->all()['default_redirect_type'] ?? 301 );
 		}
 
-		$category_id = $this->resolve_category_id( $get( 'category' ) );
+		$category_id = ( $map['category'] ?? -1 ) < 0 ? (int) ( $fallback['category_id'] ?? 0 ) : $this->resolve_category_id( $get( 'category' ) );
 		$raw_rel     = $get( 'rel' );
 		if ( '1' === $raw_rel ) {
 			$raw_rel = 'nofollow';
@@ -491,17 +527,21 @@ class GTLM_Import {
 		$geo_rules = GTLM_Geo::encode_rules( $get( 'geo_rules' ) );
 
 		return array(
-			'name'          => $name,
-			'slug'          => $slug,
-			'url'           => $url,
-			'redirect_type' => $redirect_type,
-			'rel'           => implode( ',', array_unique( $allowed_rel ) ),
-			'noindex'       => in_array( $noindex_raw, array( '1', 'yes', 'true' ), true ) ? 1 : 0,
-			'category_id'   => $category_id,
-			'tags'          => sanitize_text_field( $get( 'tags' ) ),
-			'notes'         => sanitize_textarea_field( $get( 'notes' ) ),
-			'geo_mode'      => '' !== $geo_rules ? 'targeted' : 'off',
-			'geo_rules'     => $geo_rules,
+			'name'              => $name,
+			'slug'              => $slug,
+			'url'               => $url,
+			'redirect_type'     => $redirect_type,
+			'rel'               => implode( ',', array_unique( $allowed_rel ) ),
+			'noindex'           => in_array( $noindex_raw, array( '1', 'yes', 'true' ), true ) ? 1 : 0,
+			'category_id'       => $category_id,
+			'tags'              => sanitize_text_field( $get( 'tags' ) ),
+			'notes'             => sanitize_textarea_field( $get( 'notes' ) ),
+			'geo_mode'          => in_array( $get( 'geo_mode' ), array( 'off', 'targeted' ), true ) ? $get( 'geo_mode' ) : ( '' !== $geo_rules ? 'targeted' : 'off' ),
+			'link_mode'         => $link_mode,
+			'regex_replacement' => sanitize_text_field( $get( 'regex_replacement' ) ),
+			'priority'          => '' === $get( 'priority' ) ? 10 : max( 0, (int) $get( 'priority' ) ),
+			'is_active'         => '' === $get( 'is_active' ) ? 1 : (int) in_array( strtolower( $get( 'is_active' ) ), array( '1', 'yes', 'true' ), true ),
+			'geo_rules'         => $geo_rules,
 		);
 	}
 
@@ -549,15 +589,18 @@ class GTLM_Import {
 	 */
 	private function get_preview_state(): ?array {
 		$state = get_transient( self::PREVIEW_TRANSIENT_PREFIX . get_current_user_id() );
-		return is_array( $state ) ? $state : null;
+		if ( ! is_array( $state ) || empty( $state['file_token'] ) || '' === GTLM_Import_File::path( (string) $state['file_token'] ) ) {
+			return null;
+		}
+		return $state;
 	}
 
 	/**
 	 * @param array<string, mixed> $preview Preview.
 	 */
 	private function cleanup_preview( array $preview ): void {
-		if ( ! empty( $preview['file_path'] ) && is_string( $preview['file_path'] ) && file_exists( $preview['file_path'] ) ) {
-			wp_delete_file( $preview['file_path'] );
+		if ( ! empty( $preview['file_token'] ) ) {
+			GTLM_Import_File::delete( (string) $preview['file_token'] );
 		}
 		delete_transient( self::PREVIEW_TRANSIENT_PREFIX . get_current_user_id() );
 	}

@@ -62,6 +62,13 @@ class GTLM_Redirect {
 			return;
 		}
 
+		// Protect stored rules too, including regex, encoded paths, PATH_INFO and login POSTs.
+		$script       = isset( $_SERVER['SCRIPT_NAME'] ) && is_string( $_SERVER['SCRIPT_NAME'] ) ? basename( $_SERVER['SCRIPT_NAME'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Compared only against fixed protected endpoints.
+		$request_path = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Preserve encoded bytes for the protected-path decoder; never output or query this value.
+		if ( isset( $_GET['rest_route'] ) || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || GTLM_DB::protected_path( $script ) || GTLM_DB::protected_path( $request_path ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public routing exclusion, not an authenticated action.
+			return;
+		}
+
 		$link         = null;
 		$match_slug   = '';
 		$regex_result = null;
@@ -153,7 +160,7 @@ class GTLM_Redirect {
 		}
 
 		$target_url = wp_sanitize_redirect( $target_url );
-		if ( '' === $target_url || ! wp_http_validate_url( $target_url ) ) {
+		if ( '' === $target_url || ! self::valid_destination( $target_url ) ) {
 			$this->mark_missing_link( $prefix_matched );
 			return;
 		}
@@ -199,32 +206,64 @@ class GTLM_Redirect {
 			}
 		}
 
+		if ( headers_sent() ) {
+			return;
+		}
 		nocache_headers();
 		header( 'X-Redirect-By: GT Link Manager', true );
 		header( 'Location: ' . $target_url, true, $status );
 
-		$this->record_click( $link );
+		$advanced = $this->settings->advanced_analytics_enabled();
+		$basic    = $this->settings->click_tracking_enabled();
+		if ( ( $advanced || $basic ) && function_exists( 'fastcgi_finish_request' ) ) {
+			fastcgi_finish_request();
+		}
+		$this->record_click( $link, $basic );
+		if ( $advanced ) {
+			try {
+				require_once GTLM_PATH . 'includes/class-gtlm-analytics-collector.php';
+				GTLM_Analytics_Collector::collect( $link, $status, $geo );
+			} catch ( Throwable $error ) {
+				// The redirect remains usable. Never log a failed event or request data.
+					exit;
+			}
+		}
 
 		exit;
 	}
 
+	/** Validate a client redirect without resolving DNS or making an HTTP request. */
+	public static function valid_destination( string $url ): bool {
+		if ( preg_match( '/[\x00-\x20\x7f]/', $url ) ) {
+			return false;
+		}
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) || ! in_array( strtolower( $parts['scheme'] ?? '' ), array( 'http', 'https' ), true ) || isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+			return false;
+		}
+		$host = strtolower( $parts['host'] );
+		$home = wp_parse_url( home_url() );
+		$same = strtolower( $home['host'] ?? '' ) === $host;
+		$ip   = trim( $host, '[]' );
+		if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+			if ( ! $same && ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+				return false;
+			}
+		} elseif ( strlen( $host ) > 253 || ! preg_match( '/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.?$/i', $host ) ) {
+			return false;
+		}
+		return ! isset( $parts['port'] ) || in_array( $parts['port'], array( 80, 443, 8080 ), true ) || ( $same && ( $home['port'] ?? 0 ) === $parts['port'] );
+	}
+
 	/**
-	 * Count the click, after the visitor already has their redirect.
-	 *
-	 * The redirect is the product; a counter must not slow it down. The
-	 * response is flushed and the connection closed first where the SAPI
-	 * supports it (PHP-FPM), so the write happens on time the visitor is no
-	 * longer waiting for. Hosts without that support fall back to a plain
-	 * synchronous write, which is still only reached after the Location
-	 * header has been sent.
-	 *
-	 * Only a per-link total is stored: no IP address, no user agent, no
-	 * referrer, nothing that identifies a visitor.
+	 * Count a redirect request. The caller finishes the response first on FPM.
+	 * Other SAPIs perform this single atomic update synchronously. No visitor
+	 * attributes or timestamps are stored by this legacy counter.
 	 *
 	 * @param array<string, mixed> $link Link row.
 	 */
-	private function record_click( array $link ): void {
-		if ( ! $this->settings->click_tracking_enabled() ) {
+	private function record_click( array $link, ?bool $enabled = null ): void {
+		if ( ! ( $enabled ?? $this->settings->click_tracking_enabled() ) ) {
 			return;
 		}
 
@@ -246,12 +285,9 @@ class GTLM_Redirect {
 			return;
 		}
 
-		// Close the connection first so the write is off the visitor's clock.
-		if ( function_exists( 'fastcgi_finish_request' ) ) {
-			fastcgi_finish_request();
+		if ( ! $this->db->increment_clicks( $link_id ) ) {
+			return;
 		}
-
-		$this->db->increment_clicks( $link_id );
 
 		/**
 		 * Fires after a click has been counted.
@@ -363,7 +399,7 @@ class GTLM_Redirect {
 		GTLM_Geo::reset();
 		flush_rewrite_rules();
 
-		if ( function_exists( 'wp_cache_flush_group' ) ) {
+		if ( wp_cache_supports( 'flush_group' ) ) {
 			wp_cache_flush_group( GTLM_DB::CACHE_GROUP );
 		}
 	}
@@ -405,8 +441,11 @@ class GTLM_Redirect {
 			return '';
 		}
 
-		$parts = explode( '/', $slug );
-		$slug  = (string) $parts[0];
+		// Only one segment belongs to a standard short link.
+		if ( str_contains( $slug, '/' ) ) {
+			$this->mark_missing_link( true );
+			return '';
+		}
 
 		return sanitize_title( $slug );
 	}

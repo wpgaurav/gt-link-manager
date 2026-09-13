@@ -33,6 +33,8 @@
 	<exclude-pattern>blocks/*/build/*</exclude-pattern>
 	<exclude-pattern>blocks/*/node_modules/*</exclude-pattern>
 	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>tests/*</exclude-pattern>
+	<exclude-pattern>build-release/*</exclude-pattern>
 
 	<!-- Minimum supported versions. -->
 	<config name="minimum_supported_wp_version" value="6.4"/>

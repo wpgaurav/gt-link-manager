@@ -12,7 +12,7 @@ echo "Building ${SLUG} v${VERSION}..."
 for block_dir in blocks/*/; do
 	if [ -f "${block_dir}package.json" ]; then
 		echo "Compiling ${block_dir}..."
-		(cd "${block_dir}" && npm install --silent && npm run build)
+		(cd "${block_dir}" && npm ci --silent && npm run build)
 	fi
 done
 

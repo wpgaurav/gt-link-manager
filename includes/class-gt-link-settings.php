@@ -129,7 +129,8 @@ class GTLM_Settings {
 			'geo_debug_header'          => (int) ! empty( $settings['geo_debug_header'] ),
 		);
 
-		$updated = update_option( self::OPTION_KEY, $next, false );
+		// Merge only ordinary fields; consent belongs exclusively to its explicit controls.
+		$updated = ( new GTLM_DB() )->merge_settings( $next );
 
 		if ( $updated ) {
 			do_action( 'gtlm_settings_saved', $next );
@@ -155,6 +156,26 @@ class GTLM_Settings {
 	 */
 	public function click_tracking_enabled(): bool {
 		return ! empty( $this->all()['enable_click_tracking'] );
+	}
+
+	/** Persisted owner consent only; generic settings filters cannot manufacture it. */
+	public function advanced_analytics_enabled(): bool {
+		$stored = get_option( self::OPTION_KEY, array() );
+		return is_array( $stored ) && ! empty( $stored['enable_advanced_analytics'] );
+	}
+
+	public function analytics_initialized(): bool {
+		$stored = get_option( self::OPTION_KEY, array() );
+		return is_array( $stored ) && array_key_exists( 'enable_advanced_analytics', $stored );
+	}
+
+	/** Lifecycle controllers own this flag. null forgets analytics after explicit deletion. */
+	public function set_analytics_gate( ?bool $enabled ): void {
+		if ( null === $enabled ) {
+			( new GTLM_DB() )->merge_settings( array(), array( 'enable_advanced_analytics' ) );
+		} else {
+			( new GTLM_DB() )->merge_settings( array( 'enable_advanced_analytics' => (int) $enabled ), array(), $enabled ? array() : array( 'enable_advanced_analytics' ) );
+		}
 	}
 
 	/**

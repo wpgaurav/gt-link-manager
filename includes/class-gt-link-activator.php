@@ -31,6 +31,13 @@ class GTLM_Activator {
 		// re-run dbDelta and the backfills against a freshly built table.
 		update_option( 'gtlm_db_version', GTLM_VERSION, true );
 
+		// Previously consented sites resume retention maintenance, never collection.
+		if ( GTLM_Settings::get_instance()->analytics_initialized() ) {
+			add_filter( 'cron_schedules', 'gtlm_analytics_schedules' ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- Opted-in bounded maintenance.
+			if ( ! wp_next_scheduled( 'gtlm_analytics_maintenance' ) ) {
+				wp_schedule_event( time() + 300, 'gtlm_five_minutes', 'gtlm_analytics_maintenance' );
+			}
+		}
 		do_action( 'gtlm_activated' );
 	}
 

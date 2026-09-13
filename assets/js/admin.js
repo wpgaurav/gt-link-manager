@@ -1010,3 +1010,30 @@
 		}
 	});
 })();
+
+// Native analytics campaign rows; loaded only on GT Links admin screens.
+document.addEventListener('DOMContentLoaded', function () {
+ var list = document.getElementById('gtlm-campaign-rows');
+ var add = document.getElementById('gtlm-add-campaign');
+ var template = document.getElementById('gtlm-campaign-template');
+ if (!list || !add || !template) return;
+ var next = list.children.length;
+ add.addEventListener('click', function () {
+  var copy = template.content.cloneNode(true);
+  copy.querySelectorAll('[name]').forEach(function (input) { input.name = input.name.replace('__index__', String(next)); });
+  next += 1;
+  list.appendChild(copy);
+ });
+ list.addEventListener('click', function (event) {
+  if (event.target.classList.contains('gtlm-remove-campaign')) event.target.closest('tr').remove();
+ });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+ var period = document.getElementById('gtlm-period');
+ var custom = document.getElementById('gtlm-custom-dates');
+ if (period && custom) {
+  var update = function () { custom.hidden = period.value !== 'custom'; };
+  period.addEventListener('change', update); update();
+ }
+});

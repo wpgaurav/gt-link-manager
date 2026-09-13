@@ -19,6 +19,11 @@ class GTLM_REST_API {
 		$instance->hooks();
 	}
 
+	public static function register( GTLM_DB $db, GTLM_Settings $settings ): void {
+		$instance = new self( $db, $settings );
+		$instance->register_routes();
+	}
+
 	private function __construct( GTLM_DB $db, GTLM_Settings $settings ) {
 		$this->db       = $db;
 		$this->settings = $settings;
@@ -29,6 +34,7 @@ class GTLM_REST_API {
 	}
 
 	public function register_routes(): void {
+		$this->analytics_routes();
 		register_rest_route(
 			'gt-link-manager/v1',
 			'/links',
@@ -407,6 +413,9 @@ class GTLM_REST_API {
 	 */
 	public function create_link( WP_REST_Request $request ) {
 		$data = $this->sanitize_link_payload( $request );
+		if ( ! GTLM_DB::valid_link_definition( $data ) ) {
+			return new WP_Error( 'gtlm_invalid_pattern', __( 'This WordPress path is reserved, or the regular expression is invalid.', 'gt-link-manager' ), array( 'status' => 400 ) );
+		}
 		if ( '' === $data['name'] || '' === $data['url'] ) {
 			return new WP_Error( 'gtlm_invalid', __( 'Name and URL are required.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
@@ -415,7 +424,7 @@ class GTLM_REST_API {
 			$data['slug'] = sanitize_title( $data['name'] );
 		}
 
-		if ( null !== $this->db->get_link_by_slug( (string) $data['slug'] ) ) {
+		if ( null !== $this->db->get_link_by_exact_slug( (string) $data['slug'] ) ) {
 			return new WP_Error( 'gtlm_slug_exists', __( 'Slug already exists.', 'gt-link-manager' ), array( 'status' => 409 ) );
 		}
 
@@ -439,11 +448,14 @@ class GTLM_REST_API {
 		}
 
 		$data = $this->sanitize_link_payload( $request, $existing );
+		if ( ! GTLM_DB::valid_link_definition( $data ) ) {
+			return new WP_Error( 'gtlm_invalid_pattern', __( 'This WordPress path is reserved, or the regular expression is invalid.', 'gt-link-manager' ), array( 'status' => 400 ) );
+		}
 		if ( '' === $data['name'] || '' === $data['url'] ) {
 			return new WP_Error( 'gtlm_invalid', __( 'Name and URL are required.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
-		$slug_exists = $this->db->get_link_by_slug( (string) $data['slug'] );
+		$slug_exists = $this->db->get_link_by_exact_slug( (string) $data['slug'] );
 		if ( is_array( $slug_exists ) && (int) $slug_exists['id'] !== $id ) {
 			return new WP_Error( 'gtlm_slug_exists', __( 'Slug already exists.', 'gt-link-manager' ), array( 'status' => 409 ) );
 		}
@@ -922,7 +934,7 @@ class GTLM_REST_API {
 			'slug'              => array(
 				'type'              => 'string',
 				'required'          => false,
-				'sanitize_callback' => 'sanitize_title',
+				'sanitize_callback' => 'sanitize_text_field',
 			),
 			'url'               => array(
 				'type'              => 'string',
@@ -1057,7 +1069,7 @@ class GTLM_REST_API {
 			'slug'        => array(
 				'type'              => 'string',
 				'required'          => false,
-				'sanitize_callback' => 'sanitize_title',
+				'sanitize_callback' => 'sanitize_text_field',
 			),
 			'description' => array(
 				'type'              => 'string',
@@ -1072,5 +1084,35 @@ class GTLM_REST_API {
 				'sanitize_callback' => 'absint',
 			),
 		);
+	}
+	/** Thin control routes; the collector/storage module is not loaded by registration. */
+	private function analytics_routes(): void {
+		foreach ( array( 'status', 'summary', 'breakdown', 'enable', 'pause', 'resume', 'delete' ) as $action ) {
+			$read = in_array( $action, array( 'status', 'summary', 'breakdown' ), true );
+			register_rest_route(
+				'gt-link-manager/v1',
+				'/analytics/' . $action,
+				array(
+					'methods'             => $read ? 'GET' : 'POST',
+					'permission_callback' => static function () use ( $read ): bool {
+						return current_user_can( $read ? (string) apply_filters( 'gtlm_analytics_capability', 'manage_options' ) : 'manage_options' );
+					},
+					'callback'            => static function ( WP_REST_Request $request ) use ( $action ) {
+						if ( 'status' === $action && ! GTLM_Settings::get_instance()->analytics_initialized() ) {
+							$response = new WP_REST_Response(
+								array(
+									'state'   => 'disabled',
+									'enabled' => false,
+								)
+							);
+							$response->header( 'Cache-Control', 'no-store' );
+							return $response;
+						}
+						require_once GTLM_PATH . 'includes/class-gtlm-analytics-controller.php';
+						return GTLM_Analytics_Controller::rest( $request, $action );
+					},
+				)
+			);
+		}
 	}
 }

@@ -25,7 +25,7 @@ Uses `@wordpress/scripts` — source is `blocks/link-inserter/src/index.js`, out
 Compiles block assets, copies plugin files to `/tmp`, strips source/dev artifacts, produces `gt-link-manager-{version}.zip`.
 
 ### Releasing
-Push a `v*` tag to trigger `.github/workflows/release.yml` — builds assets, creates zip, publishes GitHub Release.
+Publishing a GitHub release triggers `.github/workflows/release.yml`, which builds artifacts and then deploys to WordPress.org. A test build is not authorization to publish a tag/release or deploy to WordPress.org.
 
 ## Architecture
 
@@ -33,7 +33,7 @@ Push a `v*` tag to trigger `.github/workflows/release.yml` — builds assets, cr
 `gt-link-manager.php` → `plugins_loaded` → `gtlm_bootstrap()` which:
 1. Runs `GTLM_Activator::maybe_upgrade()` on admin (DB migrations via `dbDelta`)
 2. Instantiates `GTLM_Settings` (singleton), `GTLM_DB`
-3. Initializes services: `GTLM_Redirect`, `GTLM_Admin`, `GTLM_REST_API`, `GTLM_Block_Editor`
+3. Initializes the redirect service immediately; admin/editor classes load only for admin requests and REST classes load on `rest_api_init`. Analytics collection/storage remain gated by persisted explicit opt-in.
 
 All service classes use a static `init()` factory that takes dependencies, constructs privately, and registers hooks.
 
@@ -41,7 +41,7 @@ All service classes use a static `init()` factory that takes dependencies, const
 
 | Class | Role |
 |-------|------|
-| `GTLM_DB` | Data access layer. All SQL lives here. Object cache per-slug with `gtlm_links` cache group. |
+| `GTLM_DB` | Data access layer. Core link SQL lives here; the optional GTLM_Analytics_DB subclass owns analytics schema, aggregation and reporting. Object cache per-slug with `gtlm_links` cache group. |
 | `GTLM_Redirect` | Early redirect on `init` priority 0. Parses REQUEST_URI, looks up slug, sends Location header + exit. |
 | `GTLM_Geo` | Country detection and geo rule resolution. Header-based only — reads `$_SERVER` keys the CDN/web server already set (no DB file, no HTTP call). Memoizes detection and its settings-derived config per request. Owns rule validation (`normalize_rules`/`encode_rules`/`decode_rules`) shared by REST, admin, and CSV. |
 | `GTLM_Settings` | Singleton. Reads/writes `gtlm_settings` option. Exposes `prefix()`. |
@@ -151,3 +151,7 @@ Production runs on an xCloud-managed server. **The WordPress root is `/var/www/g
 - Unresolved links under the configured prefix must return a real 404. The rewrite rule claims the whole prefix namespace, so falling through renders the front page at HTTP 200 -- a soft 404 across every dead link. Only prefix matches 404; direct and regex mode inspect arbitrary paths that may be real pages.
 - `rel` input accepts commas, whitespace, or arrays. The plugin emits space-separated rel, so a comma-only parser silently drops values it produced itself.
 - Code prefix is `gtlm` (4+ chars) per wp.org plugin directory requirements
+
+### Advanced analytics (1.9.0 candidate)
+
+See `docs/analytics.md` for the consent lifecycle, query budget, WordPress timezone reporting, retention, and validation commands. Analytics is separate from lifetime totals. Internal instants remain UTC, while UI dates, grouping, timestamps and exports use WordPress time. Test builds do not authorize public releases. CSV exports use format 3 with spreadsheet-safe text cells; private staged imports expire through the `gtlm_import_expire` job.

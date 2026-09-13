@@ -48,3 +48,9 @@ vendor/
 *.zip
 build-release/
 docs/
+
+# Integration fixtures and local test runners
+tests/
+
+# Local language-server configuration
+.phpactor.json

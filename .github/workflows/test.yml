@@ -1,0 +1,64 @@
+name: Plugin checks
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.0'
+            wp: '6.4'
+          - php: '8.3'
+            wp: 'latest'
+          - php: '8.5'
+            wp: 'latest'
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: gtlm-ci-only
+          MYSQL_DATABASE: gtlm_test_ci
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pgtlm-ci-only"
+          --health-interval=5s --health-timeout=5s --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli
+          tools: composer, wp-cli
+      - name: Coding standards and syntax
+        run: |
+          composer install --no-interaction --prefer-dist
+          vendor/bin/phpcs --exclude=WordPress.Files.FileName
+          find includes -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l gt-link-manager.php
+          php -l uninstall.php
+      - name: Create disposable WordPress fixture
+        env:
+          WP_VERSION: ${{ matrix.wp }}
+        run: |
+          mkdir -p /tmp/gtlm-wp
+          wp core download --path=/tmp/gtlm-wp --version="$WP_VERSION"
+          wp config create --path=/tmp/gtlm-wp --dbname=gtlm_test_ci --dbuser=root --dbpass=gtlm-ci-only --dbhost=127.0.0.1 --extra-php <<'PHP'
+          define('GTLM_TEST_FIXTURE', true);
+          define('DISABLE_WP_CRON', true);
+          define('WP_HTTP_BLOCK_EXTERNAL', true);
+          define('SAVEQUERIES', true);
+          PHP
+          wp core install --path=/tmp/gtlm-wp --url=http://gtlm.test --title='GTLM CI' --admin_user=audit --admin_password=gtlm-ci-fixture --admin_email=audit@example.invalid --skip-email
+          ln -s "$GITHUB_WORKSPACE" /tmp/gtlm-wp/wp-content/plugins/gt-link-manager
+          wp plugin activate gt-link-manager --path=/tmp/gtlm-wp
+      - name: Integration, timezone and failure checks
+        env:
+          GTLM_TEST_WP_ROOT: /tmp/gtlm-wp
+        run: tests/run.sh
