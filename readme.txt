@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.8.1
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,7 +22,7 @@ Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix
 
 = Advanced Analytics: See Where Your Links Get Clicked =
 
-Available in the **1.9.0 test candidate**, Advanced Analytics adds reports alongside the existing lifetime click counter. It stays off until you explicitly enable it under **GT Links > Analytics > Settings**. No analytics tables, options, records or maintenance jobs are created before opt-in.
+Advanced Analytics adds reports alongside the existing lifetime click counter. It stays off until you explicitly enable it under **GT Links > Analytics > Settings**. No analytics tables, options, records or maintenance jobs are created before opt-in.
 
 * **Find your strongest links.** View click totals, daily or hourly trends, and the links used within a selected period or category.
 * **See the referring post or URL.** The separate **Clicked from** report lists every matching recorded entry with pagination and resolves published WordPress post titles where possible. Open a page report to see which links were clicked there, then inspect an individual link within that same page.
@@ -341,58 +341,12 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 
 == Changelog ==
 
-= 1.9.0-rc.11 =
-* Long URLs and diagnostic values wrap inside their card on desktop and mobile.
-
-= 1.9.0-rc.10 =
-* Individual click record retention has no upper day limit; a warning appears above 60 days.
-* Settings diagnostics shows total plugin database size and whether advanced analytics and advanced redirects are enabled.
-
-= 1.9.0-rc.9 =
-* Choose 10, 20, 50 or 100 referring pages per result page, with centered pagination controls.
-* Show active click collection in a light green status badge.
-
-= 1.9.0-rc.8 =
-* Move Clicked from to its own report page with a complete entry count and pagination.
-* Make every retained referring-page entry accessible while keeping each page lightweight.
-* Add a copyable AI setup prompt that reuses supplied information and asks only for missing details.
-
-= 1.9.0-rc.7 =
-* Use button tabs to avoid speculative page fetches.
-* Explain external referring websites with a brief tooltip.
-* Fit click charts to recorded activity and open exact totals in a scrollable popup.
-* Link settings to the REST API guide for AI tools and expand feature and CSV-import documentation.
-
-= 1.9.0-rc.6 =
-* Preload all analytics breakdowns and switch tabs instantly without page refreshes or extra requests.
-* Explain Page unavailable with a short accessible tooltip.
-
-= 1.9.0-rc.5 =
-* Link Privacy and data to the WordPress Privacy Policy Guide.
-* Style and align campaign removal buttons with the other form controls.
-
-= 1.9.0-rc.4 =
-* Open referring-page reports with clicked links, trends, and accurate page-specific breakdowns.
-* Add native breakdown tabs and clickable analytics counts in All Links.
-* Show all settings, improve input accessibility, and add Forever report retention.
-* Add a muted N/A geo badge and a WordPress.org review link.
-
-= 1.9.0-rc.3 =
-* Show the referring post or URL in a Clicked from table, with no visitor scripts or per-click post lookup.
-* Upgrade existing analytics safely and keep unavailable historical page details explicit.
-
-= 1.9.0-rc.2 =
-* Simplify link settings and separate the analytics overview from collection settings.
-* Protect WordPress endpoints from direct and regex rules across every write path.
-* Protect exported spreadsheet cells and stage CSV imports outside public web directories.
-* Add separately opted-in advanced analytics with no analytics storage or jobs before enablement.
-* Add bounded collection, transactional summaries, retention, health backpressure, admin reports and CSV export.
-* Use the WordPress site timezone for report dates, hourly/daily periods and exports, including DST and fractional offsets.
-* Preserve direct/regex slugs through REST and advanced configuration through CSV imports.
-* Keep click writes atomic while preserving configuration timestamps and emitting success hooks only after successful writes.
-* Validate redirect URLs without DNS and reject unexpected standard-link path suffixes.
-* Load admin/editor and REST services only in their relevant contexts.
-
+= 1.9.0 =
+* Add opt-in Advanced Analytics with WordPress-time trends, referring-page and link reports, instant breakdown tabs, and CSV exports.
+* Keep analytics lightweight with no visitor scripts, cookies or beacons, bounded background processing, and configurable retention including Forever reports.
+* Simplify settings, improve accessibility and diagnostics, and add a copyable AI setup prompt.
+* Fix direct/regex REST paths, CSV roundtrips, redirect matching, and click-counter metadata.
+* Harden protected WordPress routes, CSV upload storage, and spreadsheet exports.
 
 = 1.8.1 =
 * New: a copy button on the Branded URL column. It appears when you hover the row or focus it with the keyboard, copies the full branded link, and confirms with an inline Copied badge that clears itself.
@@ -579,6 +533,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.9.0 =
+Adds optional Advanced Analytics, clearer settings and diagnostics, and redirect/CSV security fixes. Analytics remains off until you enable it. Existing links and basic click counts are preserved.
 
 = 1.8.1 =
 Adds a hover-and-click copy button to the Branded URL column and the plugin's own icon in the admin menu, plus an expanded readme and FAQ. No database changes.

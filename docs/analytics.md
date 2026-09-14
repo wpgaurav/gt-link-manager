@@ -1,6 +1,6 @@
-# Advanced analytics test candidate
+# Advanced analytics
 
-The 1.9.0 candidate adds independent owner opt-in under **GT Links > Analytics**. Installing or updating does not create analytics storage. Basic click counts retain their separate setting and semantics.
+Version 1.9.0 adds independent owner opt-in under **GT Links > Analytics**. Installing or updating does not create analytics storage. Basic click counts retain their separate setting and semantics.
 
 Dates, filters, daily/hourly grouping, status timestamps and exports follow `wp_timezone()`. Internal event timestamps and minute aggregate buckets use UTC to preserve stable instants. Reporting converts and groups using WordPress's timezone rules in PHP-generated SQL expressions, without requiring MySQL timezone tables. Fractional offsets, repeated/skipped DST hours and subsequent site-timezone changes are supported. Repeated hours include an explicit offset. This supersedes the original design's proposed UTC-only UI.
 
@@ -31,15 +31,15 @@ wp gt-link-manager analytics delete --yes
 
 ## Verification
 
-The guarded scripts under `tests/` require an isolated WordPress fixture defining `GTLM_TEST_FIXTURE=true` and a database name starting with `gtlm_test_`. They create synthetic links and modify fixture settings; never run them on a live site. `tests/run.sh` runs the integration, timezone, failure, and security/settings regression suites. The new CI workflow covers minimum/current WordPress and PHP combinations; authoring it does not mean the remote matrix has already run.
+The guarded scripts under `tests/` require an isolated WordPress fixture defining `GTLM_TEST_FIXTURE=true` and a database name starting with `gtlm_test_`. They create synthetic links and modify fixture settings; never run them on a live site. `tests/run.sh` runs the integration, timezone, failure, security/settings, referring-page, drilldown, chart, pagination, and retention/diagnostics suites. The CI workflow covers minimum/current WordPress and PHP combinations. Release verification records the runs for the published commit.
 
-Local testing and the authorized gauravtiwari.org test installation are separate from a stable release. Do not publish a tag, GitHub release, WordPress.org deployment, store update or customer artifact as part of this test.
+A GitHub release triggers the WordPress.org deployment workflow. Release only after checking the exact candidate commit and distribution; production testing alone does not replace compatibility and package checks.
 
 The simplified admin separates Overview from Settings. Overview provides date presets, daily/hourly grouping, top links, referring sites and device/country/campaign breakdowns. Settings keeps the explicit enable checkbox, report retention and optional countries visible; campaigns and advanced controls are shown as visible sections. Saving paused preferences does not resume collection.
 
 `tests/http_regressions.py` exercises authenticated multipart imports and real CSV export/import using a local HTTP fixture. Set `GTLM_TEST_WP_ROOT`, `GTLM_TEST_USER`, and `GTLM_TEST_PASSWORD` for that disposable installation. It verifies private staging, cancellation/error cleanup, rejected uploads, spreadsheet protection and lossless format-3 roundtrips.
 
-## Referring posts and pages (RC3)
+## Referring posts and pages
 
 The **Clicked from** table shows the URL that supplied the browser referrer and resolves published, unprotected WordPress post titles on the report screen. URL capture strips credentials, query strings and fragments, rejects IP hosts and administrative paths, encodes unsafe path bytes, and limits a URL to 1,024 ASCII bytes. Missing/refused referrers remain unavailable; browsers may supply only an external origin. Previous clicks cannot be reconstructed from the older hostname-only records. Query-only WordPress URLs (such as `?p=123`) remain unavailable rather than being mislabeled as the homepage.
 
@@ -47,7 +47,7 @@ The collector still makes one insert (plus a cold configuration read), with no p
 
 Schema 2 adds the event page field and expands the aggregate value field. Migration runs only for already-initialized analytics from admin or maintenance, under its existing control lock. It preserves the original collection generation, history, settings and paused/active state. Schema-1 in-flight appends remain compatible during migration. The report includes historical clicks under Page unavailable, without fabricating URLs. CSV exports include the new page dimension after collection begins.
 
-## Page reports and retention (RC4)
+## Page reports and retention
 
 Referring-page rows open a report containing the links clicked from that page, its click trend, and page-specific breakdowns. Link rows narrow the same page report. Date/category selections, tabs and exports preserve the page filter; All referring pages clears it. The source URL remains available through Open page. All six breakdowns are preloaded with the report. Accessible tabs switch panels immediately without navigation or extra requests; normal links remain as a no-JavaScript fallback. No visitor script or application framework is added.
 

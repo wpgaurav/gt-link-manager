@@ -56,28 +56,14 @@ jobs:
 
           CHANGELOG_FILE=$(mktemp)
 
+          SECTION=$(awk -v version="$VERSION" '$0 == "= " version " =" { found=1; next } found && /^= / { exit } found { print }' readme.txt)
+          if [ -z "$SECTION" ]; then
+            echo "::error::Missing readme changelog for $VERSION"
+            exit 1
+          fi
+          printf '%s\n' "$SECTION" | sed 's/^\* /- /' > "$CHANGELOG_FILE"
           if [ -n "$PREV_TAG" ]; then
-            echo "Generating changelog: ${PREV_TAG}..${TAG}"
-
-            SECTION=$(sed -n "/^= ${VERSION} =/,/^= [0-9]/p" readme.txt | sed '$d' | tail -n +2)
-
-            if [ -n "$SECTION" ]; then
-              echo "## What's Changed" >> "$CHANGELOG_FILE"
-              echo "" >> "$CHANGELOG_FILE"
-              echo "$SECTION" | sed 's/^\* /- /' >> "$CHANGELOG_FILE"
-              echo "" >> "$CHANGELOG_FILE"
-            fi
-
-            echo "## Commits" >> "$CHANGELOG_FILE"
-            echo "" >> "$CHANGELOG_FILE"
-            git log "${PREV_TAG}..${TAG}" --pretty=format:"- %s (%h)" --no-merges >> "$CHANGELOG_FILE"
-            echo "" >> "$CHANGELOG_FILE"
-            echo "" >> "$CHANGELOG_FILE"
-            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${TAG}" >> "$CHANGELOG_FILE"
-          else
-            echo "## Initial Release" >> "$CHANGELOG_FILE"
-            echo "" >> "$CHANGELOG_FILE"
-            echo "First release of GT Link Manager v${VERSION}." >> "$CHANGELOG_FILE"
+            printf '\n[Full changelog](https://github.com/${{ github.repository }}/compare/%s...%s)\n' "$PREV_TAG" "$TAG" >> "$CHANGELOG_FILE"
           fi
 
           echo "CHANGELOG_FILE=$CHANGELOG_FILE" >> "$GITHUB_OUTPUT"
