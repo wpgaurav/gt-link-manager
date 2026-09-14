@@ -8,15 +8,40 @@ Stable tag: 1.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Fast, free branded link manager with custom database tables, early redirects, CSV import/export, and block editor integration.
+Fast branded redirects with opt-in click analytics, country targeting, CSV migration, a REST API, and block editor link tools.
 
 == Description ==
 
-**GT Link Manager** is a **100% free** high-performance branded link manager for WordPress, no upsells, no premium tiers, no paywalls. It stores links in **custom database tables** (not custom post types), resolves redirects early on `init`, and keeps your site fast, even with thousands of links.
+**GT Link Manager** is a **free WordPress plugin** for branded short links, affiliate link management, country-based redirects, and opt-in click analytics. Create reusable links, find out where they are clicked, and manage them from the WordPress admin, block editor, or REST API. There are no premium tiers or upsells.
+
+Redirects use indexed custom database tables and resolve before theme templates load. Advanced Analytics adds no visitor tracking scripts, cookies, or beacon requests.
 
 Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix is configurable and can even be removed on individual links).
 
 **[Official Page & Documentation](https://gauravtiwari.org/product/gt-link-manager/)** | **[Free Training Course](https://gauravtiwari.org/course/gt-link-manager-training/)** | **[REST API & AI Tools Guide](https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/)**
+
+= Advanced Analytics: See Where Your Links Get Clicked =
+
+Available in the **1.9.0 test candidate**, Advanced Analytics adds reports alongside the existing lifetime click counter. It stays off until you explicitly enable it under **GT Links > Analytics > Settings**. No analytics tables, options, records or maintenance jobs are created before opt-in.
+
+* **Find your strongest links.** View click totals, daily or hourly trends, and the links used within a selected period or category.
+* **See the referring post or URL.** The **Clicked from** table resolves published WordPress post titles where possible. Open a page report to see which links were clicked there, then inspect an individual link within that same page.
+* **Switch breakdowns instantly.** Sources, countries, devices, browsers, operating systems and configured campaigns are loaded with the report. Switching tabs does not reload the page or fetch another report.
+* **Read the chart clearly.** The chart fits the recorded activity period while preserving real time spacing. **View click totals** opens a scrollable popup with exact values.
+* **Use WordPress time.** Dates, hourly/day grouping and CSV timestamps follow the timezone configured in WordPress, including fractional offsets and daylight-saving changes.
+* **Keep the context when exporting.** Date, category, link and referring-page selections carry into CSV exports. Configured UTM combinations can be tracked as campaigns.
+* **Choose what to retain.** Individual click records default to seven days and reports to ninety days. Choose **Forever** to keep reports until you delete them; individual records still expire separately.
+* **Pause or remove analytics independently.** Turning collection off keeps existing reports under their retention policy. Deleting analytics removes its records and jobs while preserving links and basic counts.
+
+Collection uses a compact server-side write on eligible GET redirects. PHP-FPM can finish the redirect response before recording the event; other hosts complete that write synchronously. No visitor JavaScript, cookies, beacons, IP storage, fingerprinting or external analytics service is added. Referring URLs omit credentials, query strings and fragments; raw user agents are not retained.
+
+Recognized bots, prefetches and signed-in link managers are excluded. These reports count eligible redirect requests, not unique people or conversions. Browsers may report an external website, only its origin, or no referrer. Earlier clicks without page information remain **Page unavailable**, with a short explanation. External referrers are kept and explained rather than automatically treated as spam.
+
+Reports and page-specific breakdowns are summarized by a bounded maintenance worker. Keep WordPress cron or a system scheduler running. Storage and processing safeguards can pause collection while preserving existing reports. Historical data can be viewed in date windows of up to ninety days. Advanced Analytics currently supports single-site installations.
+
+The **Privacy and data** section links to WordPress's suggested Privacy Policy text. Administrators control analytics by default; developers can use `gtlm_analytics_capability` for report access and `gtlm_analytics_should_record` to suppress events, including consent integrations. Site-owner opt-in is not a legal consent exemption.
+
+This is a test build, not a published stable WordPress.org release.
 
 = Why GT Link Manager? =
 
@@ -28,6 +53,7 @@ Storing links as custom post types means a redirect wakes up more of WordPress t
 
 = Key Features =
 
+* **Advanced Analytics.** Optional click trends, referring-page drilldowns, instant breakdown tabs, WordPress-time reports and CSV export, with no visitor scripts or cookies.
 * **Fast direct redirects.** Resolves links on `init` (priority 0) via direct DB lookup, no CPT overhead
 * **301, 302, and 307 redirects.** Choose the right redirect type for SEO, temporary, or method-preserving redirects
 * **Rel attribute controls.** Set `nofollow`, `sponsored`, and `ugc` per link for proper SEO attribution
@@ -37,13 +63,16 @@ Storing links as custom post types means a redirect wakes up more of WordPress t
 * **Quick Edit.** Update URL, slug, redirect type, rel, category, and status inline without leaving the list
 * **Activate / Deactivate.** Disable a link without deleting it; inactive links stop redirecting but stay in the database
 * **Trash and restore.** Soft-delete links to trash with the option to restore or permanently delete
-* **CSV import and export.** Import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets, supports any CSV though as it allows you to map fields manually.
-* **Block editor integration.** A toolbar button lets you search your links and insert them directly into post content
+* **CSV import and export.** Import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets. Manual column mapping also supports compatible CSV exports from **ThirstyAffiliates, ClickWhale, Lasso, BetterLinks, GeniusLink**, and others. Map the name and destination URL fields, review the preview, and choose how to handle duplicates.
+* **Block editor integration.** Search and insert managed links into rich text and the core Button block without leaving the editor
 * **Branded URL preview.** See the full branded URL as you type, with one-click copy
-* **Normal and Regex Redirects** supported too. Don't want to use a prefix like `/go/` ? Sure thing. Use the GT Link Manager as an alternative to Rank Math Redirections, Yoast Redirects, Redirection plugin etc. **Tested to be faster** than these top tools.
-* **Geolocation targeting.** Send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from a header your CDN already sends, whether that is Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module, so there is **no GeoIP database to install, no external API call, and no added latency**. Adds roughly 20 microseconds to a geo-enabled redirect and nothing measurable to the rest.
-* **Click counting.** An optional per-link counter, off by default. Turn it on and each link keeps a running total, shown as a sortable Clicks column and included in CSV export
+* **Prefix-free and regex redirects.** Route ordinary paths without `/go/`, or use regular expressions and capture groups for more complex rules. Protected WordPress endpoints cannot be claimed by redirect rules.
+* **Geolocation targeting.** Send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from a header your CDN already sends, whether that is Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module, so there is **no GeoIP database to install and no external lookup**. Links without country rules skip country detection.
+* **Independent lifetime counts.** Optional running totals remain separate from Advanced Analytics. When analytics is enabled, click a count in All Links to open that link's report.
 * **Click tracking integrations.** For per-visit analytics, hook `gtlm_before_redirect` and send events to GA4, Plausible, Fathom, Matomo, or Simple Analytics
+* **AI and REST API workflows.** Create, update, categorize, trash and restore links through authenticated endpoints. The settings page links directly to the AI-tools guide.
+* **Safer CSV handling.** Preview and map columns before import. Temporary files stay outside public uploads, and spreadsheet-style formulas are neutralized on export.
+* **Data cleanup controls.** Restore trashed links, configure trash retention, and choose whether uninstall removes plugin data.
 * **Developer-friendly.** Actions and filters for redirect interception, URL modification, capability control, cache TTL, and more
 
 = Developer Hooks =
@@ -68,22 +97,8 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_trash_purged`, action fired after trashed links are automatically purged, with the count and retention window
 * `gtlm_count_click`, filter to skip counting a particular click (exclude logged-in editors, add bot filtering)
 * `gtlm_click_recorded`, action fired after a click has been counted
-
-= Advanced Analytics (1.9.0 test candidate) =
-
-Advanced analytics is a separate, explicit opt-in under GT Links > Analytics. Before opt-in, the plugin creates no analytics tables, options, stored events, or analytics jobs. Basic click counts can stay on or off independently.
-
-Reports include daily/hourly trends, top links, referring hosts and pages, optional trusted-header countries, coarse device/browser/OS families, and allowlisted campaigns. Dates, filters, grouping, status timestamps and CSV exports use the WordPress site timezone, including fractional offsets and daylight-saving changes.
-
-No visitor JavaScript, cookies, beacons, IP storage, fingerprinting, or external analytics/GeoIP requests are added. A compact database append is performed for eligible GET redirects. PHP-FPM can finish the response first; other hosts perform this write synchronously. Recognized bots, prefetches and signed-in link managers are excluded. These are observed requests, not unique people, conversions or destination page loads.
-
-Click records default to 7 days and aggregate summaries to 90 days. Choose Forever to retain aggregate reports until you delete them; individual records still expire separately. Historical reports remain accessible in date ranges of up to 90 days. Summaries preserve minute buckets to support accurate WordPress-time grouping without keeping individual request records. Maintenance runs in bounded batches. Collection pauses if maintenance becomes unhealthy or its 15-minute health lease expires, and resumes when maintenance succeeds. Storage safeguards use a soft threshold, not a hard disk quota.
-
-Pausing retains reports under their retention policy; deleting analytics removes its data and jobs while preserving links and basic counts. Deactivation pauses collection; reactivation does not silently resume it. Analytics report access defaults to administrators. Advanced analytics currently supports single-site installations; multisite opt-in is rejected before provisioning.
-
-Use the `gtlm_analytics_should_record` filter to suppress collection, including integration with visitor-consent requirements. Site-owner opt-in does not establish a legal consent exemption. Keep WordPress cron running; cached or high-volume sites should use a system runner. Operations are also available with `wp gt-link-manager analytics status`, `process`, `prune`, `enable --yes` and `pause`. `delete --yes` permanently removes analytics only.
-
-This candidate is for testing. It has not been published as a stable WordPress.org release.
+* `gtlm_analytics_should_record`, filter to suppress an advanced analytics event
+* `gtlm_analytics_capability`, filter the capability required to view analytics reports
 
 = Click Counting =
 
@@ -99,11 +114,11 @@ Turn it on from **GT Links > Settings** and each link starts keeping one number:
 
 Basic counts are separate from detailed analytics and do not identify visitors. Choose consent requirements according to your site and integrations.
 
-The count is written after the redirect has already been sent to the browser, using `fastcgi_finish_request()` where the host supports it. On a test install without that function, which is the slower of the 2 paths, a redirect measured 9.0ms with counting on against 9.1ms with it off.
+The count uses an atomic update. Where PHP-FPM supports `fastcgi_finish_request()`, the response can finish first; other hosts perform the update synchronously.
 
 Where the number shows up:
 
-* a sortable **Clicks** column in the links table, hidden until you switch tracking on
+* a sortable **Clicks** column in All Links; it opens analytics when enabled and you have report access
 * a **Reset Clicks** row action for a single link
 * the `total_clicks` field in the REST API, read-only
 * a `total_clicks` column in CSV export
@@ -159,9 +174,9 @@ For a suspected bug in the code itself, [GitHub Issues](https://github.com/wpgau
 
 Plenty of plugins will shorten a URL for you. These are the things this one does that shaped how it was built.
 
-**Everything is free.** Geolocation targeting, the full REST API, CSV import and export, regex and prefix-free redirects, the block editor tools. There is no Pro tier holding a feature back, no upsell notice in the admin, no telemetry, and no account to create. Nothing here is a trial.
+**Everything is free.** Advanced Analytics, geolocation targeting, the full REST API, CSV import and export, regex and prefix-free redirects, the block editor tools. There is no Pro tier holding a feature back, no upsell notice in the admin, no telemetry, and no account to create. Nothing here is a trial.
 
-**Redirects resolve before WordPress wakes up.** The lookup runs on `init` at priority 0, against a UNIQUE-indexed slug column in a custom table. Match found, header sent, exit. No theme, no template hierarchy, no post query, and no slowdown as the library grows.
+**Redirects resolve before theme templates load.** The lookup runs on `init` at priority 0, against a UNIQUE-indexed slug column in a custom table. Match found, header sent, exit. No theme template or post lookup is required to resolve a matched short link.
 
 **Dead links return a real 404.** A trashed or deactivated link stops resolving and says so with the correct status code. It does not quietly serve your front page at HTTP 200, which is what turns a retired affiliate link into duplicate home-page content in a search index.
 
@@ -218,19 +233,21 @@ Yes. GT Link Manager is built for **speed and simplicity**. It uses custom datab
 
 = Does it track clicks? =
 
-Yes, in 2 ways, and both are optional.
+Yes. **Basic click counts** keep independent lifetime totals. **Advanced Analytics** adds date trends, referring posts and websites, page-to-link reports, countries, devices, browsers and campaigns. Both are opt-in and can be enabled separately.
 
-A built-in counter keeps one running total per link. Switch it on under **GT Links > Settings**. It records no IP address, user agent, referrer, or timestamp, and the count is written after the redirect has already gone out.
+Advanced Analytics adds no visitor script or cookie. It counts eligible redirect requests rather than unique visitors. You can also use `gtlm_before_redirect` for external analytics integrations.
 
-For per-visit analytics, the `gtlm_before_redirect` action fires on every redirect. The [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/) has step-by-step guides for GA4, Plausible, Fathom, Matomo, Simple Analytics, and logging to a click table of your own.
+= Can I keep reports forever? =
 
-= Can I import from Pretty Links or LinkCentral? =
+Yes. Choose **Forever** under **Analytics > Settings > Keep reports for**. Individual click records still use their separate retention period. Storage safeguards remain active, and deleting analytics removes the retained reports.
 
-Yes. Go to **GT Links > Import / Export**, choose the **Pretty Links** or **LinkCentral** preset, upload your CSV, preview the column mapping, and import. You can also use the **Generic** preset for custom CSV formats.
+= Can I import from other link-management plugins? =
+
+Yes. Go to **GT Links > Import / Export**, choose the **Pretty Links** or **LinkCentral** preset, upload your CSV, preview the column mapping, and import. Use **Generic** and map columns manually for compatible CSV exports from **ThirstyAffiliates, ClickWhale, Lasso, BetterLinks, GeniusLink**, or another tool. A link name and destination URL are required; review advanced fields such as country rules before importing. These additional tools use manual mapping, not dedicated presets.
 
 = How are redirects resolved? =
 
-The plugin hooks into WordPress `init` at **priority 0** (before most plugins load). It parses the request URI, checks for your configured prefix, and looks up the slug in a **UNIQUE-indexed column** in a custom database table. If a match is found, it sends the redirect header and exits immediately, no theme or template loading.
+The plugin hooks into WordPress `init` at **priority 0**, before template rendering. It parses the request URI, checks for your configured prefix, and looks up the slug in a **UNIQUE-indexed column** in a custom database table. If a match is found, it sends the redirect header and exits immediately, no theme or template loading.
 
 = Can I customize which users can manage links? =
 
@@ -238,7 +255,7 @@ Yes. By default, any user with the `edit_posts` capability can manage links. Use
 
 = Is GT Link Manager really free? =
 
-Yes, 100%. There are no premium tiers, upsells, or paywalls. Every feature, including advanced redirects, the REST API, CSV import/export, and block editor integration, is included for free. There is also a free training course at [gauravtiwari.org](https://gauravtiwari.org/course/gt-link-manager-training/).
+Yes, 100%. There are no premium tiers, upsells, or paywalls. Every feature, including Advanced Analytics, advanced redirects, the REST API, CSV import/export, and block editor integration, is included for free. There is also a free training course at [gauravtiwari.org](https://gauravtiwari.org/course/gt-link-manager-training/).
 
 = Can I manage links with AI tools or the REST API? =
 
@@ -323,6 +340,20 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.9.0-rc.7 =
+* Use button tabs to avoid speculative page fetches.
+* Explain external referring websites with a brief tooltip.
+* Fit click charts to recorded activity and open exact totals in a scrollable popup.
+* Link settings to the REST API guide for AI tools and expand feature and CSV-import documentation.
+
+= 1.9.0-rc.6 =
+* Preload all analytics breakdowns and switch tabs instantly without page refreshes or extra requests.
+* Explain Page unavailable with a short accessible tooltip.
+
+= 1.9.0-rc.5 =
+* Link Privacy and data to the WordPress Privacy Policy Guide.
+* Style and align campaign removal buttons with the other form controls.
 
 = 1.9.0-rc.4 =
 * Open referring-page reports with clicked links, trends, and accurate page-specific breakdowns.

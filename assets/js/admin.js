@@ -1037,3 +1037,91 @@ document.addEventListener('DOMContentLoaded', function () {
   period.addEventListener('change', update); update();
  }
 });
+
+// All breakdown panels arrive with the admin report; switching never fetches or reloads.
+document.addEventListener('DOMContentLoaded', function () {
+ var section = document.getElementById('gtlm-breakdown');
+ if (!section) return;
+ var nav = section.querySelector('.gtlm-breakdown-nav');
+ if (!nav) return;
+ var tabs = Array.from(nav.querySelectorAll('[data-gtlm-tab]'));
+ var activate = function (tab) {
+  var dimension = tab.dataset.gtlmTab;
+  tabs.forEach(function (item) {
+   var selected = item === tab;
+   item.classList.toggle('nav-tab-active', selected);
+   item.setAttribute('role', 'tab');
+   item.setAttribute('aria-selected', String(selected));
+   item.removeAttribute('aria-current');
+   item.tabIndex = selected ? 0 : -1;
+   var panel = document.getElementById(item.getAttribute('aria-controls'));
+   panel.setAttribute('role', 'tabpanel');
+   panel.hidden = !selected;
+  });
+  document.querySelectorAll('.gtlm-analytics input[name="dimension"]').forEach(function (input) { input.value = dimension; });
+  document.querySelectorAll('.gtlm-analytics a[href]').forEach(function (link) {
+   if (nav.contains(link)) return;
+   var url = new URL(link.href, location.href);
+   if (url.origin === location.origin && url.searchParams.get('page') === 'gtlm-links-analytics' && url.searchParams.get('view') !== 'settings') {
+    url.searchParams.set('dimension', dimension);
+    link.href = url.href;
+   }
+  });
+
+ };
+ nav.setAttribute('role', 'tablist');
+ tabs.forEach(function (tab, index) {
+  tab.addEventListener('click', function (event) {
+   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+   event.preventDefault(); activate(tab);
+  });
+  tab.addEventListener('keydown', function (event) {
+   var next = index;
+   if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+   else if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+   else if (event.key === 'Home') next = 0;
+   else if (event.key === 'End') next = tabs.length - 1;
+   else if (event.key !== ' ' && event.key !== 'Spacebar') return;
+   event.preventDefault(); tabs[next].focus(); activate(tabs[next]);
+  });
+ });
+ activate(tabs.find(function (tab) { return tab.classList.contains('nav-tab-active'); }) || tabs[0]);
+});
+
+// Keep the compact help bubble outside scrolling tables so it cannot be clipped.
+document.addEventListener('DOMContentLoaded', function () {
+ document.querySelectorAll('[data-gtlm-tooltip]').forEach(function (trigger) {
+  var tip = document.getElementById(trigger.dataset.gtlmTooltip);
+  if (!tip) return;
+  var timer;
+  var hide = function () { clearTimeout(timer); tip.classList.add('screen-reader-text'); tip.removeAttribute('style'); };
+  var show = function () {
+   clearTimeout(timer); document.body.appendChild(tip); tip.classList.remove('screen-reader-text');
+   var anchor = trigger.getBoundingClientRect(); var box = tip.getBoundingClientRect();
+   tip.style.left = Math.max(8, Math.min(anchor.left, innerWidth - box.width - 8)) + 'px';
+   tip.style.top = (anchor.top - box.height - 8 >= 40 ? anchor.top - box.height - 8 : Math.min(anchor.bottom + 8, innerHeight - box.height - 8)) + 'px';
+  };
+  var later = function () { clearTimeout(timer); timer = setTimeout(function () { if (!trigger.matches(':hover, :focus') && !tip.matches(':hover')) hide(); }, 120); };
+  trigger.addEventListener('mouseenter', show); trigger.addEventListener('focus', show); trigger.addEventListener('click', show);
+  trigger.addEventListener('mouseleave', later); trigger.addEventListener('blur', later);
+  tip.addEventListener('mouseenter', function () { clearTimeout(timer); }); tip.addEventListener('mouseleave', later);
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') hide(); });
+  window.addEventListener('scroll', hide, true); window.addEventListener('resize', hide);
+ });
+});
+
+// The complete totals table is already rendered; opening the modal makes no request.
+document.addEventListener('DOMContentLoaded', function () {
+ var dialog = document.getElementById('gtlm-click-totals');
+ var open = document.getElementById('gtlm-open-totals');
+ var close = document.getElementById('gtlm-close-totals');
+ if (!dialog || !open || !close) return;
+ open.addEventListener('click', function () { if (!dialog.open) dialog.showModal(); });
+ close.addEventListener('click', function () { dialog.close(); });
+ dialog.addEventListener('close', function () { open.focus(); });
+ dialog.addEventListener('click', function (event) {
+  if (event.target !== dialog) return;
+  var rect = dialog.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+ });
+});

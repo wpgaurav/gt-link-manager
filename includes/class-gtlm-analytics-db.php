@@ -356,11 +356,21 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
-		$dimension = $filters['dimension'];
-		$breakdown = $wpdb->get_results( $wpdb->prepare( "SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$detail_where} AND h.dimension=%s GROUP BY h.value ORDER BY clicks DESC,h.value LIMIT 200", $dimension ), ARRAY_A );
-		if ( '' !== $wpdb->last_error ) {
-			throw new RuntimeException( 'analytics_report_failed' );
+		$dimension  = $filters['dimension'];
+		$dimensions = array_unique( array( 'source', 'country', 'device', 'browser', 'os', 'campaign', $dimension ) );
+		$queries    = array();
+		foreach ( $dimensions as $name ) {
+			$queries[] = $wpdb->prepare( "(SELECT %s dimension,h.value,SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$detail_where} AND h.dimension=%s GROUP BY h.value ORDER BY clicks DESC,h.value LIMIT 200)", $name, $name );
 		}
+		$rows = $wpdb->get_results( implode( ' UNION ALL ', $queries ), ARRAY_A );
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_report_failed' );}
+		$breakdowns = array_fill_keys( $dimensions, array() );
+		foreach ( $rows as $row ) {
+			$breakdowns[ $row['dimension'] ][] = array(
+				'value'  => $row['value'],
+				'clicks' => $row['clicks'],
+			);}
 		$period     = strtotime( $filters['to_utc'] . ' UTC' ) - strtotime( $filters['from_utc'] . ' UTC' );
 		$prior      = array_merge(
 			$filters,
@@ -382,19 +392,21 @@ class GTLM_Analytics_DB extends GTLM_DB {
 				throw new RuntimeException( 'analytics_page_coverage_failed' ); }
 			$missing = max( 0, $total - $covered );
 			if ( $missing ) {
-				$breakdown[] = array(
-					'value'  => '_not_recorded',
-					'clicks' => $missing,
-				); }
+				foreach ( $dimensions as $name ) {
+					$breakdowns[ $name ][] = array(
+						'value'  => '_not_recorded',
+						'clicks' => $missing,
+					);}
+			}
 		}
 		if ( ! empty( $filters['referrer'] ) && 'page' === $dimension ) {
-			$breakdown = array(
+			$breakdowns['page'] = array(
 				array(
 					'value'  => $filters['referrer'],
 					'clicks' => $total,
 				),
 			);
-			$missing   = 0;
+			$missing            = 0;
 		}
 		// Include historical clicks whose page was never captured, without inventing URLs.
 		$pages = ! empty( $filters['referrer'] ) ? array(
@@ -412,7 +424,8 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			'links'               => $top,
 			'pages'               => $pages,
 			'details_unavailable' => $missing,
-			'breakdown'           => $breakdown,
+			'breakdown'           => $breakdowns[ $dimension ],
+			'breakdowns'          => $breakdowns,
 			'filters'             => $filters,
 			'timezone'            => wp_timezone_string(),
 		);

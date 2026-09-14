@@ -49,8 +49,14 @@ Schema 2 adds the event page field and expands the aggregate value field. Migrat
 
 ## Page reports and retention (RC4)
 
-Referring-page rows open a report containing the links clicked from that page, its click trend, and page-specific breakdowns. Link rows narrow the same page report. Date/category selections, tabs and exports preserve the page filter; All referring pages clears it. The source URL remains available through Open page. Native WordPress tabs keep navigation accessible without adding visitor scripts or an application framework.
+Referring-page rows open a report containing the links clicked from that page, its click trend, and page-specific breakdowns. Link rows narrow the same page report. Date/category selections, tabs and exports preserve the page filter; All referring pages clears it. The source URL remains available through Open page. All six breakdowns are preloaded with the report. Accessible tabs switch panels immediately without navigation or extra requests; normal links remain as a no-JavaScript fallback. No visitor script or application framework is added.
 
 Schema 3 adds a page cohort key to the existing summary table and a processing flag/index to events. Global totals remain in the empty cohort; page details are stored under a hash of the recorded page URL. The maintenance worker builds page details once from retained eligible records of the current collection generation, under the existing transaction/lock and time budget. Earlier totals/trends remain available from the original page dimension, even when detailed records have expired; missing breakdown details are labelled. No raw-event reads occur while serving reports.
 
 Forever is `summary_days=0`: it disables time-based aggregate deletion only. Raw click records still expire under event_days, and storage health safeguards remain active. Historical reports can be queried in windows of up to 90 days. Adding the option does not change an existing site's retention choice. All settings use visible sections and consistently sized, labelled fields.
+
+The tab control supports arrow keys, Home/End, Enter and Space, and keeps its active dimension in navigation links and forms. One combined, bounded summary query loads the six datasets, including page-specific detail gaps. The Privacy and data section links to the WordPress Privacy Policy Guide. Campaign removal buttons use a consistent 44px control, and Page unavailable has brief hover/focus help.
+
+External referrers remain part of analytics. Separate help buttons beside their links explain that another website can be reported as the source of a short-link click; the referrer is not a verified endorsement or a guarantee of human traffic.
+
+The chart scales its horizontal axis to the first and last recorded bucket, keeping real time intervals proportional; a single bucket is centered. Its axis labels show the actual displayed period in WordPress time. Exact totals open in a labelled, scrollable modal containing the already-loaded table, with Escape/Close handling and focus restoration.
