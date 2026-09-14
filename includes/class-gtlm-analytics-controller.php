@@ -15,7 +15,7 @@ class GTLM_Analytics_Controller {
 	}
 
 	public static function rest( WP_REST_Request $request, string $action ) {
-		if ( strlen( $request->get_body() ) > 32768 ) {
+		if ( strlen( (string) $request->get_body() ) > 32768 ) {
 			return new WP_Error( 'gtlm_analytics_request', __( 'Request too large.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 		self::load();
@@ -61,15 +61,24 @@ class GTLM_Analytics_Controller {
 		}
 		$start = new DateTimeImmutable( $from, wp_timezone() );
 		$end   = ( new DateTimeImmutable( $to, wp_timezone() ) )->modify( '+1 day' );
-		if ( $start >= $end || $start->diff( $end )->days > 90 || $to > $now->format( 'Y-m-d' ) || $from < $now->modify( '-89 days' )->format( 'Y-m-d' ) ) {
-			return new WP_Error( 'gtlm_analytics_dates', __( 'Select a range within the last 90 days in the WordPress site timezone.', 'gt-link-manager' ) );
+		if ( $start >= $end || $start->diff( $end )->days > 90 || $to > $now->format( 'Y-m-d' ) ) {
+			return new WP_Error( 'gtlm_analytics_dates', __( 'Select up to 90 days at a time in the WordPress site timezone.', 'gt-link-manager' ) );
 		}
 		$dimension = $input['dimension'] ?? 'source';
 		if ( ! in_array( $dimension, array( 'source', 'page', 'country', 'device', 'browser', 'os', 'campaign', 'status', 'mode', 'geo' ), true ) ) {
 			return new WP_Error( 'gtlm_analytics_dimension', __( 'Choose a supported breakdown.', 'gt-link-manager' ) );
 		}
+		$referrer = $input['referrer'] ?? '';
+		if ( ! is_string( $referrer ) || strlen( $referrer ) > 1024 ) {
+			return new WP_Error( 'gtlm_analytics_referrer', __( 'Choose a valid referring page.', 'gt-link-manager' ) );}
+		if ( '' !== $referrer && '_other' !== $referrer ) {
+			require_once __DIR__ . '/class-gtlm-analytics-referrer.php';
+			if ( GTLM_Analytics_Referrer::parse( $referrer )['page'] !== $referrer ) {
+				return new WP_Error( 'gtlm_analytics_referrer', __( 'Choose a valid referring page.', 'gt-link-manager' ) );}
+		}
 		$result = array(
 			'from'           => $from,
+			'referrer'       => $referrer,
 			'to'             => $to,
 			'from_utc'       => $start->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
 			'from_local'     => $from,
@@ -112,7 +121,7 @@ class GTLM_Analytics_Controller {
 		$report['collection']         = GTLM_Analytics::status();
 		$span                         = strtotime( $filters['to_utc'] . ' UTC' ) - strtotime( $filters['from_utc'] . ' UTC' );
 		$prior_start                  = strtotime( $filters['prior_from_utc'] . ' UTC' );
-		$complete                     = $prior_start >= max( strtotime( $config['started_at'] . ' UTC' ), time() - $config['summary_days'] * DAY_IN_SECONDS );
+		$complete                     = $prior_start >= max( strtotime( ( ! empty( $filters['referrer'] ) ? ( $config['pages_started_at'] ?? $config['started_at'] ) : $config['started_at'] ) . ' UTC' ), $config['summary_days'] ? time() - $config['summary_days'] * DAY_IN_SECONDS : 0 );
 		$report['previous_available'] = $complete;
 		if ( ! $complete ) {
 			$report['previous'] = null;

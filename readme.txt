@@ -77,7 +77,7 @@ Reports include daily/hourly trends, top links, referring hosts and pages, optio
 
 No visitor JavaScript, cookies, beacons, IP storage, fingerprinting, or external analytics/GeoIP requests are added. A compact database append is performed for eligible GET redirects. PHP-FPM can finish the response first; other hosts perform this write synchronously. Recognized bots, prefetches and signed-in link managers are excluded. These are observed requests, not unique people, conversions or destination page loads.
 
-Click records default to 7 days and aggregate summaries to 90 days, with finite retention controls. Summaries preserve minute buckets to support accurate WordPress-time grouping without keeping individual request records. Maintenance runs in bounded batches. Collection pauses if maintenance becomes unhealthy or its 15-minute health lease expires, and resumes when maintenance succeeds. Storage safeguards use a soft threshold, not a hard disk quota.
+Click records default to 7 days and aggregate summaries to 90 days. Choose Forever to retain aggregate reports until you delete them; individual records still expire separately. Historical reports remain accessible in date ranges of up to 90 days. Summaries preserve minute buckets to support accurate WordPress-time grouping without keeping individual request records. Maintenance runs in bounded batches. Collection pauses if maintenance becomes unhealthy or its 15-minute health lease expires, and resumes when maintenance succeeds. Storage safeguards use a soft threshold, not a hard disk quota.
 
 Pausing retains reports under their retention policy; deleting analytics removes its data and jobs while preserving links and basic counts. Deactivation pauses collection; reactivation does not silently resume it. Analytics report access defaults to administrators. Advanced analytics currently supports single-site installations; multisite opt-in is rejected before provisioning.
 
@@ -308,7 +308,7 @@ If no header is present, nothing is proxying the site and there is no country to
 
 The plugin does not add visitor tracking scripts or cookies. Request data is recorded only when the site owner explicitly enables advanced analytics.
 
-Basic click counting stores a running total independently. Advanced analytics can retain a timestamp, referring hostname and page URL, coarse client families, configured campaign ID and optional country, under finite retention. It does not retain IP addresses, raw user agents, or referring URL credentials, query strings or fragments. The suggested guidance under **Settings > Privacy** reflects the features and retention you enable.
+Basic click counting stores a running total independently. Advanced analytics can retain a timestamp, referring hostname and page URL, coarse client families, configured campaign ID and optional country, under the configured retention policy. It does not retain IP addresses, raw user agents, or referring URL credentials, query strings or fragments. The suggested guidance under **Settings > Privacy** reflects the features and retention you enable.
 
 = What happens when I uninstall? =
 
@@ -323,6 +323,12 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.9.0-rc.4 =
+* Open referring-page reports with clicked links, trends, and accurate page-specific breakdowns.
+* Add native breakdown tabs and clickable analytics counts in All Links.
+* Show all settings, improve input accessibility, and add Forever report retention.
+* Add a muted N/A geo badge and a WordPress.org review link.
 
 = 1.9.0-rc.3 =
 * Show the referring post or URL in a Clicked from table, with no visitor scripts or per-click post lookup.

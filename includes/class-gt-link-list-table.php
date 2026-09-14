@@ -404,11 +404,27 @@ class GTLM_List_Table extends WP_List_Table {
 	 * @param array<string, mixed> $item Item.
 	 */
 	protected function column_total_clicks( $item ): string {
+		$tracking = GTLM_Settings::get_instance()->click_tracking_enabled();
+
+		$count = $tracking ? esc_html( number_format_i18n( (int) ( $item['total_clicks'] ?? 0 ) ) ) : esc_html__( 'View analytics', 'gt-link-manager' );
+		if ( GTLM_Settings::get_instance()->advanced_analytics_enabled() && current_user_can( (string) apply_filters( 'gtlm_analytics_capability', 'manage_options' ) ) ) {
+			/* translators: %s: Link name. */
+			$label = sprintf( __( 'View analytics for %s', 'gt-link-manager' ), $item['name'] );
+			return '<a href="' . esc_url(
+				add_query_arg(
+					array(
+						'page'    => 'gtlm-links-analytics',
+						'link_id' => (int) $item['id'],
+					),
+					admin_url( 'admin.php' )
+				)
+			) . '" aria-label="' . esc_attr( $label ) . '">' . $count . '</a>';
+		}
 		if ( ! GTLM_Settings::get_instance()->click_tracking_enabled() ) {
 			return '<span aria-hidden="true">&mdash;</span><span class="screen-reader-text">' . esc_html__( 'Click tracking is off', 'gt-link-manager' ) . '</span>';
 		}
 
-		return esc_html( number_format_i18n( (int) ( $item['total_clicks'] ?? 0 ) ) );
+		return $count;
 	}
 
 	/**
@@ -453,7 +469,7 @@ class GTLM_List_Table extends WP_List_Table {
 	 */
 	protected function column_geo( array $item ): string {
 		if ( 'off' === (string) ( $item['geo_mode'] ?? 'off' ) ) {
-			return '<span aria-hidden="true">—</span><span class="screen-reader-text">' . esc_html__( 'No geo rules', 'gt-link-manager' ) . '</span>';
+			return '<span class="gtlm-status gtlm-status--na" aria-label="' . esc_attr__( 'No geo rules', 'gt-link-manager' ) . '">' . esc_html__( 'N/A', 'gt-link-manager' ) . '</span>';
 		}
 
 		$count = GTLM_Geo::rule_count( $item );

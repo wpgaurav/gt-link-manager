@@ -14,7 +14,7 @@ require_once __DIR__ . '/class-gtlm-analytics-db.php';
 class GTLM_Analytics {
 	public const OPTION = 'gtlm_analytics';
 	public const CRON   = 'gtlm_analytics_maintenance';
-	public const SCHEMA = '2';
+	public const SCHEMA = '3';
 
 	public static function config(): array {
 		$value = get_option( self::OPTION, array() );
@@ -29,8 +29,8 @@ class GTLM_Analytics {
 			'summary_days' => array( 90, 7, 90 ),
 		) as $key => $range ) {
 			$value = $input[ $key ] ?? $previous[ $key ] ?? $range[0];
-			if ( ! is_scalar( $value ) || ! ctype_digit( (string) $value ) || (int) $value < $range[1] || (int) $value > $range[2] ) {
-				return new WP_Error( 'gtlm_analytics_retention', __( 'Choose a supported finite retention period.', 'gt-link-manager' ) );
+			if ( ! is_scalar( $value ) || ! ctype_digit( (string) $value ) || ( (int) $value < $range[1] && ! ( 'summary_days' === $key && '0' === (string) $value ) ) || (int) $value > $range[2] ) {
+				return new WP_Error( 'gtlm_analytics_retention', __( 'Choose a supported retention period.', 'gt-link-manager' ) );
 			}
 			$options[ $key ] = (int) $value;
 		}
@@ -108,11 +108,11 @@ class GTLM_Analytics {
 
 	/** The caller holds the analytics control lock. No generation change or history reset. */
 	private static function upgrade_config( GTLM_Analytics_DB $db, array $config ): array {
-		if ( '1' === ( $config['schema'] ?? '' ) ) {
+		if ( in_array( $config['schema'] ?? '', array( '1', '2' ), true ) ) {
 			if ( ! $db->install() ) {
 				throw new RuntimeException( 'analytics_schema_upgrade_failed' ); }
 			$config['schema']           = self::SCHEMA;
-			$config['pages_started_at'] = gmdate( 'Y-m-d H:i:s' );
+			$config['pages_started_at'] = $config['pages_started_at'] ?? gmdate( 'Y-m-d H:i:s' );
 			self::save( $config );
 		}
 		return $config;
@@ -136,13 +136,13 @@ class GTLM_Analytics {
 			if ( ! $db->install() ) {
 				return new WP_Error( 'gtlm_analytics_schema', __( 'Analytics could not initialize its InnoDB tables. Collection remains off; retry or delete the partial analytics storage.', 'gt-link-manager' ) );
 			}
-			if ( '1' === ( $previous['schema'] ?? '' ) ) {
+			if ( in_array( $previous['schema'] ?? '', array( '1', '2' ), true ) ) {
 				$previous['schema']           = self::SCHEMA;
-				$previous['pages_started_at'] = gmdate( 'Y-m-d H:i:s' );
+				$previous['pages_started_at'] = $previous['pages_started_at'] ?? gmdate( 'Y-m-d H:i:s' );
 			}
 			if ( $previous && self::SCHEMA === ( $previous['schema'] ?? '' ) ) {
 				self::work( $db, $previous );
-				if ( ! empty( $db->health()['oldest_pending'] ) ) {
+				if ( ! empty( $db->health()['oldest_pending'] ) || $db->has_page_pending( $previous['generation'] ) ) {
 					return new WP_Error( 'gtlm_analytics_pending', __( 'Process pending analytics before changing collection settings.', 'gt-link-manager' ) );
 				}
 			}
@@ -305,6 +305,10 @@ class GTLM_Analytics {
 			$count    = $db->aggregate_batch( $config['generation'], $cutoff );
 			$expired += $db->expired_events;
 		} while ( 500 === $count && microtime( true ) - $start < 1.5 );
+		while ( microtime( true ) - $start < 1.5 && 500 === $db->aggregate_pages( $config['generation'] ) ) {
+			// Page detail backfill shares the same bounded worker budget.
+			continue;
+		}
 		$lost       = $db->prune( $config['event_days'], $config['summary_days'] );
 		$health     = $db->health();
 		$was_active = GTLM_Settings::get_instance()->advanced_analytics_enabled();

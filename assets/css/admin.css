@@ -917,3 +917,20 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 .gtlm-analytics-pages table { table-layout:fixed; }
 .gtlm-analytics-pages th:last-child { width:88px; }
+
+/* Accessible controls and visible settings groups, scoped to GT Link Manager. */
+.gtlm-settings-section { border-top:1px solid #c3c4c7; padding:20px 0; margin-top:20px; }
+.gtlm-settings-section > h2 { margin:0 0 16px; font-size:16px; }
+.gtlm-analytics-settings input[type=text], .gtlm-analytics-settings input[type=number], .gtlm-analytics-settings select,
+.gtlm-main-settings input[type=text], .gtlm-main-settings input[type=number], .gtlm-main-settings select { min-height:44px; border:1px solid #646970; border-radius:4px; padding:8px 12px; font-size:14px; line-height:1.4; max-width:100%; box-sizing:border-box; }
+.gtlm-analytics-settings input[type=text] { width:min(100%,420px); }
+.gtlm-analytics-settings .gtlm-campaigns input[type=text] { width:100%; }
+.gtlm-analytics-settings input:focus-visible, .gtlm-analytics-settings select:focus-visible,
+.gtlm-main-settings input:focus-visible, .gtlm-main-settings select:focus-visible { outline:2px solid var(--wp-admin-theme-color,#2271b1); outline-offset:2px; box-shadow:none; }
+.gtlm-setting-check { min-height:44px; display:flex; align-items:center; gap:8px; margin:12px 0 0; }
+.gtlm-page-context { margin:24px 0; overflow-wrap:anywhere; }
+.gtlm-page-context h2 { font-size:22px; line-height:1.4; margin:12px 0; }
+.gtlm-breakdown-nav.nav-tab-wrapper { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 16px; padding:0; border-bottom:1px solid #8c8f94; }
+.gtlm-breakdown-nav .nav-tab { float:none; margin:0; padding:9px 12px; min-height:40px; box-sizing:border-box; text-decoration:none; }
+.gtlm-breakdown-nav .nav-tab-active { background:#fff; border-bottom-color:#fff; box-shadow:inset 0 3px 0 var(--wp-admin-theme-color,#2271b1); }
+.gtlm-status--na { background:#eceeef; color:#50575e; }

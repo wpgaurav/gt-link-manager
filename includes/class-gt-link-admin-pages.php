@@ -40,7 +40,7 @@ class GTLM_Admin_Pages {
 		$table->prepare_items();
 
 		echo '<div class="wrap">';
-		echo '<h1 class="wp-heading-inline">' . esc_html__( 'GT Links', 'gt-link-manager' ) . '</h1>';
+		echo '<h1 class="wp-heading-inline">' . esc_html__( 'All Links', 'gt-link-manager' ) . '</h1>';
 		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add New', 'gt-link-manager' ) . '</a>';
 
 		if ( 'trash' === $view && $this->db->count_links( array( 'trashed' => true ) ) > 0 ) {
@@ -273,19 +273,19 @@ class GTLM_Admin_Pages {
 		echo '</tbody></table><h2>' . esc_html__( 'Basic click counts', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_click_tracking', __( 'Lifetime totals', 'gt-link-manager' ), __( 'Keep a running click total next to each link', 'gt-link-manager' ), ! empty( $settings['enable_click_tracking'] ) );
 		echo '</tbody></table><p>' . esc_html__( 'For date trends, sources and devices, use the separate analytics feature.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-analytics&view=settings' ) ) . '">' . esc_html__( 'Open analytics settings', 'gt-link-manager' ) . '</a></p>';
-		echo '<details class="gtlm-settings-detail"><summary>' . esc_html__( 'Country-based redirects', 'gt-link-manager' ) . '</summary><p>' . esc_html__( 'Send visitors to different destinations using the country rules on each link.', 'gt-link-manager' ) . '</p><table class="form-table" role="presentation"><tbody>';
+		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Country-based redirects', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Send visitors to different destinations using the country rules on each link.', 'gt-link-manager' ) . '</p><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_geo_targeting', __( 'Country routing', 'gt-link-manager' ), __( 'Allow links to use country rules', 'gt-link-manager' ), ! empty( $settings['enable_geo_targeting'] ) );
 		$this->render_geo_method_field( (string) $settings['geo_detection_method'] );
 		$this->render_text_field( 'geo_custom_header', __( 'Custom header (optional)', 'gt-link-manager' ), (string) $settings['geo_custom_header'], false );
 		$this->render_checkbox_field( 'geo_debug_header', __( 'Troubleshooting', 'gt-link-manager' ), __( 'Show country details in redirect response headers', 'gt-link-manager' ), ! empty( $settings['geo_debug_header'] ) );
 		$this->render_geo_detection_status();
-		echo '</tbody></table></details><details class="gtlm-settings-detail"><summary>' . esc_html__( 'Advanced redirects and data cleanup', 'gt-link-manager' ) . '</summary><table class="form-table" role="presentation"><tbody>';
+		echo '</tbody></table></section><section class="gtlm-settings-section"><h2>' . esc_html__( 'Advanced redirects and data cleanup', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced redirects', 'gt-link-manager' ), __( 'Allow prefix-free paths and regular expressions', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
 		$this->render_retention_field( (int) $settings['trash_retention_days'] );
 		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Uninstall cleanup', 'gt-link-manager' ), __( 'Delete all plugin data when the plugin is uninstalled', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
-		echo '</tbody></table></details>';
+		echo '</tbody></table></section>';
 		submit_button( __( 'Save settings', 'gt-link-manager' ) );
-		echo '</form><details class="gtlm-settings-detail"><summary>' . esc_html__( 'Tools and diagnostics', 'gt-link-manager' ) . '</summary>';
+		echo '</form><section class="gtlm-settings-section"><h2>' . esc_html__( 'Tools and diagnostics', 'gt-link-manager' ) . '</h2>';
 		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html__( 'Tools', 'gt-link-manager' ) . '</h2>';
 		echo '<div class="gtlm-settings-actions">';
@@ -344,7 +344,7 @@ class GTLM_Admin_Pages {
 			echo '</tbody></table>';
 		}
 		echo '</div>';
-		echo '</details></div></div>';
+		echo '</section></div></div>';
 	}
 
 	public function render_import_export_page(): void {

@@ -51,47 +51,47 @@ class GTLM_Analytics_View {
 		echo '<input type="hidden" name="gtlm_analytics_action" value="save_settings"><h2>' . esc_html__( 'Click analytics', 'gt-link-manager' ) . '</h2>';
 		echo '<label class="gtlm-setting-check"><input type="checkbox" name="enabled" value="1" ' . checked( $enabled, true, false ) . '> <strong>' . esc_html__( 'Enable advanced analytics', 'gt-link-manager' ) . '</strong></label><p class="description">' . esc_html__( 'Records click times, referring pages and basic device information. No visitor scripts, cookies or IP addresses.', 'gt-link-manager' ) . '</p>';
 		echo '<div class="gtlm-setting-field"><label for="gtlm-history"><strong>' . esc_html__( 'Keep reports for', 'gt-link-manager' ) . '</strong></label><select name="summary_days" id="gtlm-history">';
-		$periods = array_unique( array( 30, 60, 90, (int) $config['summary_days'] ) );
+		$periods = array_filter( array_unique( array( 30, 60, 90, (int) $config['summary_days'] ) ) );
 		sort( $periods );
 		foreach ( $periods as $days ) {
 			/* translators: %d: Number of days to keep reports. */
 			echo '<option value="' . (int) $days . '" ' . selected( $config['summary_days'], $days, false ) . '>' . esc_html( sprintf( __( '%d days', 'gt-link-manager' ), $days ) ) . '</option>'; }
-		echo '</select><p class="description">' . esc_html__( 'Older reports are deleted automatically when background processing runs.', 'gt-link-manager' ) . '</p></div>';
+		echo '<option value="0" ' . selected( $config['summary_days'], 0, false ) . '>' . esc_html__( 'Forever', 'gt-link-manager' ) . '</option></select><p class="description">' . esc_html__( 'Choose Forever to keep reports until you delete them. Individual click records follow their separate retention setting. Storage safeguards can pause collection.', 'gt-link-manager' ) . '</p></div>';
 		echo '<label class="gtlm-setting-check"><input type="checkbox" name="countries" value="1" ' . checked( 'none' !== $config['country_source'], true, false ) . '> ' . esc_html__( 'Include countries', 'gt-link-manager' ) . '</label><p class="description">' . esc_html__( 'Uses country information already supplied by your CDN or server. Unavailable locations appear as unknown.', 'gt-link-manager' ) . '</p>';
 		echo '<p class="gtlm-analytics-timezone">' . esc_html__( 'Time follows WordPress:', 'gt-link-manager' ) . ' <strong>' . esc_html( wp_timezone_string() ) . '</strong>. <a href="' . esc_url( admin_url( 'options-general.php' ) ) . '">' . esc_html__( 'Change in WordPress settings', 'gt-link-manager' ) . '</a></p>';
-		echo '<details class="gtlm-settings-detail"><summary>' . esc_html__( 'Advanced options', 'gt-link-manager' ) . '</summary><div class="gtlm-setting-field"><label for="gtlm-events">' . esc_html__( 'Keep individual click records (days)', 'gt-link-manager' ) . '</label><input id="gtlm-events" name="event_days" type="number" min="1" max="30" value="' . (int) $config['event_days'] . '"><p class="description">' . esc_html__( 'The default is 7 days. Dated summaries remain for the report period above.', 'gt-link-manager' ) . '</p></div><div class="gtlm-setting-field"><label for="gtlm-country-source">' . esc_html__( 'Country source', 'gt-link-manager' ) . '</label><select id="gtlm-country-source" name="country_source">';
+		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Advanced options', 'gt-link-manager' ) . '</h2><div class="gtlm-setting-field"><label for="gtlm-events">' . esc_html__( 'Keep individual click records (days)', 'gt-link-manager' ) . '</label><input id="gtlm-events" name="event_days" type="number" min="1" max="30" value="' . (int) $config['event_days'] . '"><p class="description">' . esc_html__( 'The default is 7 days. Dated summaries remain for the report period above.', 'gt-link-manager' ) . '</p></div><div class="gtlm-setting-field"><label for="gtlm-country-source">' . esc_html__( 'Country source', 'gt-link-manager' ) . '</label><select id="gtlm-country-source" name="country_source">';
 		foreach ( array(
 			'auto'       => __( 'Use existing country detection', 'gt-link-manager' ),
 			'cloudflare' => __( 'Cloudflare', 'gt-link-manager' ),
 			'custom'     => __( 'Custom country header', 'gt-link-manager' ),
 		) as $value => $label ) {
 			echo '<option value="' . esc_attr( $value ) . '" ' . selected( 'none' === $config['country_source'] ? 'auto' : $config['country_source'], $value, false ) . '>' . esc_html( $label ) . '</option>'; }
-		echo '</select></div><div class="gtlm-setting-field"><label for="gtlm-country-header">' . esc_html__( 'Custom header name (optional)', 'gt-link-manager' ) . '</label><input id="gtlm-country-header" name="country_header" value="' . esc_attr( $config['country_header'] ) . '" placeholder="X-Geo-Country"></div><div class="gtlm-setting-field"><label for="gtlm-excluded-links">' . esc_html__( 'Exclude link IDs (comma-separated)', 'gt-link-manager' ) . '</label><input class="regular-text" id="gtlm-excluded-links" name="exclude_links" value="' . esc_attr( implode( ', ', $config['exclude_links'] ) ) . '"></div></details>';
-		echo '<details class="gtlm-settings-detail"><summary>' . esc_html__( 'Campaign tracking', 'gt-link-manager' ) . '</summary><p>' . esc_html__( 'Optional: match exact UTM values to a campaign. Add a new row when changing an existing campaign.', 'gt-link-manager' ) . '</p><div class="gtlm-table-scroll"><table class="widefat gtlm-campaigns"><thead><tr><th>' . esc_html__( 'Source', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Medium', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Campaign', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Action', 'gt-link-manager' ) . '</th></tr></thead><tbody id="gtlm-campaign-rows">';
+		echo '</select></div><div class="gtlm-setting-field"><label for="gtlm-country-header">' . esc_html__( 'Custom header name (optional)', 'gt-link-manager' ) . '</label><input type="text" id="gtlm-country-header" name="country_header" value="' . esc_attr( $config['country_header'] ) . '" placeholder="X-Geo-Country"></div><div class="gtlm-setting-field"><label for="gtlm-excluded-links">' . esc_html__( 'Exclude link IDs (comma-separated)', 'gt-link-manager' ) . '</label><input type="text" class="regular-text" id="gtlm-excluded-links" aria-describedby="gtlm-exclusions-help" name="exclude_links" value="' . esc_attr( implode( ', ', $config['exclude_links'] ) ) . '"><p id="gtlm-exclusions-help" class="description">' . esc_html__( 'Enter link IDs separated by commas. Leave empty to include all eligible links.', 'gt-link-manager' ) . '</p></div></section>';
+		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Campaign tracking', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Optional: match exact UTM values to a campaign. Add a new row when changing an existing campaign.', 'gt-link-manager' ) . '</p><div class="gtlm-table-scroll"><table class="widefat gtlm-campaigns"><thead><tr><th>' . esc_html__( 'Source', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Medium', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Campaign', 'gt-link-manager' ) . '</th><th>' . esc_html__( 'Action', 'gt-link-manager' ) . '</th></tr></thead><tbody id="gtlm-campaign-rows">';
 		$rows   = array_values( array_filter( $config['campaigns'], static fn( $row ) => ! empty( $row['enabled'] ) ) );
 		$rows[] = array( 'id' => 0 );
 		foreach ( $rows as $index => $row ) {
 			self::campaign_row( (string) $index, $row ); }
 		echo '</tbody></table></div><p><button type="button" class="button" id="gtlm-add-campaign">' . esc_html__( 'Add campaign', 'gt-link-manager' ) . '</button></p><template id="gtlm-campaign-template">';
 		self::campaign_row( '__index__', array( 'id' => 0 ) );
-		echo '</template></details>';
-		echo '<details class="gtlm-settings-detail"><summary>' . esc_html__( 'Privacy and data', 'gt-link-manager' ) . '</summary><p>' . esc_html__( 'Only eligible GET redirects are recorded. Recognized bots, prefetches and signed-in link managers are excluded. Referring page URLs are stored without credentials, query strings or fragments. Raw user agents and IP addresses are not stored. Summaries use minute buckets so reports can follow WordPress time accurately.', 'gt-link-manager' ) . '</p><p>' . esc_html__( 'Turning analytics off stops new collection. Existing reports are kept until they expire or you delete them. Basic lifetime click counts are unchanged.', 'gt-link-manager' ) . '</p></details>';
+		echo '</template></section>';
+		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Privacy and data', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Only eligible GET redirects are recorded. Recognized bots, prefetches and signed-in link managers are excluded. Referring page URLs are stored without credentials, query strings or fragments. Raw user agents and IP addresses are not stored. Reports use your WordPress timezone.', 'gt-link-manager' ) . '</p><p>' . esc_html__( 'Turning analytics off stops new collection. Existing reports are kept until they expire or you delete them. Basic lifetime click counts are unchanged.', 'gt-link-manager' ) . '</p></section>';
 		submit_button( __( 'Save settings', 'gt-link-manager' ) );
 		echo '</form>';
 		if ( $initialized ) {
-			echo '<details class="gtlm-settings-detail gtlm-analytics-settings"><summary>' . esc_html__( 'Maintenance and deletion', 'gt-link-manager' ) . '</summary><form method="post">';
+			echo '<section class="gtlm-settings-section gtlm-analytics-settings"><h2>' . esc_html__( 'Maintenance and deletion', 'gt-link-manager' ) . '</h2><form method="post">';
 			wp_nonce_field( 'gtlm_analytics_settings' );
 			echo '<input type="hidden" name="gtlm_analytics_action" value="process"><p>' . esc_html__( 'Reports update automatically. Use this if an update is overdue.', 'gt-link-manager' ) . '</p><button class="button">' . esc_html__( 'Update reports now', 'gt-link-manager' ) . '</button></form><hr><form method="post">';
 			wp_nonce_field( 'gtlm_analytics_settings' );
-			echo '<input type="hidden" name="gtlm_analytics_action" value="delete"><p><label><input type="checkbox" required name="confirm_delete" value="DELETE_ANALYTICS"> ' . esc_html__( 'Permanently delete all analytics data. Links and basic counts will remain.', 'gt-link-manager' ) . '</label></p><button class="button">' . esc_html__( 'Delete analytics data', 'gt-link-manager' ) . '</button></form></details>';
+			echo '<input type="hidden" name="gtlm_analytics_action" value="delete"><p><label><input type="checkbox" required name="confirm_delete" value="DELETE_ANALYTICS"> ' . esc_html__( 'Permanently delete all analytics data. Links and basic counts will remain.', 'gt-link-manager' ) . '</label></p><button class="button">' . esc_html__( 'Delete analytics data', 'gt-link-manager' ) . '</button></form></section>';
 		}
 	}
 
 	private static function overview( array $config ): void {
 		$input = array();
-		foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity' ) as $key ) {
+		foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity', 'referrer' ) as $key ) {
 			if ( isset( $_GET[ $key ] ) && is_string( $_GET[ $key ] ) ) {
-				$input[ $key ] = sanitize_text_field( wp_unslash( $_GET[ $key ] ) ); }
+				$input[ $key ] = 'referrer' === $key ? wp_unslash( $_GET[ $key ] ) : sanitize_text_field( wp_unslash( $_GET[ $key ] ) ); }
 		} // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only validated filters.
 		$period = $input['period'] ?? ( isset( $input['from'] ) ? 'custom' : '30' );
 		if ( ! in_array( $period, array( '1', '7', '30', '90', 'custom' ), true ) ) {
@@ -109,9 +109,28 @@ class GTLM_Analytics_View {
 			return; }
 		$f    = $report['filters'];
 		$base = admin_url( 'admin.php?page=gtlm-links-analytics' );
+		if ( ! empty( $f['referrer'] ) ) {
+			$page_label = self::page_label( $f['referrer'] );
+			$title      = is_array( $page_label ) ? $page_label['label'] : $page_label;
+			echo '<section class="gtlm-page-context"><a href="' . esc_url(
+				self::report_url(
+					array_merge(
+						$input,
+						array(
+							'referrer' => false,
+							'link_id'  => 0,
+						)
+					),
+					$base
+				)
+			) . '">' . esc_html__( 'All referring pages', 'gt-link-manager' ) . '</a><h2>' . esc_html( $title ) . '</h2>';
+			if ( is_array( $page_label ) ) {
+				echo '<a href="' . esc_url( $f['referrer'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Open page', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';}
+			echo '<p class="description">' . esc_html__( 'This report shows clicks from the selected page. Choose a link below to inspect its activity from this page.', 'gt-link-manager' ) . '</p></section>';
+		}
 		if ( ! in_array( $config['state'], array( 'active', 'paused' ), true ) ) {
 			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Collection is paused because reports have not updated recently. Check maintenance in Settings.', 'gt-link-manager' ) . '</p></div>'; }
-		echo '<form method="get" class="gtlm-analytics-filters"><input type="hidden" name="page" value="gtlm-links-analytics"><input type="hidden" name="link_id" value="' . (int) $f['link_id'] . '"><input type="hidden" name="dimension" value="' . esc_attr( $f['dimension'] ) . '"><label>' . esc_html__( 'Date range', 'gt-link-manager' ) . '<select name="period" id="gtlm-period">';
+		echo '<form method="get" class="gtlm-analytics-filters"><input type="hidden" name="referrer" value="' . esc_attr( $f['referrer'] ) . '"><input type="hidden" name="page" value="gtlm-links-analytics"><input type="hidden" name="link_id" value="' . (int) $f['link_id'] . '"><input type="hidden" name="dimension" value="' . esc_attr( $f['dimension'] ) . '"><label>' . esc_html__( 'Date range', 'gt-link-manager' ) . '<select name="period" id="gtlm-period">';
 		foreach ( array(
 			'1'      => __( 'Today', 'gt-link-manager' ),
 			'7'      => __( 'Last 7 days', 'gt-link-manager' ),
@@ -132,7 +151,7 @@ class GTLM_Analytics_View {
 		echo '</select></label><button class="button">' . esc_html__( 'Apply', 'gt-link-manager' ) . '</button></form>';
 		if ( $f['link_id'] ) {
 			$link = ( new GTLM_DB() )->get_link_by_id( $f['link_id'] );
-			echo '<p>' . esc_html__( 'Showing:', 'gt-link-manager' ) . ' <strong>' . esc_html( $link['name'] ?? __( 'Selected link', 'gt-link-manager' ) ) . '</strong> <a href="' . esc_url( add_query_arg( array_merge( $input, array( 'link_id' => 0 ) ), $base ) ) . '">' . esc_html__( 'Show all links', 'gt-link-manager' ) . '</a></p>'; }
+			echo '<p>' . esc_html__( 'Showing:', 'gt-link-manager' ) . ' <strong>' . esc_html( $link['name'] ?? __( 'Selected link', 'gt-link-manager' ) ) . '</strong> <a href="' . esc_url( self::report_url( array_merge( $input, array( 'link_id' => 0 ) ), $base ) ) . '">' . esc_html__( 'Show all links', 'gt-link-manager' ) . '</a></p>'; }
 		/* translators: %s: Click count in the previous selected period. */
 		echo '<section class="gtlm-analytics-trend"><div class="gtlm-analytics-metric"><span>' . esc_html__( 'Recorded clicks', 'gt-link-manager' ) . '</span><strong>' . esc_html( number_format_i18n( $report['total'] ) ) . '</strong><span>' . esc_html( null === $report['previous'] ? __( 'Previous period has no complete history yet', 'gt-link-manager' ) : sprintf( __( '%s in the previous period', 'gt-link-manager' ), number_format_i18n( $report['previous'] ) ) ) . '</span></div>';
 		if ( $report['trend'] ) {
@@ -153,26 +172,43 @@ class GTLM_Analytics_View {
 		echo '<details><summary>' . esc_html__( 'View click totals', 'gt-link-manager' ) . '</summary>';
 		self::table( array( __( 'Time', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), array_map( static fn( $row ) => array( $row['day'], number_format_i18n( (int) $row['clicks'] ) ), $report['trend'] ) );
 		echo '</details></section>';
-		echo '<section class="gtlm-analytics-pages"><h2>' . esc_html__( 'Clicked from', 'gt-link-manager' ) . '</h2><p class="description">' . esc_html__( 'Top posts and URLs that referred clicks to the selected links. Browsers may share only a website or no referrer. Older clicks have no page details. Query strings and fragments are not stored.', 'gt-link-manager' ) . '</p>';
-		$pages = array();
-		foreach ( $report['pages'] as $page ) {
-			$pages[] = array( self::page_label( $page['value'] ), number_format_i18n( (int) $page['clicks'] ) );
+		if ( empty( $f['referrer'] ) ) {
+			echo '<section class="gtlm-analytics-pages"><h2>' . esc_html__( 'Clicked from', 'gt-link-manager' ) . '</h2><p class="description">' . esc_html__( 'Top posts and URLs that referred clicks to the selected links. Browsers may share only a website or no referrer. Older clicks have no page details. Query strings and fragments are not stored.', 'gt-link-manager' ) . '</p>';
+			$pages = array();
+			foreach ( $report['pages'] as $page ) {
+
+				$label = self::page_label( $page['value'] );
+				if ( is_array( $label ) ) {
+					$label['url'] = self::report_url(
+						array_merge(
+							$input,
+							array(
+								'referrer' => $page['value'],
+								'link_id'  => 0,
+							)
+						),
+						$base
+					);
+					unset( $label['new_tab'] );
+				}
+				$pages[] = array( $label, number_format_i18n( (int) $page['clicks'] ) );
+			}
+			self::table( array( __( 'Post or URL', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $pages );
+			echo '</section>';
 		}
-		self::table( array( __( 'Post or URL', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $pages );
-		echo '</section>';
-		echo '<div class="gtlm-analytics-grid"><section class="gtlm-analytics-breakdown"><h2>' . esc_html__( 'Top links', 'gt-link-manager' ) . '</h2>';
+		echo '<div class="gtlm-analytics-grid"><section class="gtlm-analytics-breakdown"><h2>' . esc_html( empty( $f['referrer'] ) ? __( 'Top links', 'gt-link-manager' ) : __( 'Links clicked from this page', 'gt-link-manager' ) ) . '</h2>';
 		$rows = array();
-		foreach ( array_slice( $report['links'], 0, 10 ) as $row ) {
+		foreach ( array_slice( $report['links'], 0, empty( $f['referrer'] ) ? 10 : 50 ) as $row ) {
 			$rows[] = array(
 				array(
 					'label' => $row['name'],
-					'url'   => add_query_arg( array_merge( $input, array( 'link_id' => $row['link_id'] ) ), $base ),
+					'url'   => self::report_url( array_merge( $input, array( 'link_id' => $row['link_id'] ) ), $base ),
 				),
 				number_format_i18n( (int) $row['clicks'] ),
 			); }
 		self::table( array( __( 'Link', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $rows );
 		echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links' ) ) . '">' . esc_html__( 'Browse all links', 'gt-link-manager' ) . '</a></p>';
-		echo '</section><section class="gtlm-analytics-breakdown"><h2>' . esc_html__( 'Click breakdown', 'gt-link-manager' ) . '</h2><nav class="gtlm-breakdown-nav" aria-label="' . esc_attr__( 'Click breakdown', 'gt-link-manager' ) . '">';
+		echo '</section><section class="gtlm-analytics-breakdown" id="gtlm-breakdown"><h2>' . esc_html__( 'Click breakdown', 'gt-link-manager' ) . '</h2><nav class="gtlm-breakdown-nav nav-tab-wrapper" aria-label="' . esc_attr__( 'Click breakdown', 'gt-link-manager' ) . '">';
 		foreach ( array(
 			'source'   => __( 'Sources', 'gt-link-manager' ),
 			'country'  => __( 'Countries', 'gt-link-manager' ),
@@ -181,8 +217,10 @@ class GTLM_Analytics_View {
 			'os'       => __( 'OS', 'gt-link-manager' ),
 			'campaign' => __( 'Campaigns', 'gt-link-manager' ),
 		) as $dimension => $label ) {
-			echo '<a href="' . esc_url( add_query_arg( array_merge( $input, array( 'dimension' => $dimension ) ), $base ) ) . '"' . ( $dimension === $f['dimension'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $label ) . '</a>'; }
+			echo '<a class="nav-tab' . ( $dimension === $f['dimension'] ? ' nav-tab-active' : '' ) . '" href="' . esc_url( self::report_url( array_merge( $input, array( 'dimension' => $dimension ) ), $base ) . '#gtlm-breakdown' ) . '"' . ( $dimension === $f['dimension'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $label ) . '</a>'; }
 		echo '</nav>';
+		if ( ! empty( $report['details_unavailable'] ) ) {
+			echo '<p class="description">' . esc_html__( 'Some older clicks have page totals but no retained breakdown details. They are shown as Details unavailable.', 'gt-link-manager' ) . '</p>';}
 		self::table(
 			array( __( 'Value', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ),
 			array_map(
@@ -190,6 +228,8 @@ class GTLM_Analytics_View {
 					$value = $row['value'];
 					if ( '' === $value || ( 'campaign' === $f['dimension'] && '0' === $value ) ) {
 						$value = 'source' === $f['dimension'] ? __( 'Direct / unknown', 'gt-link-manager' ) : __( 'Unknown / unattributed', 'gt-link-manager' );
+					} elseif ( '_not_recorded' === $value ) {
+						$value = __( 'Details unavailable', 'gt-link-manager' );
 					} elseif ( '_other' === $value ) {
 						$value = __( 'Other', 'gt-link-manager' );
 					} elseif ( 'country' === $f['dimension'] ) {
@@ -212,6 +252,13 @@ class GTLM_Analytics_View {
 		) as $key => $value ) {
 			echo '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) $value ) . '">';
 		} echo '<button class="button">' . esc_html__( 'Export CSV', 'gt-link-manager' ) . '</button></form></footer><p class="description">' . esc_html__( 'Counts are eligible redirect requests, not unique visitors. Filters and paused collection can leave gaps. Categories reflect current membership.', 'gt-link-manager' ) . '</p>';
+	}
+
+	/** WordPress query builders expect new parameter values to be URL-encoded. */
+	private static function report_url( array $input, string $base ): string {
+		if ( isset( $input['referrer'] ) && is_string( $input['referrer'] ) ) {
+			$input['referrer'] = rawurlencode( $input['referrer'] ); }
+		return add_query_arg( $input, $base );
 	}
 
 	/** Resolve titles only in this bounded admin table; no post query runs while collecting clicks. */
@@ -249,7 +296,7 @@ class GTLM_Analytics_View {
 		) as $key => $label ) {
 			if ( 'utm_source' !== $key ) {
 				echo '<td>';
-			} echo '<input aria-label="' . esc_attr( $label ) . '" maxlength="64" name="campaigns[' . esc_attr( $index ) . '][' . esc_attr( $key ) . ']" value="' . esc_attr( $campaign[ $key ] ?? '' ) . '"></td>';
+			} echo '<input type="text" aria-label="' . esc_attr( $label ) . '" maxlength="64" name="campaigns[' . esc_attr( $index ) . '][' . esc_attr( $key ) . ']" value="' . esc_attr( $campaign[ $key ] ?? '' ) . '"></td>';
 		} echo '<td><button type="button" class="button-link-delete gtlm-remove-campaign">' . esc_html__( 'Remove', 'gt-link-manager' ) . '</button></td></tr>';
 	}
 	private static function table( array $headings, array $rows ): void {

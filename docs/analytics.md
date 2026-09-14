@@ -35,7 +35,7 @@ The guarded scripts under `tests/` require an isolated WordPress fixture definin
 
 Local testing and the authorized gauravtiwari.org test installation are separate from a stable release. Do not publish a tag, GitHub release, WordPress.org deployment, store update or customer artifact as part of this test.
 
-The simplified admin separates Overview from Settings. Overview provides date presets, daily/hourly grouping, top links, referring sites and device/country/campaign breakdowns. Settings keeps the explicit enable checkbox, finite report retention and optional countries visible; campaigns and advanced controls are collapsed. Saving paused preferences does not resume collection.
+The simplified admin separates Overview from Settings. Overview provides date presets, daily/hourly grouping, top links, referring sites and device/country/campaign breakdowns. Settings keeps the explicit enable checkbox, report retention and optional countries visible; campaigns and advanced controls are shown as visible sections. Saving paused preferences does not resume collection.
 
 `tests/http_regressions.py` exercises authenticated multipart imports and real CSV export/import using a local HTTP fixture. Set `GTLM_TEST_WP_ROOT`, `GTLM_TEST_USER`, and `GTLM_TEST_PASSWORD` for that disposable installation. It verifies private staging, cancellation/error cleanup, rejected uploads, spreadsheet protection and lossless format-3 roundtrips.
 
@@ -43,6 +43,14 @@ The simplified admin separates Overview from Settings. Overview provides date pr
 
 The **Clicked from** table shows the URL that supplied the browser referrer and resolves published, unprotected WordPress post titles on the report screen. URL capture strips credentials, query strings and fragments, rejects IP hosts and administrative paths, encodes unsafe path bytes, and limits a URL to 1,024 ASCII bytes. Missing/refused referrers remain unavailable; browsers may supply only an external origin. Previous clicks cannot be reconstructed from the older hostname-only records. Query-only WordPress URLs (such as `?p=123`) remain unavailable rather than being mislabeled as the homepage.
 
-The collector still makes one insert (plus a cold configuration read), with no post lookup, HTTP request, JavaScript or beacon. Reports show at most 20 page rows; post title resolution happens only for those rows in the admin. The worker caps distinct pages at 100 per link per UTC day across batches. More pages aggregate into Other pages. Finite event/report retention and the existing storage health limits also apply to page URLs.
+The collector still makes one insert (plus a cold configuration read), with no post lookup, HTTP request, JavaScript or beacon. Reports show at most 20 page rows; post title resolution happens only for those rows in the admin. The worker caps distinct pages at 100 per link per UTC day across batches. More pages aggregate into Other pages. Configured event/report retention and the existing storage health limits also apply to page URLs.
 
 Schema 2 adds the event page field and expands the aggregate value field. Migration runs only for already-initialized analytics from admin or maintenance, under its existing control lock. It preserves the original collection generation, history, settings and paused/active state. Schema-1 in-flight appends remain compatible during migration. The report includes historical clicks under Page unavailable, without fabricating URLs. CSV exports include the new page dimension after collection begins.
+
+## Page reports and retention (RC4)
+
+Referring-page rows open a report containing the links clicked from that page, its click trend, and page-specific breakdowns. Link rows narrow the same page report. Date/category selections, tabs and exports preserve the page filter; All referring pages clears it. The source URL remains available through Open page. Native WordPress tabs keep navigation accessible without adding visitor scripts or an application framework.
+
+Schema 3 adds a page cohort key to the existing summary table and a processing flag/index to events. Global totals remain in the empty cohort; page details are stored under a hash of the recorded page URL. The maintenance worker builds page details once from retained eligible records of the current collection generation, under the existing transaction/lock and time budget. Earlier totals/trends remain available from the original page dimension, even when detailed records have expired; missing breakdown details are labelled. No raw-event reads occur while serving reports.
+
+Forever is `summary_days=0`: it disables time-based aggregate deletion only. Raw click records still expire under event_days, and storage health safeguards remain active. Historical reports can be queried in windows of up to 90 days. Adding the option does not change an existing site's retention choice. All settings use visible sections and consistently sized, labelled fields.

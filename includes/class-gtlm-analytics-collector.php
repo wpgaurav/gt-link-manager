@@ -28,7 +28,7 @@ class GTLM_Analytics_Collector {
 			}
 		}
 		$config = get_option( 'gtlm_analytics', array() );
-		if ( ! is_array( $config ) || ! in_array( $config['schema'] ?? '', array( '1', '2' ), true ) || 'active' !== ( $config['state'] ?? '' ) || (int) ( $config['lease_until'] ?? 0 ) < time() || empty( $config['generation'] ) || in_array( (int) $link['id'], (array) ( $config['exclude_links'] ?? array() ), true ) ) {
+		if ( ! is_array( $config ) || ! in_array( $config['schema'] ?? '', array( '1', '2', '3' ), true ) || 'active' !== ( $config['state'] ?? '' ) || (int) ( $config['lease_until'] ?? 0 ) < time() || empty( $config['generation'] ) || in_array( (int) $link['id'], (array) ( $config['exclude_links'] ?? array() ), true ) ) {
 			return false;
 		}
 		$agent = self::server_value( 'HTTP_USER_AGENT', 512 );
@@ -85,7 +85,7 @@ class GTLM_Analytics_Collector {
 			'mode'        => in_array( $link['link_mode'] ?? '', array( 'standard', 'direct', 'regex' ), true ) ? $link['link_mode'] : 'standard',
 			'geo'         => null === $geo ? 'off' : ( ! empty( $geo['matched'] ) ? 'matched' : 'fallback' ),
 		);
-		if ( '2' === $config['schema'] ) {
+		if ( in_array( $config['schema'], array( '2', '3' ), true ) ) {
 			$event['page'] = $referrer['page'];
 		}
 		return ( new GTLM_DB() )->append_analytics_event( $event );

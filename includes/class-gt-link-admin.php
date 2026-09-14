@@ -36,6 +36,7 @@ class GTLM_Admin {
 		}
 
 		add_action( 'admin_menu', array( $this, 'register_menus' ) );
+		add_filter( 'admin_footer_text', array( $this, 'review_footer' ) );
 		add_action( 'admin_init', array( $this, 'handle_actions' ) );
 		add_filter( 'set-screen-option', array( $this, 'set_screen_option' ), 10, 3 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -53,6 +54,14 @@ class GTLM_Admin {
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_new_link' ), 80 );
 		add_filter( 'dashboard_glance_items', array( $this, 'dashboard_glance_items' ) );
 		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
+	}
+
+	/** Keep the review prompt on this plugin's screens only. */
+	public function review_footer( string $text ): string {
+		$screen = get_current_screen();
+		if ( ! $screen || ! str_contains( $screen->id, 'gtlm-links' ) ) {
+			return $text; }
+		return $text . ' · <a href="https://wordpress.org/support/plugin/gt-link-manager/reviews/?filter=5#new-post" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Please rate/review the plugin on WordPress.org', 'gt-link-manager' ) . '</a>';
 	}
 
 	/**
@@ -363,8 +372,13 @@ class GTLM_Admin {
 			$content .= '<p>' . esc_html__( 'The plugin does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or referring URL credentials, query strings or fragments, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required.', 'gt-link-manager' ) . '</p>';
 			$config   = get_option( 'gtlm_analytics', array() );
 			if ( is_array( $config ) && isset( $config['event_days'], $config['summary_days'] ) ) {
-				/* translators: 1: event days, 2: summary days. */
-				$content .= '<p>' . esc_html( sprintf( __( 'Configured retention: click records for %1$d days and aggregate summaries for %2$d days. Maintenance must run for scheduled deletion to take place.', 'gt-link-manager' ), $config['event_days'], $config['summary_days'] ) ) . '</p>';
+				if ( 0 === (int) $config['summary_days'] ) {
+					/* translators: %d: Individual event retention in days. */
+					$content .= '<p>' . esc_html( sprintf( __( 'Individual click records are kept for %d days. Aggregate reports are kept until manually deleted.', 'gt-link-manager' ), $config['event_days'] ) ) . '</p>';
+				} else {
+					/* translators: 1: event days, 2: summary days. */
+					$content .= '<p>' . esc_html( sprintf( __( 'Configured retention: click records for %1$d days and aggregate summaries for %2$d days. Maintenance must run for scheduled deletion to take place.', 'gt-link-manager' ), $config['event_days'], $config['summary_days'] ) ) . '</p>';
+				}
 			}
 		}
 		wp_add_privacy_policy_content( __( 'GT Link Manager', 'gt-link-manager' ), $content );

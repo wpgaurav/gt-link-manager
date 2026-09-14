@@ -45,6 +45,18 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		$events  = self::events_table();
 		$hourly  = self::hourly_table();
 		$charset = $wpdb->get_charset_collate();
+		// dbDelta does not replace an existing primary key. Add the cohort key explicitly.
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s', $hourly ) );
+		if ( $exists ) {
+			$primary = $wpdb->get_col( "SHOW INDEX FROM {$hourly} WHERE Key_name='PRIMARY'", 4 );
+			if ( ! in_array( 'page_key', $primary, true ) ) {
+				$column = $wpdb->get_var( "SHOW COLUMNS FROM {$hourly} LIKE 'page_key'" );
+				$add    = $column ? '' : "ADD page_key char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '', ";
+				if ( false === $wpdb->query( "ALTER TABLE {$hourly} {$add}DROP PRIMARY KEY, ADD PRIMARY KEY (link_id,bucket_start,page_key,dimension,value)" ) ) {
+					return false; }
+			}
+		}
+
 		dbDelta(
 			"CREATE TABLE {$events} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -52,6 +64,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			occurred_at datetime NOT NULL,
 			generation char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
 			processed tinyint(1) NOT NULL DEFAULT 0,
+			page_processed tinyint(1) NOT NULL DEFAULT 0,
 			source varchar(253) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
 			page varchar(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
 			country char(2) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
@@ -64,6 +77,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			geo varchar(16) NOT NULL,
 			PRIMARY KEY  (id),
 			KEY pending (processed,id),
+			KEY page_pending (processed,page_processed,id),
 			KEY expiry (occurred_at,id),
 			KEY link_time (link_id,occurred_at,id)
 			) ENGINE=InnoDB {$charset};"
@@ -72,16 +86,18 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			"CREATE TABLE {$hourly} (
 			link_id bigint(20) unsigned NOT NULL,
 			bucket_start datetime NOT NULL,
+			page_key char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
 			dimension varchar(12) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
 			value varchar(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
 			clicks bigint(20) unsigned NOT NULL DEFAULT 0,
-			PRIMARY KEY  (link_id,bucket_start,dimension,value),
-			KEY date_dimension (bucket_start,dimension)
+			PRIMARY KEY  (link_id,bucket_start,page_key,dimension,value),
+			KEY date_dimension (bucket_start,dimension),
+			KEY page_date (page_key,bucket_start,dimension)
 			) ENGINE=InnoDB {$charset};"
 		);
 		foreach ( array(
-			$events => array( 'PRIMARY', 'pending', 'expiry', 'link_time' ),
-			$hourly => array( 'PRIMARY', 'date_dimension' ),
+			$events => array( 'PRIMARY', 'pending', 'page_pending', 'expiry', 'link_time' ),
+			$hourly => array( 'PRIMARY', 'date_dimension', 'page_date' ),
 		) as $table => $required ) {
 			$engine = $wpdb->get_var( $wpdb->prepare( 'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s', $table ) );
 			$keys   = $wpdb->get_col( "SHOW INDEX FROM {$table}", 2 );
@@ -127,14 +143,16 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			if ( '' !== $wpdb->last_error ) {
 				throw new RuntimeException( 'analytics_links_failed' );
 			}
-			$counts = array();
-			$hosts  = array();
-			$pages  = array();
+			$ignored = array();
+			$counts  = array();
+			$hosts   = array();
+			$pages   = array();
 			foreach ( $rows as $row ) {
 				if ( $row['occurred_at'] < $cutoff ) {
 					++$this->expired_events;
 				}
 				if ( $row['generation'] !== $generation || $row['occurred_at'] < $cutoff || ! isset( $existing[ $row['link_id'] ] ) ) {
+					$ignored[] = (int) $row['id'];
 					continue;
 				}
 				$bucket = substr( $row['occurred_at'], 0, 16 ) . ':00';
@@ -142,7 +160,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 				$key    = $row['link_id'] . ':' . $day;
 				if ( '' !== $row['source'] ) {
 					if ( ! isset( $hosts[ $key ] ) ) {
-						$values = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT value FROM {$hourly} WHERE link_id = %d AND bucket_start >= %s AND bucket_start < %s AND dimension = 'source' AND value <> '_other' AND value <> '' LIMIT 100", $row['link_id'], $day . ' 00:00:00', gmdate( 'Y-m-d H:i:s', strtotime( $day . ' UTC' ) + DAY_IN_SECONDS ) ) );
+						$values = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT value FROM {$hourly} WHERE link_id = %d AND bucket_start >= %s AND bucket_start < %s AND page_key = '' AND dimension = 'source' AND value <> '_other' AND value <> '' LIMIT 100", $row['link_id'], $day . ' 00:00:00', gmdate( 'Y-m-d H:i:s', strtotime( $day . ' UTC' ) + DAY_IN_SECONDS ) ) );
 						if ( '' !== $wpdb->last_error ) {
 							throw new RuntimeException( 'analytics_hosts_failed' );
 						}
@@ -157,7 +175,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 				$page_key = $row['link_id'] . ':' . $day;
 				if ( '' !== $row['page'] ) {
 					if ( ! isset( $pages[ $page_key ] ) ) {
-						$values = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT value FROM {$hourly} WHERE link_id = %d AND bucket_start >= %s AND bucket_start < %s AND dimension = 'page' AND value <> '_other' AND value <> '' LIMIT 100", $row['link_id'], $day . ' 00:00:00', gmdate( 'Y-m-d H:i:s', strtotime( $day . ' UTC' ) + DAY_IN_SECONDS ) ) );
+						$values = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT value FROM {$hourly} WHERE link_id = %d AND bucket_start >= %s AND bucket_start < %s AND page_key = '' AND dimension = 'page' AND value <> '_other' AND value <> '' LIMIT 100", $row['link_id'], $day . ' 00:00:00', gmdate( 'Y-m-d H:i:s', strtotime( $day . ' UTC' ) + DAY_IN_SECONDS ) ) );
 						if ( '' !== $wpdb->last_error ) {
 							throw new RuntimeException( 'analytics_pages_failed' ); }
 						$pages[ $page_key ] = array_fill_keys( $values, true );
@@ -185,12 +203,86 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			}
 			$ids = implode( ',', array_map( 'intval', array_column( $rows, 'id' ) ) );
 			$this->must_query( "UPDATE {$events} SET processed = 1 WHERE id IN ({$ids})" );
+			if ( $ignored ) {
+				$skip = implode( ',', $ignored );
+				$this->must_query( "UPDATE {$events} SET page_processed=1 WHERE id IN ({$skip})" );}
 			$this->must_query( 'COMMIT' );
 			return count( $rows );
 		} catch ( Throwable $error ) {
 			$wpdb->query( 'ROLLBACK' );
 			throw $error;
 		}
+	}
+
+	/** Build page-specific details from retained processed events, exactly once per event. */
+	public function aggregate_pages( string $generation, int $limit = 500 ): int {
+		global $wpdb;
+		$events = self::events_table();
+		$hourly = self::hourly_table();
+		$links  = self::links_table();
+		$this->must_query( 'START TRANSACTION' );
+		try {
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$events} WHERE processed=1 AND page_processed=0 ORDER BY id LIMIT %d", min( 500, max( 1, $limit ) ) ), ARRAY_A );
+			if ( '' !== $wpdb->last_error ) {
+				throw new RuntimeException( 'analytics_page_read_failed' ); }
+			if ( ! $rows ) {
+				$this->must_query( 'COMMIT' );
+				return 0; }
+			$known  = array();
+			$counts = array();
+			foreach ( $rows as $row ) {
+				if ( '' === $row['page'] || $row['generation'] !== $generation ) {
+					continue; }
+				$day = substr( $row['occurred_at'], 0, 10 );
+				$key = $row['link_id'] . ':' . $day;
+				if ( ! isset( $known[ $key ] ) ) {
+					$values = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT h.value FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE h.link_id=%d AND h.bucket_start>=%s AND h.bucket_start<%s AND h.page_key='' AND h.dimension='page' LIMIT 102", $row['link_id'], $day . ' 00:00:00', gmdate( 'Y-m-d H:i:s', strtotime( $day . ' UTC' ) + DAY_IN_SECONDS ) ) );
+					if ( '' !== $wpdb->last_error ) {
+						throw new RuntimeException( 'analytics_page_lookup_failed' ); }
+					$known[ $key ] = array_fill_keys( $values, true );
+				}
+				$page = $row['page'];
+				if ( ! isset( $known[ $key ][ $page ] ) ) {
+					if ( ! isset( $known[ $key ]['_other'] ) ) {
+						continue; }
+					$page = '_other';
+				}
+				$page_key = hash( 'sha256', $page );
+				$bucket   = substr( $row['occurred_at'], 0, 16 ) . ':00';
+				foreach ( self::DIMENSIONS as $dimension ) {
+					if ( 'page' === $dimension ) {
+						continue; }
+					$value = 'total' === $dimension ? '' : (string) $row[ $dimension ];
+					$key   = $row['link_id'] . '|' . $bucket . '|' . $page_key . '|' . $dimension . '|' . $value;
+					if ( ! isset( $counts[ $key ] ) ) {
+						$counts[ $key ] = array( (int) $row['link_id'], $bucket, $page_key, $dimension, $value, 0 ); }
+					++$counts[ $key ][5];
+				}
+			}
+			foreach ( array_chunk( $counts, 500 ) as $chunk ) {
+				$values = array();
+				foreach ( $chunk as $count ) {
+					$values[] = $wpdb->prepare( '(%d,%s,%s,%s,%s,%d)', $count[0], $count[1], $count[2], $count[3], $count[4], $count[5] ); }
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Every value tuple is prepared above.
+				$this->must_query( "INSERT INTO {$hourly} (link_id,bucket_start,page_key,dimension,value,clicks) VALUES " . implode( ',', $values ) . ' ON DUPLICATE KEY UPDATE clicks=clicks+VALUES(clicks)' );
+			}
+			$ids = implode( ',', array_map( 'intval', array_column( $rows, 'id' ) ) );
+			$this->must_query( "UPDATE {$events} SET page_processed=1 WHERE id IN ({$ids})" );
+			$this->must_query( 'COMMIT' );
+			return count( $rows );
+		} catch ( Throwable $error ) {
+			$wpdb->query( 'ROLLBACK' );
+			throw $error; }
+	}
+
+	/** Prevent consent-generation changes from abandoning unfinished page detail batches. */
+	public function has_page_pending( string $generation ): bool {
+		global $wpdb;
+		$table = self::events_table();
+		$id    = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE processed=1 AND page_processed=0 AND generation=%s LIMIT 1", $generation ) );
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_page_pending_failed' );}
+		return null !== $id;
 	}
 
 	/** Bounded indexed deletion; retention also applies to unprocessed events. */
@@ -210,7 +302,9 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			$lost = count( array_filter( $expired, static fn( $row ) => ! $row['processed'] ) );
 		}
 
-		$this->must_query( $wpdb->prepare( "DELETE FROM {$hourly} WHERE bucket_start < %s ORDER BY bucket_start LIMIT 500", gmdate( 'Y-m-d H:00:00', time() - $summary_days * DAY_IN_SECONDS ) ) );
+		if ( $summary_days > 0 ) {
+			$this->must_query( $wpdb->prepare( "DELETE FROM {$hourly} WHERE bucket_start < %s ORDER BY bucket_start LIMIT 500", gmdate( 'Y-m-d H:00:00', time() - $summary_days * DAY_IN_SECONDS ) ) );
+		}
 		// Permanent deletion is uncommon; remove at most 100 orphaned link IDs per run.
 		$orphans = $wpdb->get_col( "SELECT DISTINCT h.link_id FROM {$hourly} h LEFT JOIN {$links} l ON l.id = h.link_id WHERE l.id IS NULL LIMIT 10" );
 		foreach ( $orphans as $id ) {
@@ -243,25 +337,27 @@ class GTLM_Analytics_DB extends GTLM_DB {
 	/** Return bounded report data using hourly summaries, never raw events. */
 	public function report( array $filters ): array {
 		global $wpdb;
-		$hourly = self::hourly_table();
-		$links  = self::links_table();
-		$where  = $this->report_where( $filters );
+		$hourly       = self::hourly_table();
+		$links        = self::links_table();
+		$where        = $this->report_where( $filters );
+		$total_where  = $this->totals_where( $filters );
+		$detail_where = $where . $wpdb->prepare( ' AND h.page_key=%s', empty( $filters['referrer'] ) ? '' : hash( 'sha256', $filters['referrer'] ) );
 		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- report_where prepares values; remaining SQL is static.
-		$total = (int) $wpdb->get_var( "SELECT COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension='total'" );
+		$total = (int) $wpdb->get_var( "SELECT COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$total_where}" );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
 		$bucket = $this->local_bucket_sql( $filters );
-		$trend  = $wpdb->get_results( "SELECT {$bucket} day, MIN(h.bucket_start) first_utc, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension='total' GROUP BY day ORDER BY first_utc", ARRAY_A );
+		$trend  = $wpdb->get_results( "SELECT {$bucket} day, MIN(h.bucket_start) first_utc, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$total_where} GROUP BY day ORDER BY first_utc", ARRAY_A );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
-		$top = $wpdb->get_results( "SELECT h.link_id, l.name, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension='total' GROUP BY h.link_id,l.name ORDER BY clicks DESC,h.link_id LIMIT 50", ARRAY_A );
+		$top = $wpdb->get_results( "SELECT h.link_id, l.name, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$total_where} GROUP BY h.link_id,l.name ORDER BY clicks DESC,h.link_id LIMIT 50", ARRAY_A );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
 		$dimension = $filters['dimension'];
-		$breakdown = $wpdb->get_results( $wpdb->prepare( "SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension=%s GROUP BY h.value ORDER BY clicks DESC,h.value LIMIT 200", $dimension ), ARRAY_A );
+		$breakdown = $wpdb->get_results( $wpdb->prepare( "SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$detail_where} AND h.dimension=%s GROUP BY h.value ORDER BY clicks DESC,h.value LIMIT 200", $dimension ), ARRAY_A );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
@@ -273,25 +369,52 @@ class GTLM_Analytics_DB extends GTLM_DB {
 				'to_utc'   => $filters['from_utc'],
 			)
 		);
-		$prev_where = $this->report_where( $prior );
-		$previous   = (int) $wpdb->get_var( "SELECT COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$prev_where} AND h.dimension='total'" );
+		$prev_where = $this->totals_where( $prior );
+		$previous   = (int) $wpdb->get_var( "SELECT COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$prev_where}" );
 		// SQL below is also prepared by this data layer.
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
+		$missing = 0;
+		if ( ! empty( $filters['referrer'] ) ) {
+			$covered = (int) $wpdb->get_var( "SELECT COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$detail_where} AND h.dimension='total'" );
+			if ( '' !== $wpdb->last_error ) {
+				throw new RuntimeException( 'analytics_page_coverage_failed' ); }
+			$missing = max( 0, $total - $covered );
+			if ( $missing ) {
+				$breakdown[] = array(
+					'value'  => '_not_recorded',
+					'clicks' => $missing,
+				); }
+		}
+		if ( ! empty( $filters['referrer'] ) && 'page' === $dimension ) {
+			$breakdown = array(
+				array(
+					'value'  => $filters['referrer'],
+					'clicks' => $total,
+				),
+			);
+			$missing   = 0;
+		}
 		// Include historical clicks whose page was never captured, without inventing URLs.
-		$pages = $wpdb->get_results( "SELECT value, SUM(clicks) clicks FROM (SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension='page' GROUP BY h.value UNION ALL SELECT '', {$total} - COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.dimension='page') page_counts GROUP BY value HAVING SUM(clicks) > 0 ORDER BY clicks DESC, value LIMIT 20", ARRAY_A );
+		$pages = ! empty( $filters['referrer'] ) ? array(
+			array(
+				'value'  => $filters['referrer'],
+				'clicks' => $total,
+			),
+		) : $wpdb->get_results( "SELECT value, SUM(clicks) clicks FROM (SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.page_key='' AND h.dimension='page' GROUP BY h.value UNION ALL SELECT '', {$total} - COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.page_key='' AND h.dimension='page') page_counts GROUP BY value HAVING SUM(clicks) > 0 ORDER BY clicks DESC, value LIMIT 20", ARRAY_A );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_pages_report_failed' ); }
 		return array(
-			'total'     => $total,
-			'previous'  => $previous,
-			'trend'     => $trend,
-			'links'     => $top,
-			'pages'     => $pages,
-			'breakdown' => $breakdown,
-			'filters'   => $filters,
-			'timezone'  => wp_timezone_string(),
+			'total'               => $total,
+			'previous'            => $previous,
+			'trend'               => $trend,
+			'links'               => $top,
+			'pages'               => $pages,
+			'details_unavailable' => $missing,
+			'breakdown'           => $breakdown,
+			'filters'             => $filters,
+			'timezone'            => wp_timezone_string(),
 		);
 	}
 
@@ -300,7 +423,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		global $wpdb;
 		$hourly = self::hourly_table();
 		$links  = self::links_table();
-		$where  = $this->report_where( $filters );
+		$where  = $this->export_where( $filters );
 		$sql    = "SELECT h.*,l.name FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where}";
 		if ( $cursor ) {
 			$sql .= $wpdb->prepare( ' AND (h.link_id,h.bucket_start,h.dimension,h.value) > (%d,%s,%s,%s)', $cursor[0], $cursor[1], $cursor[2], $cursor[3] );
@@ -319,7 +442,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		global $wpdb;
 		$hourly = self::hourly_table();
 		$links  = self::links_table();
-		$where  = $this->report_where( $filters );
+		$where  = $this->export_where( $filters );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- report_where prepares all values.
 		$count = $wpdb->get_var( "SELECT COUNT(*) FROM (SELECT 1 FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} LIMIT 100001) bounded_export" );
 		return null !== $count && '' === $wpdb->last_error && (int) $count <= 100000;
@@ -361,6 +484,20 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			}
 		}
 		return 'CASE ' . implode( ' ', $clauses ) . ' END';
+	}
+
+	private function totals_where( array $filters ): string {
+		global $wpdb;
+		$where = $this->report_where( $filters ) . " AND h.page_key=''";
+		return empty( $filters['referrer'] ) ? $where . " AND h.dimension='total'" : $where . $wpdb->prepare( " AND h.dimension='page' AND h.value=%s", $filters['referrer'] );
+	}
+
+	private function export_where( array $filters ): string {
+		global $wpdb;
+		$where = $this->report_where( $filters );
+		if ( empty( $filters['referrer'] ) ) {
+			return $where . " AND h.page_key=''";}
+		return $where . $wpdb->prepare( " AND ((h.page_key='' AND h.dimension='page' AND h.value=%s) OR (h.page_key=%s AND h.dimension<>'total'))", $filters['referrer'], hash( 'sha256', $filters['referrer'] ) );
 	}
 
 	private function report_where( array $filters ): string {
