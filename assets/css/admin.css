@@ -873,7 +873,8 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 /* Analytics and settings use the existing WordPress admin palette. */
 .gtlm-analytics { max-width: 1280px; }
 .gtlm-analytics-heading, .gtlm-analytics-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.gtlm-analytics-status { color:#50575e; font-size:13px; }
+.gtlm-analytics-status { display:inline-flex; align-items:center; padding:5px 10px; border-radius:4px; color:#50575e; background:#e9ecef; font-size:13px; line-height:1.5; }
+.gtlm-analytics-status.is-active { color:#166534; background:#dcfce7; }
 .gtlm-analytics .nav-tab-wrapper { margin:12px 0 24px; }
 .gtlm-analytics-filters { display:flex; flex-wrap:wrap; gap:16px; align-items:end; margin:24px 0; }
 .gtlm-analytics-filters label, .gtlm-setting-field { display:flex; flex-direction:column; gap:8px; }
@@ -968,11 +969,19 @@ body.no-js .gtlm-breakdown-nav { display:none; }
 
 .gtlm-tooltip-icon { width:28px; height:28px; padding:2px; margin-inline-start:4px; vertical-align:middle; text-align:center; line-height:1; }
 
-.gtlm-pages-pagination { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:20px; }
-.gtlm-pages-pagination form { display:flex; gap:8px; align-items:center; margin-inline-start:auto; }
+.gtlm-pages-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:16px 0; }
+.gtlm-pages-toolbar .gtlm-pages-count { margin:0; }
+.gtlm-pages-size { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.gtlm-pages-size select, .gtlm-pages-size .button { min-height:40px; }
+.gtlm-pages-pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:12px; margin-top:20px; }
+.gtlm-pages-pagination form { display:flex; gap:8px; align-items:center; }
 .gtlm-pages-pagination input[type=number] { width:80px; min-height:40px; }
 .gtlm-pages-pagination .button { min-height:40px; display:inline-flex; align-items:center; }
 
 #gtlm-ai-prompt { width:100%; padding:12px; border:1px solid #646970; border-radius:4px; font-size:14px; line-height:1.6; resize:vertical; }
 #gtlm-ai-prompt:focus-visible { outline:2px solid var(--wp-admin-theme-color,#2271b1); outline-offset:2px; }
 .gtlm-ai-prompt-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+
+.gtlm-retention-warning { color:#6e4100; background:#fff4ce; border-inline-start:3px solid #996800; padding:10px 12px; max-width:640px; }
+.gtlm-retention-warning[hidden] { display:none; }
+.gtlm-diagnostics-current { margin-bottom:20px; }

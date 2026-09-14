@@ -1050,7 +1050,7 @@ class GTLM_Admin {
 
 		if ( ! empty( $sample ) ) {
 			$link = $sample[0];
-			$test = wp_remote_get(
+			$test = wp_remote_head(
 				home_url( '/' . $prefix . '/' . (string) $link['slug'] ),
 				array(
 					'timeout'     => 8,

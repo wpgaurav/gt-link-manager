@@ -23,9 +23,13 @@ class GTLM_Analytics {
 
 	/** Pure validation. No option writes or schema probes. */
 	public static function validate( array $input, array $previous = array() ) {
-		$options = array();
+		$options    = array();
+		$event_days = $input['event_days'] ?? $previous['event_days'] ?? 7;
+		if ( ( ! is_int( $event_days ) && ! is_string( $event_days ) ) || ! ctype_digit( (string) $event_days ) || false === filter_var( $event_days, FILTER_VALIDATE_INT, array( 'options' => array( 'min_range' => 1 ) ) ) ) {
+			return new WP_Error( 'gtlm_analytics_retention', __( 'Enter a positive whole number of days for individual click records.', 'gt-link-manager' ) );
+		}
+		$options['event_days'] = (int) $event_days;
 		foreach ( array(
-			'event_days'   => array( 7, 1, 30 ),
 			'summary_days' => array( 90, 7, 90 ),
 		) as $key => $range ) {
 			$value = $input[ $key ] ?? $previous[ $key ] ?? $range[0];
@@ -299,7 +303,7 @@ class GTLM_Analytics {
 
 	private static function work( GTLM_Analytics_DB $db, array $config ): void {
 		$start   = microtime( true );
-		$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $config['event_days'] * DAY_IN_SECONDS );
+		$cutoff  = $db->event_cutoff( $config['event_days'] );
 		$expired = 0;
 		do {
 			$count    = $db->aggregate_batch( $config['generation'], $cutoff );

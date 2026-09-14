@@ -325,6 +325,15 @@ Set up the appropriate authenticated REST API connection and verify it with read
 
 		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html__( 'Diagnostics', 'gt-link-manager' ) . '</h2>';
+		$bytes = $this->db->storage_bytes();
+		echo '<table class="gtlm-diagnostics-table gtlm-diagnostics-current"><tbody><tr><th scope="row">' . esc_html__( 'Database size (all GT Link Manager tables)', 'gt-link-manager' ) . '</th><td>' . esc_html( null === $bytes ? __( 'Unavailable', 'gt-link-manager' ) : size_format( $bytes, 2 ) ) . '<p class="description">' . esc_html__( 'Estimated table data and indexes, including analytics tables when present.', 'gt-link-manager' ) . '</p></td></tr>';
+		foreach ( array(
+			'analytics' => array( __( 'Advanced Analytics', 'gt-link-manager' ), $this->settings->advanced_analytics_enabled() ),
+			'redirects' => array( __( 'Advanced redirects', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) ),
+		) as $feature ) {
+			echo '<tr><th scope="row">' . esc_html( $feature[0] ) . '</th><td><span class="gtlm-status gtlm-status--' . ( $feature[1] ? 'active' : 'inactive' ) . '">' . esc_html( $feature[1] ? __( 'Enabled', 'gt-link-manager' ) : __( 'Disabled', 'gt-link-manager' ) ) . '</span></td></tr>';
+		}
+		echo '</tbody></table>';
 		if ( ! is_array( $diagnostics ) || empty( $diagnostics ) ) {
 			echo '<p>' . esc_html__( 'No diagnostics run yet.', 'gt-link-manager' ) . '</p>';
 		} else {

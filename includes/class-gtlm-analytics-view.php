@@ -23,7 +23,7 @@ class GTLM_Analytics_View {
 			$config = array_merge( $config, GTLM_Analytics::status() ); }
 		$view = isset( $_GET['view'] ) && in_array( $_GET['view'], array( 'overview', 'pages', 'settings' ), true ) ? $_GET['view'] : 'overview'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation.
 		$base = admin_url( 'admin.php?page=gtlm-links-analytics' );
-		echo '<div class="wrap gtlm-analytics"><div class="gtlm-analytics-heading"><h1>' . esc_html__( 'Analytics', 'gt-link-manager' ) . '</h1><span class="gtlm-analytics-status">' . esc_html( 'active' === $config['state'] ? __( 'Collecting clicks', 'gt-link-manager' ) : ( $settings->advanced_analytics_enabled() ? __( 'Waiting for maintenance', 'gt-link-manager' ) : ( $initialized ? __( 'Collection paused', 'gt-link-manager' ) : __( 'Not enabled', 'gt-link-manager' ) ) ) ) . '</span></div>';
+		echo '<div class="wrap gtlm-analytics"><div class="gtlm-analytics-heading"><h1>' . esc_html__( 'Analytics', 'gt-link-manager' ) . '</h1><span class="gtlm-analytics-status' . ( 'active' === $config['state'] ? ' is-active' : '' ) . '">' . esc_html( 'active' === $config['state'] ? __( 'Collecting clicks', 'gt-link-manager' ) : ( $settings->advanced_analytics_enabled() ? __( 'Waiting for maintenance', 'gt-link-manager' ) : ( $initialized ? __( 'Collection paused', 'gt-link-manager' ) : __( 'Not enabled', 'gt-link-manager' ) ) ) ) . '</span></div>';
 		echo '<nav class="nav-tab-wrapper" aria-label="' . esc_attr__( 'Analytics views', 'gt-link-manager' ) . '">';
 		foreach ( array(
 			'overview' => __( 'Overview', 'gt-link-manager' ),
@@ -34,7 +34,7 @@ class GTLM_Analytics_View {
 				continue; }
 			$navigation = array( 'view' => $key );
 			if ( 'settings' !== $key ) {
-				foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity' ) as $field ) {
+				foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity', 'sources_per_page' ) as $field ) {
 					if ( isset( $_GET[ $field ] ) && is_string( $_GET[ $field ] ) ) {
 						$navigation[ $field ] = sanitize_text_field( wp_unslash( $_GET[ $field ] ) );}
 				}
@@ -67,7 +67,7 @@ class GTLM_Analytics_View {
 		echo '<option value="0" ' . selected( $config['summary_days'], 0, false ) . '>' . esc_html__( 'Forever', 'gt-link-manager' ) . '</option></select><p class="description">' . esc_html__( 'Choose Forever to keep reports until you delete them. Individual click records follow their separate retention setting. Storage safeguards can pause collection.', 'gt-link-manager' ) . '</p></div>';
 		echo '<label class="gtlm-setting-check"><input type="checkbox" name="countries" value="1" ' . checked( 'none' !== $config['country_source'], true, false ) . '> ' . esc_html__( 'Include countries', 'gt-link-manager' ) . '</label><p class="description">' . esc_html__( 'Uses country information already supplied by your CDN or server. Unavailable locations appear as unknown.', 'gt-link-manager' ) . '</p>';
 		echo '<p class="gtlm-analytics-timezone">' . esc_html__( 'Time follows WordPress:', 'gt-link-manager' ) . ' <strong>' . esc_html( wp_timezone_string() ) . '</strong>. <a href="' . esc_url( admin_url( 'options-general.php' ) ) . '">' . esc_html__( 'Change in WordPress settings', 'gt-link-manager' ) . '</a></p>';
-		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Advanced options', 'gt-link-manager' ) . '</h2><div class="gtlm-setting-field"><label for="gtlm-events">' . esc_html__( 'Keep individual click records (days)', 'gt-link-manager' ) . '</label><input id="gtlm-events" name="event_days" type="number" min="1" max="30" value="' . (int) $config['event_days'] . '"><p class="description">' . esc_html__( 'The default is 7 days. Dated summaries remain for the report period above.', 'gt-link-manager' ) . '</p></div><div class="gtlm-setting-field"><label for="gtlm-country-source">' . esc_html__( 'Country source', 'gt-link-manager' ) . '</label><select id="gtlm-country-source" name="country_source">';
+		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Advanced options', 'gt-link-manager' ) . '</h2><div class="gtlm-setting-field"><label for="gtlm-events">' . esc_html__( 'Keep individual click records (days)', 'gt-link-manager' ) . '</label><input id="gtlm-events" name="event_days" type="number" min="1" step="1" aria-describedby="gtlm-events-help gtlm-events-warning" value="' . (int) $config['event_days'] . '"><p id="gtlm-events-warning" class="gtlm-retention-warning" role="status"' . ( $config['event_days'] > 60 ? '' : ' hidden' ) . '>' . esc_html__( 'Keeping individual click records for more than 60 days can significantly increase database size and cleanup work.', 'gt-link-manager' ) . '</p><p id="gtlm-events-help" class="description">' . esc_html__( 'The default is 7 days. Dated summaries remain for the report period above.', 'gt-link-manager' ) . '</p></div><div class="gtlm-setting-field"><label for="gtlm-country-source">' . esc_html__( 'Country source', 'gt-link-manager' ) . '</label><select id="gtlm-country-source" name="country_source">';
 		foreach ( array(
 			'auto'       => __( 'Use existing country detection', 'gt-link-manager' ),
 			'cloudflare' => __( 'Cloudflare', 'gt-link-manager' ),
@@ -98,7 +98,7 @@ class GTLM_Analytics_View {
 
 	private static function overview( array $config, bool $pages_view = false ): void {
 		$input = array();
-		foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity', 'referrer', 'sources_page' ) as $key ) {
+		foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity', 'referrer', 'sources_page', 'sources_per_page' ) as $key ) {
 			if ( isset( $_GET[ $key ] ) && is_string( $_GET[ $key ] ) ) {
 				$input[ $key ] = 'referrer' === $key ? wp_unslash( $_GET[ $key ] ) : sanitize_text_field( wp_unslash( $_GET[ $key ] ) ); }
 		} // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only validated filters.
@@ -146,7 +146,7 @@ class GTLM_Analytics_View {
 		}
 		if ( ! in_array( $config['state'], array( 'active', 'paused' ), true ) ) {
 			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Collection is paused because reports have not updated recently. Check maintenance in Settings.', 'gt-link-manager' ) . '</p></div>'; }
-		echo '<form method="get" class="gtlm-analytics-filters"><input type="hidden" name="view" value="' . esc_attr( $input['view'] ) . '"><input type="hidden" name="referrer" value="' . esc_attr( $f['referrer'] ) . '"><input type="hidden" name="page" value="gtlm-links-analytics"><input type="hidden" name="link_id" value="' . (int) $f['link_id'] . '"><input type="hidden" name="dimension" value="' . esc_attr( $f['dimension'] ) . '"><label>' . esc_html__( 'Date range', 'gt-link-manager' ) . '<select name="period" id="gtlm-period">';
+		echo '<form method="get" class="gtlm-analytics-filters"><input type="hidden" name="sources_per_page" value="' . (int) $f['sources_per_page'] . '"><input type="hidden" name="view" value="' . esc_attr( $input['view'] ) . '"><input type="hidden" name="referrer" value="' . esc_attr( $f['referrer'] ) . '"><input type="hidden" name="page" value="gtlm-links-analytics"><input type="hidden" name="link_id" value="' . (int) $f['link_id'] . '"><input type="hidden" name="dimension" value="' . esc_attr( $f['dimension'] ) . '"><label>' . esc_html__( 'Date range', 'gt-link-manager' ) . '<select name="period" id="gtlm-period">';
 		foreach ( array(
 			'1'      => __( 'Today', 'gt-link-manager' ),
 			'7'      => __( 'Last 7 days', 'gt-link-manager' ),
@@ -273,11 +273,24 @@ class GTLM_Analytics_View {
 	}
 
 	private static function pages_report( array $report, array $input, string $base ): void {
-		$p                     = $report['pagination'];
-		$input['sources_page'] = $p['current_page'];
+		$p                         = $report['pagination'];
+		$input['sources_page']     = $p['current_page'];
+		$input['sources_per_page'] = $p['per_page'];
 		echo '<section id="gtlm-referring-pages" class="gtlm-analytics-pages"><h2>' . esc_html__( 'Clicked from', 'gt-link-manager' ) . '</h2><p class="description">' . esc_html__( 'Every recorded referring-page entry for this selection is available below. Browsers may share only a website or no referrer; older clicks may have no page details.', 'gt-link-manager' ) . '</p>';
+		echo '<div class="gtlm-pages-toolbar">';
 		/* translators: 1: first row, 2: last row, 3: total matching entries. */
 		echo '<p class="gtlm-pages-count">' . esc_html( sprintf( __( 'Showing %1$s–%2$s of %3$s', 'gt-link-manager' ), number_format_i18n( $p['from'] ), number_format_i18n( $p['to'] ), number_format_i18n( $p['total_items'] ) ) ) . '</p>';
+		echo '<form method="get" class="gtlm-pages-size">';
+		foreach ( array_merge( array( 'page' => 'gtlm-links-analytics' ), $input ) as $key => $value ) {
+			if ( ! in_array( $key, array( 'sources_page', 'sources_per_page' ), true ) ) {
+				echo '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) $value ) . '">';
+			}
+		}
+		echo '<label for="gtlm-sources-per-page">' . esc_html__( 'Rows per page', 'gt-link-manager' ) . '</label><select id="gtlm-sources-per-page" name="sources_per_page">';
+		foreach ( array( 10, 20, 50, 100 ) as $size ) {
+			echo '<option value="' . (int) $size . '" ' . selected( $p['per_page'], $size, false ) . '>' . esc_html( number_format_i18n( $size ) ) . '</option>';
+		}
+		echo '</select><button type="submit" class="button" aria-label="' . esc_attr__( 'Apply rows per page', 'gt-link-manager' ) . '">' . esc_html__( 'Apply', 'gt-link-manager' ) . '</button></form></div>';
 		$rows = array();foreach ( $report['rows'] as $page ) {
 			$label = self::page_label( $page['value'] );
 			if ( is_array( $label ) && isset( $label['url'] ) ) {

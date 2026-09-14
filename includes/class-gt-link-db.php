@@ -15,6 +15,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class GTLM_DB {
 	public const CACHE_GROUP = 'gtlm_links';
 
+	/** Current table data plus indexes; queried only on the administrator's Settings screen. */
+	public function storage_bytes(): ?int {
+		global $wpdb;
+		$old = $wpdb->suppress_errors( true );
+		try {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Fresh administrator-only metadata; never queried by redirects.
+			$bytes = $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(DATA_LENGTH + INDEX_LENGTH),0) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE %s', $wpdb->esc_like( $wpdb->prefix . 'gtlm_' ) . '%' ) );
+			return null === $bytes || '' !== $wpdb->last_error ? null : (int) $bytes;
+		} finally {
+			$wpdb->suppress_errors( $old );
+		}
+	}
+
 	/**
 	 * Column list used in SELECT statements.
 	 */

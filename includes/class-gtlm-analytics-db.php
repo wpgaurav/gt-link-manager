@@ -285,13 +285,20 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		return null !== $id;
 	}
 
+	/** A UTC cutoff that stays safe even for retention periods beyond the age of the data. */
+	public function event_cutoff( int $event_days ): string {
+		$now = time();
+		// Avoid integer overflow for long retention periods. No recorded events predate the Unix epoch.
+		return $event_days > intdiv( $now, DAY_IN_SECONDS ) ? '1970-01-01 00:00:00' : gmdate( 'Y-m-d H:i:s', $now - $event_days * DAY_IN_SECONDS );
+	}
+
 	/** Bounded indexed deletion; retention also applies to unprocessed events. */
 	public function prune( int $event_days, int $summary_days ): int {
 		global $wpdb;
 		$events  = self::events_table();
 		$hourly  = self::hourly_table();
 		$links   = self::links_table();
-		$expired = $wpdb->get_results( $wpdb->prepare( "SELECT id,processed FROM {$events} WHERE occurred_at < %s ORDER BY occurred_at,id LIMIT 500", gmdate( 'Y-m-d H:i:s', time() - $event_days * DAY_IN_SECONDS ) ), ARRAY_A );
+		$expired = $wpdb->get_results( $wpdb->prepare( "SELECT id,processed FROM {$events} WHERE occurred_at < %s ORDER BY occurred_at,id LIMIT 500", $this->event_cutoff( $event_days ) ), ARRAY_A );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_prune_failed' );
 		}
@@ -439,7 +446,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			if ( '' !== $wpdb->last_error ) {
 				throw new RuntimeException( 'analytics_pages_total_failed' );}
 		}
-		$per_page = 20;
+		$per_page = in_array( $filters['sources_per_page'] ?? 20, array( 10, 20, 50, 100 ), true ) ? ( $filters['sources_per_page'] ?? 20 ) : 20;
 		if ( ! empty( $filters['referrer'] ) ) {
 			return array(
 				'total'      => $total,

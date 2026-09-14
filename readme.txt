@@ -341,6 +341,14 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 
 == Changelog ==
 
+= 1.9.0-rc.10 =
+* Individual click record retention has no upper day limit; a warning appears above 60 days.
+* Settings diagnostics shows total plugin database size and whether advanced analytics and advanced redirects are enabled.
+
+= 1.9.0-rc.9 =
+* Choose 10, 20, 50 or 100 referring pages per result page, with centered pagination controls.
+* Show active click collection in a light green status badge.
+
 = 1.9.0-rc.8 =
 * Move Clicked from to its own report page with a complete entry count and pagination.
 * Make every retained referring-page entry accessible while keeping each page lightweight.

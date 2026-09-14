@@ -1139,3 +1139,13 @@ document.addEventListener('DOMContentLoaded', function () {
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
  });
 });
+
+// Retention is uncapped; warn without blocking longer periods.
+document.addEventListener('DOMContentLoaded', function () {
+ var retention = document.getElementById('gtlm-events');
+ var warning = document.getElementById('gtlm-events-warning');
+ if (!retention || !warning) return;
+ function updateRetentionWarning() { warning.hidden = !(Number(retention.value) > 60); }
+ retention.addEventListener('input', updateRetentionWarning);
+ updateRetentionWarning();
+});

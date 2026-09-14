@@ -105,6 +105,11 @@ class GTLM_Analytics_Controller {
 		if ( ( ! is_string( $page ) && ! is_int( $page ) ) || ! ctype_digit( (string) $page ) || strlen( (string) $page ) > 9 || (int) $page < 1 ) {
 			return new WP_Error( 'gtlm_analytics_page', __( 'Choose a valid results page.', 'gt-link-manager' ) );}
 		$result['sources_page'] = (int) $page;
+		$per_page               = $input['sources_per_page'] ?? 20;
+		if ( ( ! is_string( $per_page ) && ! is_int( $per_page ) ) || ! ctype_digit( (string) $per_page ) || ! in_array( (int) $per_page, array( 10, 20, 50, 100 ), true ) ) {
+			return new WP_Error( 'gtlm_analytics_page_size', __( 'Choose 10, 20, 50 or 100 rows per page.', 'gt-link-manager' ) );
+		}
+		$result['sources_per_page'] = (int) $per_page;
 		return $result;
 	}
 
