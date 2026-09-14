@@ -25,7 +25,7 @@ Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix
 Available in the **1.9.0 test candidate**, Advanced Analytics adds reports alongside the existing lifetime click counter. It stays off until you explicitly enable it under **GT Links > Analytics > Settings**. No analytics tables, options, records or maintenance jobs are created before opt-in.
 
 * **Find your strongest links.** View click totals, daily or hourly trends, and the links used within a selected period or category.
-* **See the referring post or URL.** The **Clicked from** table resolves published WordPress post titles where possible. Open a page report to see which links were clicked there, then inspect an individual link within that same page.
+* **See the referring post or URL.** The separate **Clicked from** report lists every matching recorded entry with pagination and resolves published WordPress post titles where possible. Open a page report to see which links were clicked there, then inspect an individual link within that same page.
 * **Switch breakdowns instantly.** Sources, countries, devices, browsers, operating systems and configured campaigns are loaded with the report. Switching tabs does not reload the page or fetch another report.
 * **Read the chart clearly.** The chart fits the recorded activity period while preserving real time spacing. **View click totals** opens a scrollable popup with exact values.
 * **Use WordPress time.** Dates, hourly/day grouping and CSV timestamps follow the timezone configured in WordPress, including fractional offsets and daylight-saving changes.
@@ -340,6 +340,11 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.9.0-rc.8 =
+* Move Clicked from to its own report page with a complete entry count and pagination.
+* Make every retained referring-page entry accessible while keeping each page lightweight.
+* Add a copyable AI setup prompt that reuses supplied information and asks only for missing details.
 
 = 1.9.0-rc.7 =
 * Use button tabs to avoid speculative page fetches.

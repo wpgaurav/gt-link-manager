@@ -281,6 +281,20 @@
 			return;
 		}
 
+		var promptCopy = event.target.closest('#gtlm-copy-ai-prompt');
+		if (promptCopy) {
+			event.preventDefault();
+			var prompt = document.getElementById('gtlm-ai-prompt');
+			var promptStatus = document.getElementById('gtlm-ai-prompt-status');
+			if (!prompt || !promptStatus) return;
+			copyToClipboard(prompt.value).then(function (ok) {
+				promptStatus.textContent = ok ? promptCopy.dataset.copied : promptCopy.dataset.failed;
+				if (ok) promptCopy.focus();
+				else { prompt.focus(); prompt.select(); }
+			});
+			return;
+		}
+
 		var copyLink = event.target.closest('.gtlm-copy-url');
 		if (copyLink) {
 			event.preventDefault();

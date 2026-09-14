@@ -101,10 +101,14 @@ class GTLM_Analytics_Controller {
 			}
 			$result[ $key ] = (int) $value;
 		}
+		$page = $input['sources_page'] ?? 1;
+		if ( ( ! is_string( $page ) && ! is_int( $page ) ) || ! ctype_digit( (string) $page ) || strlen( (string) $page ) > 9 || (int) $page < 1 ) {
+			return new WP_Error( 'gtlm_analytics_page', __( 'Choose a valid results page.', 'gt-link-manager' ) );}
+		$result['sources_page'] = (int) $page;
 		return $result;
 	}
 
-	public static function report( array $input ) {
+	public static function report( array $input, bool $include_pages = true ) {
 		if ( ! GTLM_Settings::get_instance()->analytics_initialized() ) {
 			return new WP_Error( 'gtlm_analytics_disabled', __( 'Enable analytics before requesting reports.', 'gt-link-manager' ) );
 		}
@@ -117,7 +121,7 @@ class GTLM_Analytics_Controller {
 		if ( GTLM_Analytics::SCHEMA !== ( $config['schema'] ?? '' ) ) {
 			return new WP_Error( 'gtlm_analytics_schema', __( 'Analytics storage is not ready.', 'gt-link-manager' ) );
 		}
-		$report                       = ( new GTLM_Analytics_DB() )->report( $filters );
+		$report                       = ( new GTLM_Analytics_DB() )->report( $filters, $include_pages );
 		$report['collection']         = GTLM_Analytics::status();
 		$span                         = strtotime( $filters['to_utc'] . ' UTC' ) - strtotime( $filters['from_utc'] . ' UTC' );
 		$prior_start                  = strtotime( $filters['prior_from_utc'] . ' UTC' );
@@ -127,6 +131,28 @@ class GTLM_Analytics_Controller {
 			$report['previous'] = null;
 		}
 		return $report;
+	}
+
+	/** Dedicated referring-page listing; no chart or breakdown queries are needed. */
+	public static function pages( array $input ) {
+		if ( ! GTLM_Settings::get_instance()->analytics_initialized() ) {
+			return new WP_Error( 'gtlm_analytics_disabled', __( 'Enable analytics before requesting reports.', 'gt-link-manager' ) );}
+		$input['referrer'] = '';
+		$filters           = self::filters( $input );
+		if ( is_wp_error( $filters ) ) {
+			return $filters;}
+		self::load();
+		if ( GTLM_Analytics::SCHEMA !== ( GTLM_Analytics::config()['schema'] ?? '' ) ) {
+			return new WP_Error( 'gtlm_analytics_schema', __( 'Analytics storage is not ready.', 'gt-link-manager' ) );}
+		$db = new GTLM_Analytics_DB();
+		$db->start_export();
+		try {
+			$result = $db->referring_pages( $filters );
+		} finally {
+			$db->finish_export();}
+		$filters['sources_page'] = $result['pagination']['current_page'];
+		$result['filters']       = $filters;
+		return $result;
 	}
 
 	/** Native admin POST handler, called before rendering. */

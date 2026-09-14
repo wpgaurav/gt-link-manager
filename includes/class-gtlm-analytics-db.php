@@ -335,7 +335,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 	}
 
 	/** Return bounded report data using hourly summaries, never raw events. */
-	public function report( array $filters ): array {
+	public function report( array $filters, bool $include_pages = true ): array {
 		global $wpdb;
 		$hourly       = self::hourly_table();
 		$links        = self::links_table();
@@ -408,26 +408,83 @@ class GTLM_Analytics_DB extends GTLM_DB {
 			);
 			$missing            = 0;
 		}
-		// Include historical clicks whose page was never captured, without inventing URLs.
-		$pages = ! empty( $filters['referrer'] ) ? array(
-			array(
-				'value'  => $filters['referrer'],
-				'clicks' => $total,
-			),
-		) : $wpdb->get_results( "SELECT value, SUM(clicks) clicks FROM (SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.page_key='' AND h.dimension='page' GROUP BY h.value UNION ALL SELECT '', {$total} - COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.page_key='' AND h.dimension='page') page_counts GROUP BY value HAVING SUM(clicks) > 0 ORDER BY clicks DESC, value LIMIT 20", ARRAY_A );
-		if ( '' !== $wpdb->last_error ) {
-			throw new RuntimeException( 'analytics_pages_report_failed' ); }
+		$page_result = $include_pages ? $this->referring_pages( $filters, $total ) : array(
+			'rows'       => array(),
+			'pagination' => null,
+		);
 		return array(
 			'total'               => $total,
 			'previous'            => $previous,
 			'trend'               => $trend,
 			'links'               => $top,
-			'pages'               => $pages,
+			'pages'               => $page_result['rows'],
+			'pages_pagination'    => $page_result['pagination'],
 			'details_unavailable' => $missing,
 			'breakdown'           => $breakdowns[ $dimension ],
 			'breakdowns'          => $breakdowns,
 			'filters'             => $filters,
 			'timezone'            => wp_timezone_string(),
+		);
+	}
+
+	/** Every retained referring-page entry is reachable; each response and title lookup stay bounded. */
+	public function referring_pages( array $filters, ?int $total = null ): array {
+		global $wpdb;
+		$hourly = self::hourly_table();
+		$links  = self::links_table();
+		$where  = $this->report_where( $filters );
+		if ( null === $total ) {
+			$totals_where = $this->totals_where( $filters );
+			$total        = (int) $wpdb->get_var( "SELECT COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$totals_where}" );
+			if ( '' !== $wpdb->last_error ) {
+				throw new RuntimeException( 'analytics_pages_total_failed' );}
+		}
+		$per_page = 20;
+		if ( ! empty( $filters['referrer'] ) ) {
+			return array(
+				'total'      => $total,
+				'rows'       => array(
+					array(
+						'value'  => $filters['referrer'],
+						'clicks' => $total,
+					),
+				),
+				'pagination' => array(
+					'current_page' => 1,
+					'per_page'     => $per_page,
+					'total_items'  => 1,
+					'total_pages'  => 1,
+					'from'         => 1,
+					'to'           => 1,
+					'has_previous' => false,
+					'has_next'     => false,
+				),
+			);
+		}
+		// The unavailable entry includes pre-attribution history; it is counted once, not once per query branch.
+		$grouped = "SELECT value, SUM(clicks) clicks FROM (SELECT h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.page_key='' AND h.dimension='page' GROUP BY h.value UNION ALL SELECT '', {$total} - COALESCE(SUM(h.clicks),0) FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} AND h.page_key='' AND h.dimension='page') page_counts GROUP BY value HAVING SUM(clicks)>0";
+		$count   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM ({$grouped}) referring_pages" );
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_pages_count_failed' );}
+		$total_pages = (int) ceil( $count / $per_page );
+		$page        = min( max( 1, (int) ( $filters['sources_page'] ?? 1 ) ), max( 1, $total_pages ) );
+		$offset      = ( $page - 1 ) * $per_page;
+		$rows        = $count ? $wpdb->get_results( $grouped . $wpdb->prepare( ' ORDER BY clicks DESC,value LIMIT %d OFFSET %d', $per_page, $offset ), ARRAY_A ) : array();
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_pages_report_failed' );}
+		return array(
+			'total'      => $total,
+			'rows'       => $rows,
+			'pagination' => array(
+				'current_page' => $page,
+				'per_page'     => $per_page,
+				'total_items'  => $count,
+				'total_pages'  => $total_pages,
+				'from'         => $count ? $offset + 1 : 0,
+				'to'           => $offset + count( $rows ),
+				'has_previous' => $page > 1,
+				'has_next'     => $page < $total_pages,
+			),
 		);
 	}
 

@@ -21,17 +21,25 @@ class GTLM_Analytics_View {
 		if ( $initialized ) {
 			require_once __DIR__ . '/class-gtlm-analytics.php';
 			$config = array_merge( $config, GTLM_Analytics::status() ); }
-		$view = isset( $_GET['view'] ) && 'settings' === $_GET['view'] ? 'settings' : 'overview'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation.
+		$view = isset( $_GET['view'] ) && in_array( $_GET['view'], array( 'overview', 'pages', 'settings' ), true ) ? $_GET['view'] : 'overview'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation.
 		$base = admin_url( 'admin.php?page=gtlm-links-analytics' );
 		echo '<div class="wrap gtlm-analytics"><div class="gtlm-analytics-heading"><h1>' . esc_html__( 'Analytics', 'gt-link-manager' ) . '</h1><span class="gtlm-analytics-status">' . esc_html( 'active' === $config['state'] ? __( 'Collecting clicks', 'gt-link-manager' ) : ( $settings->advanced_analytics_enabled() ? __( 'Waiting for maintenance', 'gt-link-manager' ) : ( $initialized ? __( 'Collection paused', 'gt-link-manager' ) : __( 'Not enabled', 'gt-link-manager' ) ) ) ) . '</span></div>';
 		echo '<nav class="nav-tab-wrapper" aria-label="' . esc_attr__( 'Analytics views', 'gt-link-manager' ) . '">';
 		foreach ( array(
 			'overview' => __( 'Overview', 'gt-link-manager' ),
+			'pages'    => __( 'Clicked from', 'gt-link-manager' ),
 			'settings' => __( 'Settings', 'gt-link-manager' ),
 		) as $key => $label ) {
 			if ( 'settings' === $key && ! current_user_can( 'manage_options' ) ) {
 				continue; }
-			echo '<a class="nav-tab ' . ( $view === $key ? 'nav-tab-active' : '' ) . '" href="' . esc_url( add_query_arg( 'view', $key, $base ) ) . '"' . ( $view === $key ? ' aria-current="page"' : '' ) . '>' . esc_html( $label ) . '</a>';
+			$navigation = array( 'view' => $key );
+			if ( 'settings' !== $key ) {
+				foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity' ) as $field ) {
+					if ( isset( $_GET[ $field ] ) && is_string( $_GET[ $field ] ) ) {
+						$navigation[ $field ] = sanitize_text_field( wp_unslash( $_GET[ $field ] ) );}
+				}
+			}
+			echo '<a class="nav-tab ' . ( $view === $key ? 'nav-tab-active' : '' ) . '" href="' . esc_url( self::report_url( $navigation, $base ) ) . '"' . ( $view === $key ? ' aria-current="page"' : '' ) . '>' . esc_html( $label ) . '</a>';
 		}
 		echo '</nav>';
 		if ( isset( $_GET['saved'] ) ) {
@@ -40,7 +48,7 @@ class GTLM_Analytics_View {
 			self::settings( $config, $initialized ); } elseif ( ! $initialized ) {
 			echo '<section class="gtlm-analytics-empty"><h2>' . esc_html__( 'See how your links are used', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'View click trends, referring websites and device information. Your existing basic click counts stay separate.', 'gt-link-manager' ) . '</p><p>' . esc_html__( 'Analytics is off until you enable it. No analytics data or background jobs are created beforehand.', 'gt-link-manager' ) . '</p><a class="button button-primary" href="' . esc_url( add_query_arg( 'view', 'settings', $base ) ) . '">' . esc_html__( 'Set up analytics', 'gt-link-manager' ) . '</a></section>';
 			} else {
-				self::overview( $config ); }
+				self::overview( $config, 'pages' === $view ); }
 			echo '</div>';
 	}
 
@@ -88,12 +96,15 @@ class GTLM_Analytics_View {
 		}
 	}
 
-	private static function overview( array $config ): void {
+	private static function overview( array $config, bool $pages_view = false ): void {
 		$input = array();
-		foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity', 'referrer' ) as $key ) {
+		foreach ( array( 'from', 'to', 'period', 'link_id', 'category_id', 'dimension', 'granularity', 'referrer', 'sources_page' ) as $key ) {
 			if ( isset( $_GET[ $key ] ) && is_string( $_GET[ $key ] ) ) {
 				$input[ $key ] = 'referrer' === $key ? wp_unslash( $_GET[ $key ] ) : sanitize_text_field( wp_unslash( $_GET[ $key ] ) ); }
 		} // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only validated filters.
+		$input['view'] = $pages_view ? 'pages' : 'overview';
+		if ( $pages_view ) {
+			$input['referrer'] = '';}
 		if ( ! in_array( $input['dimension'] ?? 'source', array( 'source', 'country', 'device', 'browser', 'os', 'campaign' ), true ) ) {
 			$input['dimension'] = 'source';}
 		$period = $input['period'] ?? ( isset( $input['from'] ) ? 'custom' : '30' );
@@ -104,7 +115,7 @@ class GTLM_Analytics_View {
 			$input['from'] = current_datetime()->modify( '-' . ( (int) $period - 1 ) . ' days' )->format( 'Y-m-d' );
 			$input['to']   = current_datetime()->format( 'Y-m-d' ); }
 		try {
-			$report = GTLM_Analytics_Controller::report( $input );
+			$report = $pages_view ? GTLM_Analytics_Controller::pages( $input ) : GTLM_Analytics_Controller::report( $input, false );
 		} catch ( Throwable $error ) {
 			$report = new WP_Error( 'report_unavailable', __( 'Reports could not load. Check analytics maintenance in Settings.', 'gt-link-manager' ) ); }
 		if ( is_wp_error( $report ) ) {
@@ -120,8 +131,10 @@ class GTLM_Analytics_View {
 					array_merge(
 						$input,
 						array(
-							'referrer' => false,
-							'link_id'  => 0,
+							'referrer'     => false,
+							'link_id'      => 0,
+							'view'         => 'pages',
+							'sources_page' => false,
 						)
 					),
 					$base
@@ -133,7 +146,7 @@ class GTLM_Analytics_View {
 		}
 		if ( ! in_array( $config['state'], array( 'active', 'paused' ), true ) ) {
 			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Collection is paused because reports have not updated recently. Check maintenance in Settings.', 'gt-link-manager' ) . '</p></div>'; }
-		echo '<form method="get" class="gtlm-analytics-filters"><input type="hidden" name="referrer" value="' . esc_attr( $f['referrer'] ) . '"><input type="hidden" name="page" value="gtlm-links-analytics"><input type="hidden" name="link_id" value="' . (int) $f['link_id'] . '"><input type="hidden" name="dimension" value="' . esc_attr( $f['dimension'] ) . '"><label>' . esc_html__( 'Date range', 'gt-link-manager' ) . '<select name="period" id="gtlm-period">';
+		echo '<form method="get" class="gtlm-analytics-filters"><input type="hidden" name="view" value="' . esc_attr( $input['view'] ) . '"><input type="hidden" name="referrer" value="' . esc_attr( $f['referrer'] ) . '"><input type="hidden" name="page" value="gtlm-links-analytics"><input type="hidden" name="link_id" value="' . (int) $f['link_id'] . '"><input type="hidden" name="dimension" value="' . esc_attr( $f['dimension'] ) . '"><label>' . esc_html__( 'Date range', 'gt-link-manager' ) . '<select name="period" id="gtlm-period">';
 		foreach ( array(
 			'1'      => __( 'Today', 'gt-link-manager' ),
 			'7'      => __( 'Last 7 days', 'gt-link-manager' ),
@@ -154,7 +167,22 @@ class GTLM_Analytics_View {
 		echo '</select></label><button class="button">' . esc_html__( 'Apply', 'gt-link-manager' ) . '</button></form>';
 		if ( $f['link_id'] ) {
 			$link = ( new GTLM_DB() )->get_link_by_id( $f['link_id'] );
-			echo '<p>' . esc_html__( 'Showing:', 'gt-link-manager' ) . ' <strong>' . esc_html( $link['name'] ?? __( 'Selected link', 'gt-link-manager' ) ) . '</strong> <a href="' . esc_url( self::report_url( array_merge( $input, array( 'link_id' => 0 ) ), $base ) ) . '">' . esc_html__( 'Show all links', 'gt-link-manager' ) . '</a></p>'; }
+			echo '<p>' . esc_html__( 'Showing:', 'gt-link-manager' ) . ' <strong>' . esc_html( $link['name'] ?? __( 'Selected link', 'gt-link-manager' ) ) . '</strong> <a href="' . esc_url(
+				self::report_url(
+					array_merge(
+						$input,
+						array(
+							'link_id'      => 0,
+							'sources_page' => false,
+						)
+					),
+					$base
+				)
+			) . '">' . esc_html__( 'Show all links', 'gt-link-manager' ) . '</a></p>'; }
+		if ( $pages_view ) {
+			self::pages_report( $report, $input, $base );
+			self::report_footer( $config, $f, $input );
+			return;}
 		/* translators: %s: Click count in the previous selected period. */
 		echo '<section class="gtlm-analytics-trend"><div class="gtlm-analytics-metric"><span>' . esc_html__( 'Recorded clicks', 'gt-link-manager' ) . '</span><strong>' . esc_html( number_format_i18n( $report['total'] ) ) . '</strong><span>' . esc_html( null === $report['previous'] ? __( 'Previous period has no complete history yet', 'gt-link-manager' ) : sprintf( __( '%s in the previous period', 'gt-link-manager' ), number_format_i18n( $report['previous'] ) ) ) . '</span></div>';
 		if ( $report['trend'] ) {
@@ -173,30 +201,6 @@ class GTLM_Analytics_View {
 		echo '<p><button type="button" class="button" id="gtlm-open-totals" aria-haspopup="dialog" aria-controls="gtlm-click-totals">' . esc_html__( 'View click totals', 'gt-link-manager' ) . '</button></p><dialog id="gtlm-click-totals" class="gtlm-totals-dialog" aria-labelledby="gtlm-totals-title"><div class="gtlm-dialog-header"><h2 id="gtlm-totals-title">' . esc_html__( 'Click totals', 'gt-link-manager' ) . '</h2><button type="button" class="button" id="gtlm-close-totals">' . esc_html__( 'Close', 'gt-link-manager' ) . '</button></div><p class="gtlm-dialog-description">' . esc_html( $f['from_local'] . ' – ' . $f['to_local'] . ' · ' . wp_timezone_string() ) . '</p><div class="gtlm-dialog-scroll" tabindex="0" role="region" aria-label="' . esc_attr__( 'Click totals table', 'gt-link-manager' ) . '">';
 		self::table( array( __( 'Time', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), array_map( static fn( $row ) => array( $row['day'], number_format_i18n( (int) $row['clicks'] ) ), $report['trend'] ) );
 		echo '</div></dialog></section>';
-		if ( empty( $f['referrer'] ) ) {
-			echo '<section class="gtlm-analytics-pages"><h2>' . esc_html__( 'Clicked from', 'gt-link-manager' ) . '</h2><p class="description">' . esc_html__( 'Top posts and URLs that referred clicks to the selected links. Browsers may share only a website or no referrer. Older clicks have no page details. Query strings and fragments are not stored.', 'gt-link-manager' ) . '</p>';
-			$pages = array();
-			foreach ( $report['pages'] as $page ) {
-
-				$label = self::page_label( $page['value'] );
-				if ( is_array( $label ) && isset( $label['url'] ) ) {
-					$label['url'] = self::report_url(
-						array_merge(
-							$input,
-							array(
-								'referrer' => $page['value'],
-								'link_id'  => 0,
-							)
-						),
-						$base
-					);
-					unset( $label['new_tab'] );
-				}
-				$pages[] = array( $label, number_format_i18n( (int) $page['clicks'] ) );
-			}
-			self::table( array( __( 'Post or URL', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $pages );
-			echo '</section>';
-		}
 		echo '<div class="gtlm-analytics-grid"><section class="gtlm-analytics-breakdown"><h2>' . esc_html( empty( $f['referrer'] ) ? __( 'Top links', 'gt-link-manager' ) : __( 'Links clicked from this page', 'gt-link-manager' ) ) . '</h2>';
 		$rows = array();
 		foreach ( array_slice( $report['links'], 0, empty( $f['referrer'] ) ? 10 : 50 ) as $row ) {
@@ -250,6 +254,10 @@ class GTLM_Analytics_View {
 			echo '</div>';
 		}
 		echo '</section></div>';
+		self::report_footer( $config, $f, $input );
+	}
+
+	private static function report_footer( array $config, array $f, array $input ): void {
 		echo '<footer class="gtlm-analytics-footer"><p>' . esc_html__( 'WordPress time:', 'gt-link-manager' ) . ' ' . esc_html( wp_timezone_string() ) . ' · ' . esc_html__( 'Last updated:', 'gt-link-manager' ) . ' ' . esc_html( empty( $config['last_processed_at'] ) ? '-' : wp_date( 'M j, H:i', strtotime( $config['last_processed_at'] ) ) ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'gtlm_analytics_export' );
 		echo '<input type="hidden" name="action" value="gtlm_analytics_export">';
@@ -262,6 +270,56 @@ class GTLM_Analytics_View {
 		) as $key => $value ) {
 			echo '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) $value ) . '">';
 		} echo '<button class="button">' . esc_html__( 'Export CSV', 'gt-link-manager' ) . '</button></form></footer><p class="description">' . esc_html__( 'Counts are eligible redirect requests, not unique visitors. Filters and paused collection can leave gaps. Categories reflect current membership.', 'gt-link-manager' ) . '</p>';
+	}
+
+	private static function pages_report( array $report, array $input, string $base ): void {
+		$p                     = $report['pagination'];
+		$input['sources_page'] = $p['current_page'];
+		echo '<section id="gtlm-referring-pages" class="gtlm-analytics-pages"><h2>' . esc_html__( 'Clicked from', 'gt-link-manager' ) . '</h2><p class="description">' . esc_html__( 'Every recorded referring-page entry for this selection is available below. Browsers may share only a website or no referrer; older clicks may have no page details.', 'gt-link-manager' ) . '</p>';
+		/* translators: 1: first row, 2: last row, 3: total matching entries. */
+		echo '<p class="gtlm-pages-count">' . esc_html( sprintf( __( 'Showing %1$s–%2$s of %3$s', 'gt-link-manager' ), number_format_i18n( $p['from'] ), number_format_i18n( $p['to'] ), number_format_i18n( $p['total_items'] ) ) ) . '</p>';
+		$rows = array();foreach ( $report['rows'] as $page ) {
+			$label = self::page_label( $page['value'] );
+			if ( is_array( $label ) && isset( $label['url'] ) ) {
+				$label['url'] = self::report_url(
+					array_merge(
+						$input,
+						array(
+							'view'         => 'overview',
+							'referrer'     => $page['value'],
+							'link_id'      => 0,
+							'sources_page' => false,
+						)
+					),
+					$base
+				);
+				unset( $label['new_tab'] );
+			}
+			$rows[] = array( $label, number_format_i18n( (int) $page['clicks'] ) );
+		}
+		self::table( array( __( 'Post or URL', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $rows );
+		if ( $p['total_pages'] > 1 ) {
+			echo '<nav class="gtlm-pages-pagination" aria-label="' . esc_attr__( 'Referring page results', 'gt-link-manager' ) . '">';
+			foreach ( array(
+				'previous' => __( 'Previous', 'gt-link-manager' ),
+				'next'     => __( 'Next', 'gt-link-manager' ),
+			) as $direction => $label ) {
+				if ( $p[ 'has_' . $direction ] ) {
+					$number = $p['current_page'] + ( 'next' === $direction ? 1 : -1 );
+					echo '<a class="button" rel="' . ( 'next' === $direction ? 'next' : 'prev' ) . '" href="' . esc_url( self::report_url( array_merge( $input, array( 'sources_page' => $number ) ), $base ) . '#gtlm-referring-pages' ) . '">' . esc_html( $label ) . '</a>';
+				} else {
+					echo '<span class="button disabled" aria-disabled="true">' . esc_html( $label ) . '</span>';}
+			}
+			/* translators: 1: current page, 2: number of result pages. */
+			echo '<span>' . esc_html( sprintf( __( 'Page %1$s of %2$s', 'gt-link-manager' ), number_format_i18n( $p['current_page'] ), number_format_i18n( $p['total_pages'] ) ) ) . '</span>';
+			echo '<form method="get">';
+			foreach ( array_merge( array( 'page' => 'gtlm-links-analytics' ), $input ) as $key => $value ) {
+				if ( 'sources_page' !== $key ) {
+					echo '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) $value ) . '">';}
+			}
+			echo '<label for="gtlm-sources-page" class="screen-reader-text">' . esc_html__( 'Go to results page', 'gt-link-manager' ) . '</label><input type="number" id="gtlm-sources-page" name="sources_page" min="1" max="' . (int) $p['total_pages'] . '" value="' . (int) $p['current_page'] . '" required><button type="submit" class="button">' . esc_html__( 'Go', 'gt-link-manager' ) . '</button></form></nav>';
+		}
+		echo '</section>';
 	}
 
 	/** Fit the recorded period while preserving real time spacing and WordPress timezone labels. */

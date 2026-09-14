@@ -273,7 +273,24 @@ class GTLM_Admin_Pages {
 		echo '</tbody></table><h2>' . esc_html__( 'Basic click counts', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_click_tracking', __( 'Lifetime totals', 'gt-link-manager' ), __( 'Keep a running click total next to each link', 'gt-link-manager' ), ! empty( $settings['enable_click_tracking'] ) );
 		echo '</tbody></table><p>' . esc_html__( 'For date trends, sources and devices, use the separate analytics feature.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-analytics&view=settings' ) ) . '">' . esc_html__( 'Open analytics settings', 'gt-link-manager' ) . '</a></p>';
-		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><a href="https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Read the REST API guide for AI tools', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a></section>';
+		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><a href="https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Read the REST API guide for AI tools', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';
+		$prompt = sprintf(
+			/* translators: 1: this WordPress site's URL, 2: the setup guide URL. */
+			__(
+				'Help me set up my AI tool to create and manage GT Link Manager links on this WordPress site: %1$s
+
+First, read this guide and adapt its instructions to my tool and site: %2$s
+
+Use details, access and configuration already provided in this conversation or environment. Ask only for missing information: my AI tool and where it runs, the target site if different from the one above, the WordPress username and a secure way to access an Application Password or an existing authenticated connection, and the link-management task I want to perform. Do not print or expose credentials.
+
+Set up the appropriate authenticated REST API connection and verify it with read-only requests to list links and categories. Then explain how to use the connection. Create or change links only for my stated task; ask for any required link details that are still missing.',
+				'gt-link-manager'
+			),
+			home_url( '/' ),
+			'https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/'
+		);
+		echo '<p><label for="gtlm-ai-prompt"><strong>' . esc_html__( 'Copy this setup prompt into your AI tool', 'gt-link-manager' ) . '</strong></label></p><textarea id="gtlm-ai-prompt" class="large-text" rows="10" readonly>' . esc_textarea( $prompt ) . '</textarea><p class="gtlm-ai-prompt-actions"><button type="button" class="button" id="gtlm-copy-ai-prompt" data-copied="' . esc_attr__( 'Prompt copied.', 'gt-link-manager' ) . '" data-failed="' . esc_attr__( 'Copy failed. Select the prompt and copy it manually.', 'gt-link-manager' ) . '">' . esc_html__( 'Copy setup prompt', 'gt-link-manager' ) . '</button><span id="gtlm-ai-prompt-status" role="status" aria-live="polite"></span></p></section>';
+
 		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Country-based redirects', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Send visitors to different destinations using the country rules on each link.', 'gt-link-manager' ) . '</p><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_geo_targeting', __( 'Country routing', 'gt-link-manager' ), __( 'Allow links to use country rules', 'gt-link-manager' ), ! empty( $settings['enable_geo_targeting'] ) );
 		$this->render_geo_method_field( (string) $settings['geo_detection_method'] );

@@ -61,4 +61,6 @@ jobs:
       - name: Integration, timezone and failure checks
         env:
           GTLM_TEST_WP_ROOT: /tmp/gtlm-wp
-        run: tests/run.sh
+        run: |
+          tests/run.sh
+          node tests/ai-prompt-copy.mjs

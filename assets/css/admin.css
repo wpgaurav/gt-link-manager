@@ -967,3 +967,12 @@ body.no-js .gtlm-breakdown-nav { display:none; }
 .gtlm-dialog-scroll thead th { position:sticky; top:0; background:#fff; z-index:1; }
 
 .gtlm-tooltip-icon { width:28px; height:28px; padding:2px; margin-inline-start:4px; vertical-align:middle; text-align:center; line-height:1; }
+
+.gtlm-pages-pagination { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:20px; }
+.gtlm-pages-pagination form { display:flex; gap:8px; align-items:center; margin-inline-start:auto; }
+.gtlm-pages-pagination input[type=number] { width:80px; min-height:40px; }
+.gtlm-pages-pagination .button { min-height:40px; display:inline-flex; align-items:center; }
+
+#gtlm-ai-prompt { width:100%; padding:12px; border:1px solid #646970; border-radius:4px; font-size:14px; line-height:1.6; resize:vertical; }
+#gtlm-ai-prompt:focus-visible { outline:2px solid var(--wp-admin-theme-color,#2271b1); outline-offset:2px; }
+.gtlm-ai-prompt-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
