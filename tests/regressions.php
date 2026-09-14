@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/reflection.php';
 /** Security and settings regressions, only for a disposable fixture. */
 if (!defined('GTLM_TEST_FIXTURE') || !GTLM_TEST_FIXTURE || !str_starts_with(DB_NAME,'gtlm_test_')) exit(2);
 require_once GTLM_PATH.'includes/class-gtlm-analytics.php';
@@ -23,7 +24,7 @@ regression(!GTLM_DB::protected_path('guides/wp-login.php-example')&&!GTLM_DB::pr
 regression(!$db->insert_link(['name'=>'Blocked','slug'=>'wp-login.php','url'=>'https://example.invalid/','link_mode'=>'direct','redirect_type'=>307]),'Shared writes reject direct login takeover');
 wp_set_current_user(1);do_action('rest_api_init');$request=new WP_REST_Request('POST','/gt-link-manager/v1/links');$request->set_body_params(['name'=>'Blocked','slug'=>'wp-login.php','url'=>'https://example.invalid/','link_mode'=>'direct','redirect_type'=>307]);
 regression(rest_do_request($request)->get_status()===400,'REST rejects protected direct definition');
-$rc=new ReflectionClass(GTLM_Redirect::class);$redirect=$rc->newInstanceWithoutConstructor();$rc->getProperty('db')->setValue($redirect,$db);$rc->getProperty('settings')->setValue($redirect,$settings);
+$rc=new ReflectionClass(GTLM_Redirect::class);$redirect=$rc->newInstanceWithoutConstructor();gtlm_test_access($rc->getProperty('db'))->setValue($redirect,$db);gtlm_test_access($rc->getProperty('settings'))->setValue($redirect,$settings);
 $settings_before=$settings->all();$settings->update(array_merge($settings_before,['enable_advanced_redirects'=>1]));
 $id=$db->insert_link(['name'=>'Catchall fixture','slug'=>'.*','url'=>'https://example.invalid/','regex_replacement'=>'https://example.invalid/','link_mode'=>'regex','redirect_type'=>307]);
 regression((bool)$id,'Catchall regex fixture installed');

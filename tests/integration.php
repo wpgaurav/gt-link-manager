@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/reflection.php';
 /** Integration checks. Run only in an isolated fixture defining GTLM_TEST_FIXTURE. */
 if (!defined('GTLM_TEST_FIXTURE') || GTLM_TEST_FIXTURE !== true || !str_starts_with(DB_NAME, 'gtlm_test_')) {
  throw new RuntimeException('A disposable GTLM_TEST_FIXTURE database is required.');
@@ -17,7 +18,7 @@ verify(!$settings->advanced_analytics_enabled(),'Settings filters cannot manufac
 remove_all_filters('gtlm_settings');
 $settings->update(array_merge($settings->all(),['enable_advanced_analytics'=>1]));
 verify(!$settings->analytics_initialized(),'Ordinary settings save cannot initialize analytics');
-$rc=new ReflectionClass(GTLM_Redirect::class);$redirect=$rc->newInstanceWithoutConstructor();$rc->getProperty('db')->setValue($redirect,$db);$rc->getProperty('settings')->setValue($redirect,$settings);$record=$rc->getMethod('record_click');
+$rc=new ReflectionClass(GTLM_Redirect::class);$redirect=$rc->newInstanceWithoutConstructor();gtlm_test_access($rc->getProperty('db'))->setValue($redirect,$db);gtlm_test_access($rc->getProperty('settings'))->setValue($redirect,$settings);$record=gtlm_test_access($rc->getMethod('record_click'));
 $id=$db->insert_link(['name'=>'Fixture','slug'=>'fixture','url'=>home_url('/target'),'redirect_type'=>302]);$link=$db->get_link_by_id($id);
 $q=$wpdb->num_queries;$record->invoke($redirect,$link);verify($wpdb->num_queries===$q,'Disabled basic collector performs no queries');
 $settings->update(array_merge($settings->all(),['enable_click_tracking'=>1]));
@@ -34,7 +35,7 @@ foreach(['direct'=>'docs/getting-started','regex'=>'^old/([0-9]+)$'] as $mode=>$
  if(isset($data['id'])){$r=new WP_REST_Request('PATCH','/gt-link-manager/v1/links/'.$data['id']);$r->set_body_params(['slug'=>$slug,'name'=>'Patched','total_clicks'=>900]);$p=rest_do_request($r)->get_data();verify(($p['slug']??null)===$slug&&($p['redirect_type']??0)===307&&($p['total_clicks']??-1)===0,'PATCH uses existing mode and preserves omitted fields',$p);}
 }
 $r=new WP_REST_Request('POST','/gt-link-manager/v1/links');$r->set_body_params(['name'=>'Bad regex','slug'=>'[','url'=>home_url('/target'),'link_mode'=>'regex']);verify(rest_do_request($r)->get_status()===400,'REST rejects malformed regex');
-require_once GTLM_PATH.'includes/class-gt-link-import.php';$import=new GTLM_Import($db,$settings);$convert=new ReflectionMethod(GTLM_Import::class,'row_to_link_data');
+require_once GTLM_PATH.'includes/class-gt-link-import.php';$import=new GTLM_Import($db,$settings);$convert=gtlm_test_access(new ReflectionMethod(GTLM_Import::class,'row_to_link_data'));
 $mapped=$convert->invoke($import,['Direct','docs/test',home_url('/target'),'direct','',17,'0'],['name'=>0,'slug'=>1,'url'=>2,'link_mode'=>3,'regex_replacement'=>4,'priority'=>5,'is_active'=>6]);verify($mapped['slug']==='docs/test'&&$mapped['link_mode']==='direct'&&$mapped['priority']===17&&$mapped['is_active']===0,'CSV advanced fields round trip',$mapped);
 $fallback=array_merge($mapped,['category_id'=>0]);$mapped=$convert->invoke($import,['Renamed','docs/test',home_url('/new-target')],['name'=>0,'slug'=>1,'url'=>2],$fallback);verify($mapped['link_mode']==='direct'&&$mapped['is_active']===0&&$mapped['priority']===17,'Legacy CSV overwrite preserves omitted advanced fields',$mapped);
 $r=new WP_REST_Request('POST','/gt-link-manager/v1/analytics/enable');verify(rest_do_request($r)->get_status()===400,'REST requires explicit consent');verify(!get_option('gtlm_analytics',false),'Missing consent creates no config');
