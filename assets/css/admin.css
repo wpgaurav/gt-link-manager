@@ -267,7 +267,20 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 /* ── Diagnostics table ───────────────────────────────────────── */
 .gtlm-diagnostics-table {
 	width: 100%;
+	table-layout: fixed;
 	border-collapse: collapse;
+}
+
+.gtlm-diagnostics-table th,
+.gtlm-diagnostics-table td {
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+.gtlm-diagnostics-table code,
+.gtlm-diagnostics-table a {
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 
 .gtlm-diagnostics-table th {
@@ -288,6 +301,12 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 .gtlm-diagnostics-table tr:last-child th,
 .gtlm-diagnostics-table tr:last-child td {
 	border-bottom: none;
+}
+
+@media (max-width: 600px) {
+	.gtlm-diagnostics-table th {
+		width: 38%;
+	}
 }
 
 /* ── License page ────────────────────────────────────────────── */

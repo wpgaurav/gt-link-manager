@@ -341,6 +341,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 
 == Changelog ==
 
+= 1.9.0-rc.11 =
+* Long URLs and diagnostic values wrap inside their card on desktop and mobile.
+
 = 1.9.0-rc.10 =
 * Individual click record retention has no upper day limit; a warning appears above 60 days.
 * Settings diagnostics shows total plugin database size and whether advanced analytics and advanced redirects are enabled.
