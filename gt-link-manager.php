@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       GT Link Manager
- * Plugin URI:        https://wordpress.org/plugins/gt-link-manager/
+ * Plugin URI:        https://gauravtiwari.org/product/gt-link-manager/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
  * Version:           1.9.0
  * Requires at least: 6.4

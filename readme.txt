@@ -12,7 +12,7 @@ Fast branded redirects with opt-in click analytics, country targeting, CSV migra
 
 == Description ==
 
-**GT Link Manager** is a **free WordPress plugin** for branded short links, affiliate link management, country-based redirects, and opt-in click analytics. Create reusable links, find out where they are clicked, and manage them from the WordPress admin, block editor, or REST API. There are no premium tiers or upsells.
+**GT Link Manager** is a **free WordPress link manager and URL shortener** for branded short links, affiliate link management, country-based redirects, and opt-in click analytics. Create reusable links, find out where they are clicked, and manage them from the WordPress admin, block editor, or REST API. There are no premium tiers or upsells.
 
 Redirects use indexed custom database tables and resolve before theme templates load. Advanced Analytics adds no visitor tracking scripts, cookies, or beacon requests.
 
@@ -41,15 +41,9 @@ Reports and page-specific breakdowns are summarized by a bounded maintenance wor
 
 The **Privacy and data** section links to WordPress's suggested Privacy Policy text. Administrators control analytics by default; developers can use `gtlm_analytics_capability` for report access and `gtlm_analytics_should_record` to suppress events, including consent integrations. Site-owner opt-in is not a legal consent exemption.
 
-This is a test build, not a published stable WordPress.org release.
+= Fast Branded Redirects =
 
-= Why GT Link Manager? =
-
-A branded link is a redirect with a job: it has to resolve fast, survive a thousand siblings, and never become the slowest thing on the page. GT Link Manager stores links in **custom database tables**, not custom post types. It intercepts the request on `init` at priority 0, looks up the slug in a UNIQUE-indexed column, sends the redirect header, and exits.
-
-No theme loading. No template stack. No post query.
-
-Storing links as custom post types means a redirect wakes up more of WordPress than a redirect needs. Custom tables keep the resolution path short, and it stays short whether you have 20 links or 2,000.
+GT Link Manager stores links in **custom database tables**, not custom post types. Redirect resolution runs on `init` at priority 0 using a UNIQUE-indexed slug lookup, before theme templates load. Missing, inactive and trashed branded short links return a real 404 instead of serving the homepage.
 
 = Key Features =
 
@@ -100,100 +94,33 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_analytics_should_record`, filter to suppress an advanced analytics event
 * `gtlm_analytics_capability`, filter the capability required to view analytics reports
 
-= Click Counting =
+= Independent Click Counting =
 
-Click counting is off when you install the plugin, and that default is deliberate. With basic counts and advanced analytics both off, GT Link Manager stores no request analytics. Its privacy-policy guidance reflects the enabled features.
+Basic click counting is off by default. Enable it under **GT Links > Settings** to keep one lifetime total per link. It stores no visitor details, IP addresses, user agents, referrers or timestamps. With basic counts and Advanced Analytics both off, GT Link Manager stores no request analytics.
 
-Turn it on from **GT Links > Settings** and each link starts keeping one number: how many times it has been followed. That is the whole record. What it stores per click:
+Counts appear in the sortable **Clicks** column, the read-only REST API `total_clicks` field and CSV exports. Use **Reset Clicks** for a single link or `gtlm_count_click` to exclude requests. When Advanced Analytics is enabled, a count links to that link's report.
 
-* nothing about the visitor
-* no IP address
-* no user agent
-* no referrer
-* no timestamp
+Updates are atomic. PHP-FPM can finish the response before recording a count; other hosts write synchronously. Basic totals and dated analytics have independent settings. Choose consent requirements according to your site and integrations.
 
-Basic counts are separate from detailed analytics and do not identify visitors. Choose consent requirements according to your site and integrations.
+= Free Training and Documentation =
 
-The count uses an atomic update. Where PHP-FPM supports `fastcgi_finish_request()`, the response can finish first; other hosts perform the update synchronously.
+The **[GT Link Manager Training](https://gauravtiwari.org/course/gt-link-manager-training/)** course covers getting started, managing links, categories, settings, the redirect system, block editor integration, import and export, geolocation targeting, REST API endpoints, hooks, filters and troubleshooting.
 
-Where the number shows up:
+Useful references:
 
-* a sortable **Clicks** column in All Links; it opens analytics when enabled and you have report access
-* a **Reset Clicks** row action for a single link
-* the `total_clicks` field in the REST API, read-only
-* a `total_clicks` column in CSV export
+* [Import and Export](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/import-export/): Pretty Links and LinkCentral presets, column mapping and CSV migration.
+* [Geolocation Targeting](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/geolocation-targeting/): country rules and CDN header detection.
+* [Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/): API access, hooks and custom integrations.
 
-Use `gtlm_count_click` to skip clicks you do not want counted, such as your own logged-in visits.
+= Source, Support and Data Ownership =
 
-Basic counting answers "which of my links get used." Enable the separate advanced analytics feature for dated reports, referring websites, countries, and device families. For external integrations, the **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** has step-by-step guides for wiring `gtlm_before_redirect` into GA4, Plausible, Fathom, Matomo, Simple Analytics, or a click log table of your own.
+The full source, including the compiled block editor assets' source code, is on [GitHub](https://github.com/wpgaurav/gt-link-manager). See [Releases](https://github.com/wpgaurav/gt-link-manager/releases) for builds and changelogs.
 
-= Free Training Course =
+Use the [WordPress.org support forum](https://wordpress.org/support/plugin/gt-link-manager/) for help or [GitHub Issues](https://github.com/wpgaurav/gt-link-manager/issues) for bugs. Include your WordPress and PHP versions, link slug, configured prefix, expected behavior and any CDN or page cache. Send security reports privately to the maintainer.
 
-The **[GT Link Manager Training](https://gauravtiwari.org/course/gt-link-manager-training/)** is a free course covering installation through developer integrations. Most lessons run 3 to 5 minutes, so you can read the 1 you need instead of the whole thing.
+CSV export keeps your links portable, including geo rules and advanced redirect configuration. Uninstall removes data only when you enable that option. There are no Pro tiers, trials, required accounts, telemetry or upsell notices.
 
-Straight to the lesson for a specific feature:
-
-* [Getting Started](https://gauravtiwari.org/course/gt-link-manager-training/getting-started-1771422506/getting-started/) covers the admin screens and your first link
-* [Managing Links](https://gauravtiwari.org/course/gt-link-manager-training/getting-started-1771422506/managing-links/) covers editing, quick edit, status, and trash
-* [Link Categories](https://gauravtiwari.org/course/gt-link-manager-training/getting-started-1771422506/categories/) covers organizing a large library
-* [Settings and Configuration](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/settings-configuration/) covers the prefix, defaults, and advanced modes
-* [The Redirect System](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/redirect-system/) covers 301, 302, 307, and how resolution works
-* [Block Editor Integration](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/block-editor-integration/) covers the GT Link toolbar button and the Button block
-* [Import and Export](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/import-export/) covers the Pretty Links and LinkCentral presets and column mapping
-* [Geolocation Targeting](https://gauravtiwari.org/course/gt-link-manager-training/configuration-features/geolocation-targeting/) covers per-country rules and CDN header detection
-* [REST API Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/rest-api-reference/) covers every endpoint and its arguments
-* [Hooks and Filters](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/hooks-filters/) covers all the extension points
-* [Troubleshooting](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/troubleshooting-1771422633/) covers redirects that do not fire and slugs that collide
-
-= Source and Issue Tracker =
-
-GT Link Manager is developed in the open. The full source, including the block editor code that ships compiled in the plugin, is on GitHub:
-
-* [Repository](https://github.com/wpgaurav/gt-link-manager) for the code and release history
-* [Issues](https://github.com/wpgaurav/gt-link-manager/issues) for bugs and feature requests
-* [Releases](https://github.com/wpgaurav/gt-link-manager/releases) for changelogs and downloadable builds
-
-A bug report with your WordPress version, PHP version, and the slug that misbehaved is usually enough to reproduce it.
-
-= Support =
-
-Support runs through the **[WordPress.org support forum](https://wordpress.org/support/plugin/gt-link-manager/)** for this plugin. That is the fastest route for every kind of problem, and it is the one to use first.
-
-Post there and the answer stays public, so the next person with the same redirect loop finds it without asking again.
-
-What helps a thread get solved on the first reply:
-
-* your WordPress and PHP versions
-* the link slug and the prefix you configured
-* what you expected the redirect to do, and what it actually did
-* whether a CDN or page cache sits in front of the site
-
-For a suspected bug in the code itself, [GitHub Issues](https://github.com/wpgaurav/gt-link-manager/issues) works too, and a security report should go to the maintainer privately rather than into a public thread.
-
-= What Makes GT Link Manager Stand Out =
-
-Plenty of plugins will shorten a URL for you. These are the things this one does that shaped how it was built.
-
-**Everything is free.** Advanced Analytics, geolocation targeting, the full REST API, CSV import and export, regex and prefix-free redirects, the block editor tools. There is no Pro tier holding a feature back, no upsell notice in the admin, no telemetry, and no account to create. Nothing here is a trial.
-
-**Redirects resolve before theme templates load.** The lookup runs on `init` at priority 0, against a UNIQUE-indexed slug column in a custom table. Match found, header sent, exit. No theme template or post lookup is required to resolve a matched short link.
-
-**Dead links return a real 404.** A trashed or deactivated link stops resolving and says so with the correct status code. It does not quietly serve your front page at HTTP 200, which is what turns a retired affiliate link into duplicate home-page content in a search index.
-
-**Geolocation costs nothing when you do not use it, and no database when you do.** Country detection reads a header your CDN already attaches, so there is no GeoIP file to install or keep updated and no external service in the request path. Links that do not opt in never trigger detection at all.
-
-**The REST API covers the whole link lifecycle.** Create, read, update, trash, restore, and bulk-categorise, with a self-describing schema. That makes the plugin scriptable, and it is why AI tooling can manage links without a browser session.
-
-**Click counting stores a number, not a person.** Turn it on and each link keeps a running total. No IP address, no user agent, no referrer, no timestamp. The write happens after the redirect has already gone out.
-
-**Your links stay yours.** CSV import reads other plugins' exports so you can move in, and CSV export gives you everything back, geo rules included, so you can move out. Uninstall removes only what you tell it to remove.
-
-Honest limits, because they matter more than the list above:
-
-* basic counts show lifetime totals; optional advanced analytics adds dated reports, referring websites, and coarse device families
-* country detection is only as trustworthy as the CDN in front of it. A forged header on an origin with nothing proxying it is still a forged header
-* there is no automatic keyword linking. Links go where you put them
-* it is a young plugin, and a young plugin has seen fewer edge cases than an old one
+GT Link Manager does not perform automatic keyword linking. Country detection depends on a trusted CDN or server header; a header supplied directly by a visitor can be forged. Basic counts measure requests, while Advanced Analytics adds eligible-click reports; neither identifies unique visitors or verifies conversions.
 
 = Analytics & Advanced Integrations =
 
@@ -207,7 +134,7 @@ The **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-trai
 
 = REST API & AI Tools =
 
-GT Link Manager has a full REST API that works with AI tools for programmatic link management. The **[REST API & AI Tools Guide](https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/)** covers authentication setup, all available endpoints, and integration with AI platforms including Claude Code, OpenAI Codex, WP-MCP, Novamira, Claudeus WordPress MCP, and WordPress MCP Adapter.
+GT Link Manager has a full REST API that works with AI tools for programmatic link management. The **[REST API & AI Tools Guide](https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/)** covers authentication setup, all available endpoints, and integration with AI platforms including Claude Code, OpenAI Codex, WP-MCP, Novamira, Claudeus WordPress MCP, and WordPress MCP Adapter. Settings includes a copyable setup prompt that asks the AI to read the guide, reuse supplied configuration and request missing details.
 
 == Source Code ==
 
