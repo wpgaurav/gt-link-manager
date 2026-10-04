@@ -130,7 +130,7 @@ class GTLM_Analytics_Controller {
 		$report['collection']         = GTLM_Analytics::status();
 		$span                         = strtotime( $filters['to_utc'] . ' UTC' ) - strtotime( $filters['from_utc'] . ' UTC' );
 		$prior_start                  = strtotime( $filters['prior_from_utc'] . ' UTC' );
-		$complete                     = $prior_start >= max( strtotime( ( ! empty( $filters['referrer'] ) ? ( $config['pages_started_at'] ?? $config['started_at'] ) : $config['started_at'] ) . ' UTC' ), $config['summary_days'] ? time() - $config['summary_days'] * DAY_IN_SECONDS : 0 );
+		$complete                     = $prior_start >= max( strtotime( ( ! empty( $filters['referrer'] ) ? ( $config['pages_started_at'] ?? $config['started_at'] ) : $config['started_at'] ) . ' UTC' ), $config['summary_days'] ? time() - $config['summary_days'] * DAY_IN_SECONDS : 0, empty( $config['data_deleted_before'] ) ? 0 : (int) strtotime( $config['data_deleted_before'] . ' UTC' ) );
 		$report['previous_available'] = $complete;
 		if ( ! $complete ) {
 			$report['previous'] = null;
@@ -170,6 +170,7 @@ class GTLM_Analytics_Controller {
 		}
 		check_admin_referer( 'gtlm_analytics_settings' );
 		$action = is_string( $_POST['gtlm_analytics_action'] ) ? sanitize_key( wp_unslash( $_POST['gtlm_analytics_action'] ) ) : '';
+		$older  = isset( $_POST['older_than_days'] ) && is_string( $_POST['older_than_days'] ) ? sanitize_text_field( wp_unslash( $_POST['older_than_days'] ) ) : '';
 		self::load();
 		try {
 			if ( in_array( $action, array( 'enable', 'save_settings' ), true ) ) {
@@ -201,7 +202,7 @@ class GTLM_Analytics_Controller {
 					'exclude_links' => preg_split( '/[\s,]+/', $excluded, -1, PREG_SPLIT_NO_EMPTY ),
 				);
 				$input    = array();
-				foreach ( array( 'event_days', 'summary_days', 'country_source', 'country_header' ) as $key ) {
+				foreach ( array( 'event_days', 'summary_days', 'country_source', 'country_header', 'storage_warning_mb' ) as $key ) {
 					$input[ $key ] = isset( $_POST[ $key ] ) && is_string( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
 				}
 				$input['country_source'] = 'save_settings' === $action && empty( $_POST['countries'] ) ? 'none' : $input['country_source'];
@@ -212,6 +213,8 @@ class GTLM_Analytics_Controller {
 				$result = GTLM_Analytics::process();
 			} elseif ( 'delete' === $action && isset( $_POST['confirm_delete'] ) && 'DELETE_ANALYTICS' === $_POST['confirm_delete'] ) {
 				$result = GTLM_Analytics::delete();
+			} elseif ( 'delete_old' === $action && ! empty( $_POST['confirm_delete_old'] ) && ctype_digit( $older ) && strlen( $older ) <= 6 ) {
+				$result = GTLM_Analytics::delete_older_than( (int) $older );
 			} else {
 				wp_die( esc_html__( 'Invalid analytics action or missing confirmation.', 'gt-link-manager' ) );
 			}
@@ -221,7 +224,26 @@ class GTLM_Analytics_Controller {
 		} catch ( Throwable $error ) {
 			wp_die( esc_html__( 'Analytics could not complete this action. Redirects remain available.', 'gt-link-manager' ), '', array( 'back_link' => true ) );
 		}
-		wp_safe_redirect( admin_url( 'admin.php?page=gtlm-links-analytics&view=settings&saved=1' ) );
+		$args = array(
+			'page'  => 'gtlm-links-analytics',
+			'view'  => 'settings',
+			'saved' => 1,
+		);
+		if ( 'delete_old' === $action ) {
+			$args = array(
+				'page'         => 'gtlm-links-analytics',
+				'view'         => 'settings',
+				'deleted_old'  => (int) $result['deleted_rows'],
+				'old_complete' => $result['complete'] ? 1 : 0,
+			);
+		}
+		// The forms post to their own URL, where wp_get_referer() returns false by design.
+		$referer = (string) wp_validate_redirect( (string) wp_get_raw_referer(), '' );
+		if ( 'process' === $action && str_contains( $referer, 'page=gtlm-links-analytics' ) ) {
+			wp_safe_redirect( add_query_arg( 'updated', 1, remove_query_arg( array( 'saved', 'updated', 'deleted_old', 'old_complete' ), $referer ) ) );
+			exit;
+		}
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
 		exit;
 	}
 

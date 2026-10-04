@@ -7,19 +7,20 @@ class GTLM_Analytics_View {
 	public static function render(): void {
 		if ( ! current_user_can( (string) apply_filters( 'gtlm_analytics_capability', 'manage_options' ) ) ) {
 			wp_die( esc_html__( 'You cannot view analytics.', 'gt-link-manager' ), '', array( 'response' => 403 ) ); }
+		require_once __DIR__ . '/class-gtlm-analytics.php';
 		$settings    = GTLM_Settings::get_instance();
 		$initialized = $settings->analytics_initialized();
 		$config      = array(
-			'state'          => 'disabled',
-			'event_days'     => 7,
-			'summary_days'   => 90,
-			'country_source' => 'none',
-			'country_header' => '',
-			'campaigns'      => array(),
-			'exclude_links'  => array(),
+			'state'              => 'disabled',
+			'event_days'         => 7,
+			'summary_days'       => 90,
+			'storage_warning_mb' => GTLM_Analytics::STORAGE_WARNING_MB,
+			'country_source'     => 'none',
+			'country_header'     => '',
+			'campaigns'          => array(),
+			'exclude_links'      => array(),
 		);
 		if ( $initialized ) {
-			require_once __DIR__ . '/class-gtlm-analytics.php';
 			$config = array_merge( $config, GTLM_Analytics::status() ); }
 		$view = isset( $_GET['view'] ) && in_array( $_GET['view'], array( 'overview', 'pages', 'settings' ), true ) ? $_GET['view'] : 'overview'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation.
 		$base = admin_url( 'admin.php?page=gtlm-links-analytics' );
@@ -44,6 +45,12 @@ class GTLM_Analytics_View {
 		echo '</nav>';
 		if ( isset( $_GET['saved'] ) ) {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved.', 'gt-link-manager' ) . '</p></div>'; } // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Static notice only.
+		if ( isset( $_GET['updated'] ) ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Reports updated.', 'gt-link-manager' ) . '</p></div>'; }
+		if ( isset( $_GET['deleted_old'] ) && is_string( $_GET['deleted_old'] ) ) {
+			self::deleted_old_notice( absint( $_GET['deleted_old'] ), ! empty( $_GET['old_complete'] ), $config ); }
+		if ( $initialized ) {
+			self::notices( $config, $view, $base ); }
 		if ( 'settings' === $view && current_user_can( 'manage_options' ) ) {
 			self::settings( $config, $initialized ); } elseif ( ! $initialized ) {
 			echo '<section class="gtlm-analytics-empty"><h2>' . esc_html__( 'See how your links are used', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'View click trends, referring websites and device information. Your existing basic click counts stay separate.', 'gt-link-manager' ) . '</p><p>' . esc_html__( 'Analytics is off until you enable it. No analytics data or background jobs are created beforehand.', 'gt-link-manager' ) . '</p><a class="button button-primary" href="' . esc_url( add_query_arg( 'view', 'settings', $base ) ) . '">' . esc_html__( 'Set up analytics', 'gt-link-manager' ) . '</a></section>';
@@ -64,10 +71,10 @@ class GTLM_Analytics_View {
 		foreach ( $periods as $days ) {
 			/* translators: %d: Number of days to keep reports. */
 			echo '<option value="' . (int) $days . '" ' . selected( $config['summary_days'], $days, false ) . '>' . esc_html( sprintf( __( '%d days', 'gt-link-manager' ), $days ) ) . '</option>'; }
-		echo '<option value="0" ' . selected( $config['summary_days'], 0, false ) . '>' . esc_html__( 'Forever', 'gt-link-manager' ) . '</option></select><p class="description">' . esc_html__( 'Choose Forever to keep reports until you delete them. Individual click records follow their separate retention setting. Storage safeguards can pause collection.', 'gt-link-manager' ) . '</p></div>';
+		echo '<option value="0" ' . selected( $config['summary_days'], 0, false ) . '>' . esc_html__( 'Forever', 'gt-link-manager' ) . '</option></select><p class="description">' . esc_html__( 'Choose Forever to keep reports until you delete them. Individual click records follow their separate retention setting. Collection never stops because of size; you get a warning when storage passes the level under Advanced options.', 'gt-link-manager' ) . '</p></div>';
 		echo '<label class="gtlm-setting-check"><input type="checkbox" name="countries" value="1" ' . checked( 'none' !== $config['country_source'], true, false ) . '> ' . esc_html__( 'Include countries', 'gt-link-manager' ) . '</label><p class="description">' . esc_html__( 'Uses country information already supplied by your CDN or server. Unavailable locations appear as unknown.', 'gt-link-manager' ) . '</p>';
 		echo '<p class="gtlm-analytics-timezone">' . esc_html__( 'Time follows WordPress:', 'gt-link-manager' ) . ' <strong>' . esc_html( wp_timezone_string() ) . '</strong>. <a href="' . esc_url( admin_url( 'options-general.php' ) ) . '">' . esc_html__( 'Change in WordPress settings', 'gt-link-manager' ) . '</a></p>';
-		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Advanced options', 'gt-link-manager' ) . '</h2><div class="gtlm-setting-field"><label for="gtlm-events">' . esc_html__( 'Keep individual click records (days)', 'gt-link-manager' ) . '</label><input id="gtlm-events" name="event_days" type="number" min="1" step="1" aria-describedby="gtlm-events-help gtlm-events-warning" value="' . (int) $config['event_days'] . '"><p id="gtlm-events-warning" class="gtlm-retention-warning" role="status"' . ( $config['event_days'] > 60 ? '' : ' hidden' ) . '>' . esc_html__( 'Keeping individual click records for more than 60 days can significantly increase database size and cleanup work.', 'gt-link-manager' ) . '</p><p id="gtlm-events-help" class="description">' . esc_html__( 'The default is 7 days. Dated summaries remain for the report period above.', 'gt-link-manager' ) . '</p></div><div class="gtlm-setting-field"><label for="gtlm-country-source">' . esc_html__( 'Country source', 'gt-link-manager' ) . '</label><select id="gtlm-country-source" name="country_source">';
+		echo '<section class="gtlm-settings-section"><h2>' . esc_html__( 'Advanced options', 'gt-link-manager' ) . '</h2><div class="gtlm-setting-field"><label for="gtlm-events">' . esc_html__( 'Keep individual click records (days)', 'gt-link-manager' ) . '</label><input id="gtlm-events" name="event_days" type="number" min="1" step="1" aria-describedby="gtlm-events-help gtlm-events-warning" value="' . (int) $config['event_days'] . '"><p id="gtlm-events-warning" class="gtlm-retention-warning" role="status"' . ( $config['event_days'] > 60 ? '' : ' hidden' ) . '>' . esc_html__( 'Keeping individual click records for more than 60 days can significantly increase database size and cleanup work.', 'gt-link-manager' ) . '</p><p id="gtlm-events-help" class="description">' . esc_html__( 'The default is 7 days. Dated summaries remain for the report period above.', 'gt-link-manager' ) . '</p></div><div class="gtlm-setting-field"><label for="gtlm-storage-warning">' . esc_html__( 'Storage warning level (MB)', 'gt-link-manager' ) . '</label><input id="gtlm-storage-warning" name="storage_warning_mb" type="number" min="1" step="1" aria-describedby="gtlm-storage-warning-help" value="' . (int) $config['storage_warning_mb'] . '"><p id="gtlm-storage-warning-help" class="description">' . esc_html__( 'Show a reminder to delete old data when analytics tables grow past this size. Collection is never stopped because of size.', 'gt-link-manager' ) . '</p></div><div class="gtlm-setting-field"><label for="gtlm-country-source">' . esc_html__( 'Country source', 'gt-link-manager' ) . '</label><select id="gtlm-country-source" name="country_source">';
 		foreach ( array(
 			'auto'       => __( 'Use existing country detection', 'gt-link-manager' ),
 			'cloudflare' => __( 'Cloudflare', 'gt-link-manager' ),
@@ -88,9 +95,16 @@ class GTLM_Analytics_View {
 		submit_button( __( 'Save settings', 'gt-link-manager' ) );
 		echo '</form>';
 		if ( $initialized ) {
-			echo '<section class="gtlm-settings-section gtlm-analytics-settings"><h2>' . esc_html__( 'Maintenance and deletion', 'gt-link-manager' ) . '</h2><form method="post">';
+			echo '<section class="gtlm-settings-section gtlm-analytics-settings"><h2>' . esc_html__( 'Maintenance and deletion', 'gt-link-manager' ) . '</h2>';
+			if ( isset( $config['health']['bytes'] ) ) {
+				/* translators: 1: analytics storage size, 2: storage warning level. */
+				echo '<p class="gtlm-storage-usage">' . esc_html( sprintf( __( 'Analytics data uses %1$s. Warning level: %2$s.', 'gt-link-manager' ), size_format( (int) $config['health']['bytes'], 1 ), size_format( (int) $config['storage_warning_bytes'] ) ) ) . '</p>';
+			}
+			echo '<form method="post">';
 			wp_nonce_field( 'gtlm_analytics_settings' );
-			echo '<input type="hidden" name="gtlm_analytics_action" value="process"><p>' . esc_html__( 'Reports update automatically. Use this if an update is overdue.', 'gt-link-manager' ) . '</p><button class="button">' . esc_html__( 'Update reports now', 'gt-link-manager' ) . '</button></form><hr><form method="post">';
+			echo '<input type="hidden" name="gtlm_analytics_action" value="process"><p>' . esc_html__( 'Reports update automatically. Use this if an update is overdue.', 'gt-link-manager' ) . '</p><button class="button">' . esc_html__( 'Update reports now', 'gt-link-manager' ) . '</button></form><hr><form method="post" id="gtlm-delete-old">';
+			wp_nonce_field( 'gtlm_analytics_settings' );
+			echo '<input type="hidden" name="gtlm_analytics_action" value="delete_old"><h3>' . esc_html__( 'Delete old data', 'gt-link-manager' ) . '</h3><p><label for="gtlm-older-than">' . esc_html__( 'Delete analytics data older than (days)', 'gt-link-manager' ) . '</label> <input type="number" id="gtlm-older-than" name="older_than_days" min="1" step="1" value="90" required aria-describedby="gtlm-older-than-help"></p><p id="gtlm-older-than-help" class="description">' . esc_html__( 'Reports for that period are removed and the analytics tables are compacted so the space returns to your database. On very large tables, run it again if some old data remains, or use WP-CLI:', 'gt-link-manager' ) . ' <code>wp gt-link-manager analytics prune --older-than=90 --yes</code></p><p><label><input type="checkbox" required name="confirm_delete_old" value="1"> ' . esc_html__( 'I understand this permanently deletes reports for that period.', 'gt-link-manager' ) . '</label></p><button class="button">' . esc_html__( 'Delete old data', 'gt-link-manager' ) . '</button></form><hr><form method="post">';
 			wp_nonce_field( 'gtlm_analytics_settings' );
 			echo '<input type="hidden" name="gtlm_analytics_action" value="delete"><p><label><input type="checkbox" required name="confirm_delete" value="DELETE_ANALYTICS"> ' . esc_html__( 'Permanently delete all analytics data. Links and basic counts will remain.', 'gt-link-manager' ) . '</label></p><button class="button">' . esc_html__( 'Delete analytics data', 'gt-link-manager' ) . '</button></form></section>';
 		}
@@ -144,8 +158,6 @@ class GTLM_Analytics_View {
 				echo '<a href="' . esc_url( $f['referrer'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Open page', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';}
 			echo '<p class="description">' . esc_html__( 'This report shows clicks from the selected page. Choose a link below to inspect its activity from this page.', 'gt-link-manager' ) . '</p></section>';
 		}
-		if ( ! in_array( $config['state'], array( 'active', 'paused' ), true ) ) {
-			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Collection is paused because reports have not updated recently. Check maintenance in Settings.', 'gt-link-manager' ) . '</p></div>'; }
 		echo '<form method="get" class="gtlm-analytics-filters"><input type="hidden" name="sources_per_page" value="' . (int) $f['sources_per_page'] . '"><input type="hidden" name="view" value="' . esc_attr( $input['view'] ) . '"><input type="hidden" name="referrer" value="' . esc_attr( $f['referrer'] ) . '"><input type="hidden" name="page" value="gtlm-links-analytics"><input type="hidden" name="link_id" value="' . (int) $f['link_id'] . '"><input type="hidden" name="dimension" value="' . esc_attr( $f['dimension'] ) . '"><label>' . esc_html__( 'Date range', 'gt-link-manager' ) . '<select name="period" id="gtlm-period">';
 		foreach ( array(
 			'1'      => __( 'Today', 'gt-link-manager' ),
@@ -209,9 +221,10 @@ class GTLM_Analytics_View {
 					'label' => $row['name'],
 					'url'   => self::report_url( array_merge( $input, array( 'link_id' => $row['link_id'] ) ), $base ),
 				),
+				self::destination_cell( (string) ( $row['url'] ?? '' ), (string) ( $row['link_mode'] ?? '' ) ),
 				number_format_i18n( (int) $row['clicks'] ),
 			); }
-		self::table( array( __( 'Link', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $rows );
+		self::table( array( __( 'Link', 'gt-link-manager' ), __( 'Destination URL', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ), $rows, 'gtlm-top-links' );
 		echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links' ) ) . '">' . esc_html__( 'Browse all links', 'gt-link-manager' ) . '</a></p>';
 		echo '</section><section class="gtlm-analytics-breakdown" id="gtlm-breakdown"><h2>' . esc_html__( 'Click breakdown', 'gt-link-manager' ) . '</h2><nav class="gtlm-breakdown-nav nav-tab-wrapper" aria-label="' . esc_attr__( 'Click breakdown', 'gt-link-manager' ) . '">';
 		$tabs = array(
@@ -255,6 +268,70 @@ class GTLM_Analytics_View {
 		}
 		echo '</section></div>';
 		self::report_footer( $config, $f, $input );
+	}
+
+	/** Say exactly why reports may be stale or storage is large. None of these conditions stops collection by itself. */
+	private static function notices( array $config, string $view, string $base ): void {
+		if ( ! empty( $config['storage_warning'] ) ) {
+			$target = ( 'settings' === $view ? '' : add_query_arg( 'view', 'settings', $base ) ) . '#gtlm-delete-old';
+			/* translators: 1: analytics storage size, 2: storage warning level. */
+			echo '<div class="notice notice-warning inline"><p><strong>' . esc_html( sprintf( __( 'Analytics data is using %1$s, above your %2$s warning level.', 'gt-link-manager' ), size_format( (int) $config['health']['bytes'], 1 ), size_format( (int) $config['storage_warning_bytes'] ) ) ) . '</strong> ' . esc_html__( 'Collection continues, but the database keeps growing. Delete data you no longer need to free space.', 'gt-link-manager' );
+			if ( current_user_can( 'manage_options' ) ) {
+				echo ' <a href="' . esc_url( $target ) . '">' . esc_html__( 'Delete old data', 'gt-link-manager' ) . '</a>'; }
+			echo '</p></div>';
+		}
+		if ( empty( $config['enabled'] ) ) {
+			return; }
+		if ( 'active' !== $config['state'] ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Collection is paused because reports have not updated in the last 15 minutes. This usually means WP-Cron is not running on this site. Collection resumes after the next successful update.', 'gt-link-manager' ) . '</p>';
+			self::process_button();
+			echo '</div>';
+		} elseif ( ! empty( $config['last_error'] ) ) {
+			/* translators: %s: Time of the failed update. */
+			echo '<div class="notice notice-warning inline"><p>' . esc_html( sprintf( __( 'The last report update failed (%s). Collection continues and stops if updates keep failing.', 'gt-link-manager' ), empty( $config['last_error_at'] ) ? '-' : wp_date( 'M j, H:i', strtotime( $config['last_error_at'] ) ) ) ) . '</p>';
+			self::process_button();
+			echo '</div>';
+		} elseif ( (int) ( $config['health']['lag'] ?? 0 ) >= GTLM_Analytics::LAG_WARNING_SECONDS && ! empty( $config['health']['oldest_pending'] ) ) {
+			/* translators: %s: Time of the oldest click waiting to be processed. */
+			echo '<div class="notice notice-info inline"><p>' . esc_html( sprintf( __( 'Reports are catching up. The oldest click waiting to be counted is from %s.', 'gt-link-manager' ), wp_date( 'M j, H:i', strtotime( $config['health']['oldest_pending'] ) ) ) ) . '</p></div>';
+		}
+	}
+
+	private static function process_button(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return; }
+		echo '<form method="post"><p>';
+		wp_nonce_field( 'gtlm_analytics_settings' );
+		echo '<input type="hidden" name="gtlm_analytics_action" value="process"><button class="button">' . esc_html__( 'Update reports now', 'gt-link-manager' ) . '</button></p></form>';
+	}
+
+	private static function deleted_old_notice( int $rows, bool $complete, array $config ): void {
+		$size = isset( $config['health']['bytes'] ) ? size_format( (int) $config['health']['bytes'], 1 ) : '-';
+		if ( ! $rows ) {
+			/* translators: %s: analytics storage size after compacting. */
+			$message = sprintf( __( 'No analytics data was older than that. The tables were compacted; analytics data now uses %s.', 'gt-link-manager' ), $size );
+		} elseif ( $complete ) {
+			/* translators: 1: number of deleted rows, 2: analytics storage size after deletion. */
+			$message = sprintf( __( 'Deleted %1$s rows of old analytics data. Analytics data now uses %2$s.', 'gt-link-manager' ), number_format_i18n( $rows ), $size );
+		} else {
+			/* translators: %s: number of deleted rows. */
+			$message = sprintf( __( 'Deleted %s rows of old analytics data. More old data remains; run Delete old data again to continue.', 'gt-link-manager' ), number_format_i18n( $rows ) );
+		}
+		echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+	}
+
+	/** Where a link sends visitors. Regex targets contain capture placeholders, so they are shown, not linked. */
+	private static function destination_cell( string $url, string $mode ): array {
+		$cell = array(
+			'label' => '' === $url ? '-' : (string) preg_replace( '#^https?://#i', '', $url ),
+			'title' => $url,
+			'class' => 'gtlm-destination',
+		);
+		if ( 'regex' !== $mode && in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) {
+			$cell['url']     = $url;
+			$cell['new_tab'] = true;
+		}
+		return $cell;
 	}
 
 	private static function report_footer( array $config, array $f, array $input ): void {
@@ -409,8 +486,8 @@ class GTLM_Analytics_View {
 			} echo '<input type="text" aria-label="' . esc_attr( $label ) . '" maxlength="64" name="campaigns[' . esc_attr( $index ) . '][' . esc_attr( $key ) . ']" value="' . esc_attr( $campaign[ $key ] ?? '' ) . '"></td>';
 		} echo '<td><button type="button" class="button button-secondary gtlm-remove-campaign">' . esc_html__( 'Remove', 'gt-link-manager' ) . '</button></td></tr>';
 	}
-	private static function table( array $headings, array $rows ): void {
-		echo '<div class="gtlm-table-scroll"><table class="widefat striped"><thead><tr>';
+	private static function table( array $headings, array $rows, string $class = '' ): void {
+		echo '<div class="gtlm-table-scroll"><table class="widefat striped' . ( '' !== $class ? ' ' . esc_attr( $class ) : '' ) . '"><thead><tr>';
 		foreach ( $headings as $heading ) {
 			echo '<th scope="col">' . esc_html( $heading ) . '</th>';
 		} echo '</tr></thead><tbody>';
@@ -420,9 +497,11 @@ class GTLM_Analytics_View {
 				echo '<td>';
 				if ( is_array( $value ) && isset( $value['tooltip'] ) ) {
 					echo '<button type="button" class="gtlm-tooltip-trigger" data-gtlm-tooltip="gtlm-page-unavailable-help" aria-describedby="gtlm-page-unavailable-help">' . esc_html( $value['label'] ) . ' <span class="dashicons dashicons-editor-help" aria-hidden="true"></span></button><span id="gtlm-page-unavailable-help" class="gtlm-tooltip-content screen-reader-text" role="tooltip">' . esc_html( $value['tooltip'] ) . '</span>';
+				} elseif ( is_array( $value ) && empty( $value['url'] ) ) {
+					echo '<span' . ( ! empty( $value['class'] ) ? ' class="' . esc_attr( $value['class'] ) . '"' : '' ) . ( ! empty( $value['title'] ) ? ' title="' . esc_attr( $value['title'] ) . '"' : '' ) . '>' . esc_html( $value['label'] ) . '</span>';
 				} elseif ( is_array( $value ) ) {
 					$help_id = ! empty( $value['help'] ) ? wp_unique_id( 'gtlm-referrer-help-' ) : '';
-					echo '<a href="' . esc_url( $value['url'] ) . '"' . ( ! empty( $value['new_tab'] ) ? ' target="_blank" rel="noopener noreferrer"' : '' ) . '>' . esc_html( $value['label'] );
+					echo '<a href="' . esc_url( $value['url'] ) . '"' . ( ! empty( $value['class'] ) ? ' class="' . esc_attr( $value['class'] ) . '"' : '' ) . ( ! empty( $value['title'] ) ? ' title="' . esc_attr( $value['title'] ) . '"' : '' ) . ( ! empty( $value['new_tab'] ) ? ' target="_blank" rel="noopener noreferrer"' : '' ) . '>' . esc_html( $value['label'] );
 					if ( ! empty( $value['new_tab'] ) ) {
 						echo '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span>'; }
 					echo '</a>';

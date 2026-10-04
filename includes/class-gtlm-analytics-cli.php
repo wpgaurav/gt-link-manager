@@ -30,9 +30,36 @@ class GTLM_Analytics_CLI {
 		$this->result( GTLM_Analytics::process() );
 	}
 
-	/** Enforce retention and process pending events within the same bounded maintenance job. */
-	public function prune(): void {
-		$this->process();
+	/**
+	 * Enforce retention and process pending events within the same bounded maintenance job.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--older-than=<days>]
+	 * : Also permanently delete analytics data older than this many days, then compact the tables.
+	 *
+	 * [--yes]
+	 * : Confirm the deletion requested with --older-than.
+	 */
+	public function prune( array $args = array(), array $assoc_args = array() ): void {
+		if ( ! isset( $assoc_args['older-than'] ) ) {
+			$this->process();
+			return;
+		}
+		$days = (string) $assoc_args['older-than'];
+		if ( ! ctype_digit( $days ) || (int) $days < 1 ) {
+			WP_CLI::error( 'Pass --older-than as a positive whole number of days.' );
+		}
+		if ( ! isset( $assoc_args['yes'] ) ) {
+			WP_CLI::error( 'Pass --yes to permanently delete analytics data older than ' . (int) $days . ' days.' );
+		}
+		if ( ! GTLM_Settings::get_instance()->analytics_initialized() ) {
+			$this->status();
+			return;
+		}
+		$this->load();
+		// No request timeout applies here, so one call can delete everything in range.
+		$this->result( GTLM_Analytics::delete_older_than( (int) $days, (float) HOUR_IN_SECONDS ) );
 	}
 
 	/**

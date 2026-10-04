@@ -16,9 +16,20 @@ class GTLM_Analytics {
 	public const CRON   = 'gtlm_analytics_maintenance';
 	public const SCHEMA = '3';
 
+	/** Default storage warning level. Storage is never capped; past this size the admin is asked to delete old data. */
+	public const STORAGE_WARNING_MB = 100;
+
+	/** Reports more than this far behind are flagged in the admin. Collection continues regardless. */
+	public const LAG_WARNING_SECONDS = 900;
+
 	public static function config(): array {
 		$value = get_option( self::OPTION, array() );
 		return is_array( $value ) ? $value : array();
+	}
+
+	public static function storage_warning_bytes( array $config ): int {
+		$mb = (int) ( $config['storage_warning_mb'] ?? self::STORAGE_WARNING_MB );
+		return max( 1, (int) apply_filters( 'gtlm_analytics_storage_warning_bytes', max( 1, $mb ) * MB_IN_BYTES ) );
 	}
 
 	/** Pure validation. No option writes or schema probes. */
@@ -38,7 +49,15 @@ class GTLM_Analytics {
 			}
 			$options[ $key ] = (int) $value;
 		}
-		$options['country_source'] = $input['country_source'] ?? $previous['country_source'] ?? 'none';
+		$warning_mb = $input['storage_warning_mb'] ?? '';
+		if ( '' === $warning_mb ) {
+			$warning_mb = $previous['storage_warning_mb'] ?? self::STORAGE_WARNING_MB;
+		}
+		if ( ! is_scalar( $warning_mb ) || ! ctype_digit( (string) $warning_mb ) || strlen( (string) $warning_mb ) > 7 || (int) $warning_mb < 1 ) {
+			return new WP_Error( 'gtlm_analytics_storage_warning', __( 'Enter the storage warning level as a whole number of megabytes.', 'gt-link-manager' ) );
+		}
+		$options['storage_warning_mb'] = (int) $warning_mb;
+		$options['country_source']     = $input['country_source'] ?? $previous['country_source'] ?? 'none';
 		if ( ! in_array( $options['country_source'], array( 'none', 'auto', 'cloudflare', 'custom' ), true ) ) {
 			return new WP_Error( 'gtlm_analytics_country', __( 'Choose a supported country header source.', 'gt-link-manager' ) );
 		}
@@ -169,9 +188,6 @@ class GTLM_Analytics {
 				'state' => 'active',
 			);
 			$health              = $db->health();
-			if ( $health['bytes'] >= 100 * MB_IN_BYTES ) {
-				return new WP_Error( 'gtlm_analytics_full', __( 'Analytics storage is at its safety threshold. Prune or delete old data before resuming.', 'gt-link-manager' ) );
-			}
 			add_filter( 'cron_schedules', 'gtlm_analytics_schedules' ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- Dedicated 300-second interval registered only after opt-in.
 			if ( ! wp_next_scheduled( self::CRON ) && ! wp_schedule_event( time() + 60, 'gtlm_five_minutes', self::CRON ) ) {
 				return new WP_Error( 'gtlm_analytics_schedule', __( 'Analytics maintenance could not be scheduled. Collection remains off.', 'gt-link-manager' ) );
@@ -290,12 +306,14 @@ class GTLM_Analytics {
 		} catch ( Throwable $error ) {
 			$config = self::fresh_config();
 			if ( $config ) {
-				$config['state']       = 'unhealthy';
-				$config['lease_until'] = 0;
-				$config['last_error']  = 'maintenance_failed';
+				// The lease is left as is: one failed run must not drop clicks. If failures
+				// persist, the lease lapses and collection stops, which keeps raw click
+				// records inside their promised retention.
+				$config['last_error']    = 'maintenance_failed';
+				$config['last_error_at'] = gmdate( 'Y-m-d H:i:s' );
 				self::save( $config );
 			}
-			return new WP_Error( 'gtlm_analytics_maintenance', __( 'Analytics maintenance failed. Collection is paused until maintenance succeeds.', 'gt-link-manager' ) );
+			return new WP_Error( 'gtlm_analytics_maintenance', __( 'Analytics maintenance failed. Collection continues for now and stops if updates keep failing.', 'gt-link-manager' ) );
 		} finally {
 			$db->unlock();
 		}
@@ -316,10 +334,9 @@ class GTLM_Analytics {
 		$lost       = $db->prune( $config['event_days'], $config['summary_days'] );
 		$health     = $db->health();
 		$was_active = GTLM_Settings::get_instance()->advanced_analytics_enabled();
-		$limit      = 'unhealthy' === ( $config['state'] ?? '' ) ? 80 : 100;
-		$healthy    = $health['bytes'] < $limit * MB_IN_BYTES && $health['lag'] < 900;
-		$next_state = $was_active ? ( $healthy ? 'active' : 'unhealthy' ) : 'paused';
-		if ( $next_state !== $config['state'] || ( $was_active && (int) ( $config['lease_until'] ?? 0 ) < time() ) ) {
+		// Storage size and processing lag are surfaced as admin warnings; neither stops collection.
+		$next_state = $was_active ? 'active' : 'paused';
+		if ( ( $config['state'] ?? '' ) !== $next_state || ( $was_active && (int) ( $config['lease_until'] ?? 0 ) < time() ) ) {
 			$config['periods']   = array_slice( (array) ( $config['periods'] ?? array() ), -30 );
 			$config['periods'][] = array(
 				'at'        => gmdate( 'Y-m-d H:i:s' ),
@@ -328,12 +345,51 @@ class GTLM_Analytics {
 			);
 		}
 		$config['state']             = $next_state;
-		$config['lease_until']       = $was_active && $healthy ? time() + 900 : 0;
+		$config['lease_until']       = $was_active ? time() + 900 : 0;
 		$config['health']            = $health;
 		$config['last_processed_at'] = gmdate( 'Y-m-d H:i:s' );
 		$config['expired_pending']   = (int) ( $config['expired_pending'] ?? 0 ) + $lost + $expired;
-		unset( $config['last_error'] );
+		unset( $config['last_error'], $config['last_error_at'] );
 		self::save( $config );
+	}
+
+	/**
+	 * Permanently delete events and summaries older than $days, then compact the tables.
+	 *
+	 * Deletion is bounded by $budget seconds; the result reports whether older rows remain.
+	 */
+	public static function delete_older_than( int $days, float $budget = 10.0 ) {
+		if ( $days < 1 ) {
+			return new WP_Error( 'gtlm_analytics_delete_old', __( 'Enter a positive whole number of days.', 'gt-link-manager' ) );
+		}
+		$db = new GTLM_Analytics_DB();
+		if ( ! $db->lock() ) {
+			return new WP_Error( 'gtlm_analytics_busy', __( 'Analytics maintenance is busy. Try again shortly.', 'gt-link-manager' ) );
+		}
+		try {
+			$config = self::fresh_config();
+			if ( ! $config || self::SCHEMA !== ( $config['schema'] ?? '' ) ) {
+				return new WP_Error( 'gtlm_analytics_disabled', __( 'Analytics has not been initialized.', 'gt-link-manager' ) );
+			}
+			$cutoff = $db->event_cutoff( $days );
+			$result = $db->delete_before( $cutoff, $budget );
+			$db->reclaim_space();
+			// Reports before the cutoff are now partial, so period comparisons must not treat them as complete history.
+			$config['data_deleted_before'] = max( (string) ( $config['data_deleted_before'] ?? '' ), $cutoff );
+			$config['health']              = $db->health();
+			self::save( $config );
+			return array_merge(
+				self::status(),
+				array(
+					'deleted_rows' => $result['rows'],
+					'complete'     => $result['complete'],
+				)
+			);
+		} catch ( Throwable $error ) {
+			return new WP_Error( 'gtlm_analytics_delete_old', __( 'Old analytics data could not be deleted. Try again, or use WP-CLI for very large tables.', 'gt-link-manager' ) );
+		} finally {
+			$db->unlock();
+		}
 	}
 
 	/** No table inspection; a missing gate can be answered without reading this option. */
@@ -347,7 +403,8 @@ class GTLM_Analytics {
 		}
 		$enabled = GTLM_Settings::get_instance()->advanced_analytics_enabled();
 		$state   = ! $enabled ? 'paused' : ( (int) ( $config['lease_until'] ?? 0 ) < time() ? 'lease_expired' : $config['state'] );
-		foreach ( array( 'started_at', 'last_enabled_at', 'last_processed_at', 'pages_started_at' ) as $key ) {
+		$warning = self::storage_warning_bytes( $config );
+		foreach ( array( 'started_at', 'last_enabled_at', 'last_processed_at', 'pages_started_at', 'last_error_at', 'data_deleted_before' ) as $key ) {
 			if ( ! empty( $config[ $key ] ) ) {
 				$config[ $key ] = wp_date( DATE_ATOM, strtotime( $config[ $key ] . ' UTC' ) );
 			}
@@ -367,9 +424,11 @@ class GTLM_Analytics {
 		return array_merge(
 			$config,
 			array(
-				'state'    => $state,
-				'enabled'  => $enabled,
-				'timezone' => wp_timezone_string(),
+				'state'                 => $state,
+				'enabled'               => $enabled,
+				'timezone'              => wp_timezone_string(),
+				'storage_warning_bytes' => $warning,
+				'storage_warning'       => (int) ( $config['health']['bytes'] ?? 0 ) >= $warning,
 			)
 		);
 	}

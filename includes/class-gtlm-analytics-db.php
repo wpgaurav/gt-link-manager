@@ -322,6 +322,49 @@ class GTLM_Analytics_DB extends GTLM_DB {
 	}
 
 	/** Maintenance-only health inspection. Never called by the collector. */
+	/** Delete events and summaries before $cutoff (UTC) in batches until done or $budget seconds pass. */
+	public function delete_before( string $cutoff, float $budget ): array {
+		global $wpdb;
+		$start = microtime( true );
+		$rows  = 0;
+		foreach ( array(
+			self::hourly_table() => 'bucket_start',
+			self::events_table() => 'occurred_at',
+		) as $table => $column ) {
+			do {
+				$count = $this->must_query( $wpdb->prepare( "DELETE FROM {$table} WHERE {$column} < %s ORDER BY {$column} LIMIT 5000", $cutoff ) );
+				$rows += $count;
+			} while ( 5000 === $count && microtime( true ) - $start < $budget );
+			if ( 5000 === $count ) {
+				return array(
+					'rows'     => $rows,
+					'complete' => false,
+				);
+			}
+		}
+		return array(
+			'rows'     => $rows,
+			'complete' => true,
+		);
+	}
+
+	/**
+	 * Rebuild both tables. InnoDB keeps deleted pages allocated, so without this
+	 * neither the disk usage nor the reported size drops after a delete.
+	 * Best effort: an online rebuild the database user cannot run is skipped.
+	 */
+	public function reclaim_space(): void {
+		global $wpdb;
+		$old = $wpdb->suppress_errors( true );
+		try {
+			foreach ( array( self::hourly_table(), self::events_table() ) as $table ) {
+				$wpdb->query( "OPTIMIZE TABLE {$table}" );
+			}
+		} finally {
+			$wpdb->suppress_errors( $old );
+		}
+	}
+
 	public function health(): array {
 		global $wpdb;
 		$events = self::events_table();
@@ -359,7 +402,7 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}
-		$top = $wpdb->get_results( "SELECT h.link_id, l.name, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$total_where} GROUP BY h.link_id,l.name ORDER BY clicks DESC,h.link_id LIMIT 50", ARRAY_A );
+		$top = $wpdb->get_results( "SELECT h.link_id, l.name, l.url, l.link_mode, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$total_where} GROUP BY h.link_id,l.name,l.url,l.link_mode ORDER BY clicks DESC,h.link_id LIMIT 50", ARRAY_A );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_report_failed' );
 		}

@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,7 +37,7 @@ Collection uses a compact server-side write on eligible GET redirects. PHP-FPM c
 
 Recognized bots, prefetches and signed-in link managers are excluded. These reports count eligible redirect requests, not unique people or conversions. Browsers may report an external website, only its origin, or no referrer. Earlier clicks without page information remain **Page unavailable**, with a short explanation. External referrers are kept and explained rather than automatically treated as spam.
 
-Reports and page-specific breakdowns are summarized by a bounded maintenance worker. Keep WordPress cron or a system scheduler running. Storage and processing safeguards can pause collection while preserving existing reports. Historical data can be viewed in date windows of up to ninety days. Advanced Analytics currently supports single-site installations.
+Reports and page-specific breakdowns are summarized by a bounded maintenance worker. Keep WordPress cron or a system scheduler running; collection pauses only if maintenance stops running for fifteen minutes. Storage is never capped: past a warning level you set (100 MB by default), the plugin asks you to delete old data, and the delete compacts the tables so the space is released. Historical data can be viewed in date windows of up to ninety days. Advanced Analytics currently supports single-site installations.
 
 The **Privacy and data** section links to WordPress's suggested Privacy Policy text. Administrators control analytics by default; developers can use `gtlm_analytics_capability` for report access and `gtlm_analytics_should_record` to suppress events, including consent integrations. Site-owner opt-in is not a legal consent exemption.
 
@@ -166,7 +166,7 @@ Advanced Analytics adds no visitor script or cookie. It counts eligible redirect
 
 = Can I keep reports forever? =
 
-Yes. Choose **Forever** under **Analytics > Settings > Keep reports for**. Individual click records still use their separate retention period. Storage safeguards remain active, and deleting analytics removes the retained reports.
+Yes. Choose **Forever** under **Analytics > Settings > Keep reports for**. Individual click records still use their separate retention period. Collection never stops because of size; past your storage warning level you are prompted to delete old data under **Analytics > Settings > Delete old data**.
 
 = Can I import from other link-management plugins? =
 
@@ -267,6 +267,12 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.9.1 =
+* Fixed: Advanced Analytics stopped recording clicks once its tables passed 100 MB, and the Analytics page blamed stale reports instead of storage. Collection now never stops because of size or a processing backlog. Past a configurable storage warning level (100 MB by default) you get a warning with a one-click **Delete old data** action.
+* New: Delete old data removes analytics older than a chosen number of days and compacts the tables, so the reported size and the disk usage both drop. Also available as `wp gt-link-manager analytics prune --older-than=<days> --yes`.
+* New: Top links now shows each link's destination URL.
+* Improved: accurate status notices for a stalled scheduler, a failed report update, and a processing backlog, each with an Update reports now button. A single failed update no longer pauses collection.
 
 = 1.9.0 =
 * Add opt-in Advanced Analytics with WordPress-time trends, referring-page and link reports, instant breakdown tabs, and CSV exports.
@@ -460,6 +466,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.9.1 =
+Advanced Analytics no longer stops collecting at 100 MB. You get a storage warning and a Delete old data action instead. Top links also shows destination URLs.
 
 = 1.9.0 =
 Adds optional Advanced Analytics, clearer settings and diagnostics, and redirect/CSV security fixes. Analytics remains off until you enable it. Existing links and basic click counts are preserved.
