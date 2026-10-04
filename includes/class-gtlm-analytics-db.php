@@ -285,6 +285,52 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		return null !== $id;
 	}
 
+	/** Earliest summary bucket at or after $from (UTC), or null when none exist. */
+	public function first_bucket_from( string $from ): ?string {
+		global $wpdb;
+		$hourly = self::hourly_table();
+		$first  = $wpdb->get_var( $wpdb->prepare( "SELECT MIN(bucket_start) FROM {$hourly} WHERE bucket_start >= %s", $from ) );
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_rollup_scan_failed' );
+		}
+		return $first ? (string) $first : null;
+	}
+
+	/** Oldest retained raw click (UTC), or null. Days are rolled up only once none of their raw clicks remain. */
+	public function oldest_event(): ?string {
+		global $wpdb;
+		$events = self::events_table();
+		$oldest = $wpdb->get_var( "SELECT MIN(occurred_at) FROM {$events}" );
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_rollup_events_failed' );
+		}
+		return $oldest ? (string) $oldest : null;
+	}
+
+	/**
+	 * Collapse every summary row in [$stamp, $until) into one row per link, page, dimension and value at $stamp.
+	 *
+	 * Minute buckets older than the individual-record window would otherwise let a
+	 * single click be rebuilt (minute, page, country, device) for as long as reports
+	 * are kept. The rewrite is one transaction and idempotent: re-running a rolled
+	 * range sums the single stamped row into itself and deletes nothing.
+	 */
+	public function rollup_range( string $stamp, string $until ): int {
+		global $wpdb;
+		$hourly = self::hourly_table();
+		$this->must_query( 'START TRANSACTION' );
+		try {
+			// The stamped row is part of the range, so VALUES(clicks) is the range total, not an increment.
+			$this->must_query( $wpdb->prepare( "INSERT INTO {$hourly} (link_id,bucket_start,page_key,dimension,value,clicks) SELECT link_id, %s, page_key, dimension, value, SUM(clicks) FROM {$hourly} WHERE bucket_start >= %s AND bucket_start < %s GROUP BY link_id, page_key, dimension, value ON DUPLICATE KEY UPDATE clicks = VALUES(clicks)", $stamp, $stamp, $until ) );
+			$removed = $this->must_query( $wpdb->prepare( "DELETE FROM {$hourly} WHERE bucket_start > %s AND bucket_start < %s", $stamp, $until ) );
+			$this->must_query( 'COMMIT' );
+			return $removed;
+		} catch ( Throwable $error ) {
+			$wpdb->query( 'ROLLBACK' );
+			throw $error;
+		}
+	}
+
 	/** A UTC cutoff that stays safe even for retention periods beyond the age of the data. */
 	public function event_cutoff( int $event_days ): string {
 		$now = time();
@@ -562,34 +608,50 @@ class GTLM_Analytics_DB extends GTLM_DB {
 		);
 	}
 
-	/** Keyset pagination within the export's consistent read snapshot. */
-	public function export_page( array $filters, array $cursor ): array {
+	/** Links with data in the export window, read once; rows are then fetched per batch of links by primary key. */
+	public function export_link_ids( array $filters ): array {
 		global $wpdb;
 		$hourly = self::hourly_table();
 		$links  = self::links_table();
 		$where  = $this->export_where( $filters );
-		$sql    = "SELECT h.*,l.name FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where}";
-		if ( $cursor ) {
-			$sql .= $wpdb->prepare( ' AND (h.link_id,h.bucket_start,h.dimension,h.value) > (%d,%s,%s,%s)', $cursor[0], $cursor[1], $cursor[2], $cursor[3] );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- export_where prepares all values.
+		$ids = $wpdb->get_col( "SELECT DISTINCT h.link_id FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} ORDER BY h.link_id" );
+		if ( '' !== $wpdb->last_error ) {
+			throw new RuntimeException( 'analytics_export_failed' );
 		}
-		$sql .= ' ORDER BY h.link_id,h.bucket_start,h.dimension,h.value LIMIT 500';
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Values prepared above.
-		$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- All clauses prepared in this method.
+		return array_map( 'intval', $ids );
+	}
+
+	/** One row per link, site-local day, dimension and value, so exports carry no minute-level detail. */
+	public function export_rows( array $filters, array $link_ids ): array {
+		global $wpdb;
+		if ( ! $link_ids ) {
+			return array();
+		}
+		$hourly = self::hourly_table();
+		$links  = self::links_table();
+		$where  = $this->export_where( $filters ) . ' AND h.link_id IN (' . implode( ',', array_map( 'intval', $link_ids ) ) . ')';
+		$day    = $this->local_bucket_sql( array_merge( $filters, array( 'granularity' => 'day' ) ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- export_where and local_bucket_sql prepare all values; IDs are cast.
+		$rows = $wpdb->get_results( "SELECT h.link_id, l.name, {$day} day, h.dimension, h.value, SUM(h.clicks) clicks FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} GROUP BY h.link_id, l.name, day, h.dimension, h.value ORDER BY h.link_id, day, h.dimension, h.value", ARRAY_A );
 		if ( '' !== $wpdb->last_error ) {
 			throw new RuntimeException( 'analytics_export_failed' );
 		}
 		return $rows;
 	}
 
-	/** Refuse an oversized export before sending a partial CSV. */
+	/**
+	 * Refuse an oversized export before sending a partial CSV. The output is grouped by
+	 * day and streamed per batch of links, so the bound is on rows scanned, not written.
+	 */
 	public function export_size_allowed( array $filters ): bool {
 		global $wpdb;
 		$hourly = self::hourly_table();
 		$links  = self::links_table();
 		$where  = $this->export_where( $filters );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- report_where prepares all values.
-		$count = $wpdb->get_var( "SELECT COUNT(*) FROM (SELECT 1 FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} LIMIT 100001) bounded_export" );
-		return null !== $count && '' === $wpdb->last_error && (int) $count <= 100000;
+		$count = $wpdb->get_var( "SELECT COUNT(*) FROM (SELECT 1 FROM {$hourly} h INNER JOIN {$links} l ON l.id=h.link_id WHERE {$where} LIMIT 1000001) bounded_export" );
+		return null !== $count && '' === $wpdb->last_error && (int) $count <= 1000000;
 	}
 
 	public function start_export(): void {

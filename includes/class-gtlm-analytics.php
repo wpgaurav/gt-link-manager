@@ -332,6 +332,7 @@ class GTLM_Analytics {
 			continue;
 		}
 		$lost       = $db->prune( $config['event_days'], $config['summary_days'] );
+		$config     = self::rollup( $db, $config, microtime( true ) + 2.0 );
 		$health     = $db->health();
 		$was_active = GTLM_Settings::get_instance()->advanced_analytics_enabled();
 		// Storage size and processing lag are surfaced as admin warnings; neither stops collection.
@@ -351,6 +352,44 @@ class GTLM_Analytics {
 		$config['expired_pending']   = (int) ( $config['expired_pending'] ?? 0 ) + $lost + $expired;
 		unset( $config['last_error'], $config['last_error_at'] );
 		self::save( $config );
+	}
+
+	/**
+	 * Reduce minute summaries to one bucket per site-local day once a day is past the
+	 * individual-record window and none of its raw clicks remain.
+	 *
+	 * Privacy: within the window, raw click records exist anyway, so minute summaries
+	 * add nothing. After it, minute buckets (87% of which hold a single click) would let
+	 * one click be rebuilt for as long as reports are kept. Days are taken in order and
+	 * `rolled_until` (UTC) records progress; each day is one idempotent transaction.
+	 */
+	private static function rollup( GTLM_Analytics_DB $db, array $config, float $deadline ): array {
+		$limit  = $db->event_cutoff( (int) $config['event_days'] );
+		$oldest = $db->oldest_event();
+		if ( null !== $oldest && $oldest < $limit ) {
+			$limit = $oldest;
+		}
+		$zone  = wp_timezone();
+		$utc   = new DateTimeZone( 'UTC' );
+		$floor = (string) ( $config['rolled_until'] ?? '1970-01-01 00:00:00' );
+		while ( microtime( true ) < $deadline ) {
+			$first = $db->first_bucket_from( $floor );
+			if ( null === $first || $first >= $limit ) {
+				break;
+			}
+			$day = ( new DateTimeImmutable( $first, $utc ) )->setTimezone( $zone )->setTime( 0, 0 );
+			// Never reach below the previous range: after a timezone change the new local
+			// midnight can precede it, and its stamp must not collide with rolled rows.
+			$start = max( $day->setTimezone( $utc )->format( 'Y-m-d H:i:s' ), $floor );
+			$until = $day->modify( '+1 day' )->setTimezone( $utc )->format( 'Y-m-d H:i:s' );
+			if ( $until > $limit ) {
+				break;
+			}
+			$db->rollup_range( $start, $until );
+			$floor                  = $until;
+			$config['rolled_until'] = $until;
+		}
+		return $config;
 	}
 
 	/**
@@ -418,7 +457,7 @@ class GTLM_Analytics {
 		$enabled = GTLM_Settings::get_instance()->advanced_analytics_enabled();
 		$state   = ! $enabled ? 'paused' : ( (int) ( $config['lease_until'] ?? 0 ) < time() ? 'lease_expired' : $config['state'] );
 		$warning = self::storage_warning_bytes( $config );
-		foreach ( array( 'started_at', 'last_enabled_at', 'last_processed_at', 'pages_started_at', 'last_error_at', 'data_deleted_before' ) as $key ) {
+		foreach ( array( 'started_at', 'last_enabled_at', 'last_processed_at', 'pages_started_at', 'last_error_at', 'data_deleted_before', 'rolled_until' ) as $key ) {
 			if ( ! empty( $config[ $key ] ) ) {
 				$config[ $key ] = wp_date( DATE_ATOM, strtotime( $config[ $key ] . ' UTC' ) );
 			}

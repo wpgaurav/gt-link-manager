@@ -28,9 +28,9 @@ Advanced Analytics adds reports alongside the existing lifetime click counter. I
 * **See the referring post or URL.** The separate **Clicked from** report lists every matching recorded entry with pagination and resolves published WordPress post titles where possible. Open a page report to see which links were clicked there, then inspect an individual link within that same page.
 * **Switch breakdowns instantly.** Sources, countries, devices, browsers, operating systems and configured campaigns are loaded with the report. Switching tabs does not reload the page or fetch another report.
 * **Read the chart clearly.** The chart fits the recorded activity period while preserving real time spacing. **View click totals** opens a scrollable popup with exact values.
-* **Use WordPress time.** Dates, hourly/day grouping and CSV timestamps follow the timezone configured in WordPress, including fractional offsets and daylight-saving changes.
+* **Use WordPress time.** Dates, hourly/day grouping and CSV dates follow the timezone configured in WordPress, including fractional offsets and daylight-saving changes.
 * **Keep the context when exporting.** Date, category, link and referring-page selections carry into CSV exports. Configured UTM combinations can be tracked as campaigns.
-* **Choose what to retain.** Individual click records default to seven days and reports to ninety days. Choose **Forever** to keep reports until you delete them; individual records still expire separately.
+* **Choose what to retain.** Individual click records, with their time to the minute, default to seven days; after that, clicks are kept only as daily totals, and those reports default to ninety days. Choose **Forever** to keep daily reports until you delete them; individual records still expire separately.
 * **Pause or remove analytics independently.** Turning collection off keeps existing reports under their retention policy. Deleting analytics removes its records and jobs while preserving links and basic counts.
 
 Collection uses a compact server-side write on eligible GET redirects. PHP-FPM can finish the redirect response before recording the event; other hosts complete that write synchronously. No visitor JavaScript, cookies, beacons, IP storage, fingerprinting or external analytics service is added. Referring URLs omit credentials, query strings and fragments; raw user agents are not retained.
@@ -254,7 +254,7 @@ If no header is present, nothing is proxying the site and there is no country to
 
 The plugin does not add visitor tracking scripts or cookies. Request data is recorded only when the site owner explicitly enables advanced analytics.
 
-Basic click counting stores a running total independently. Advanced analytics can retain a timestamp, referring hostname and page URL, coarse client families, configured campaign ID and optional country, under the configured retention policy. It does not retain IP addresses, raw user agents, or referring URL credentials, query strings or fragments. The suggested guidance under **Settings > Privacy** reflects the features and retention you enable.
+Basic click counting stores a running total independently. Advanced analytics can retain a timestamp, referring hostname and page URL, coarse client families, configured campaign ID and optional country. Timestamps to the minute last only as long as individual click records (seven days by default); after that, clicks survive only as daily totals per link. On a link with very few clicks, a daily total can still describe a single click's date, page, country and device type. It does not retain IP addresses, raw user agents, or referring URL credentials, query strings or fragments. The suggested guidance under **Settings > Privacy** reflects the features and retention you enable.
 
 = What happens when I uninstall? =
 
@@ -271,17 +271,13 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 == Changelog ==
 
 = 1.9.1 =
-* Fixed: Advanced Analytics stopped recording clicks once its tables passed 100 MB, and the Analytics page blamed stale reports instead of storage. Collection now never stops because of size or a processing backlog. Past a configurable storage warning level (100 MB by default) you get a warning with a one-click **Delete old data** action.
-* New: Delete old data removes analytics older than a chosen number of days and compacts the tables, so the reported size and the disk usage both drop. Also available as `wp gt-link-manager analytics prune --older-than=<days> --yes`.
-* New: Top links now shows each link's destination URL.
-* Improved: accurate status notices for a stalled scheduler, a failed report update, and a processing backlog, each with an Update reports now button. A single failed update no longer pauses collection.
-* Fixed: Quick Edit rewrote regex patterns and direct paths as if they were slugs. Changing only the destination of `^old/(.*)$` saved the pattern as `old`, which then redirected every URL containing "old". Quick Edit now edits slugs for standard links only, and only when you change them.
-* Fixed: renaming an existing link on the edit screen silently changed its slug, breaking the short link everywhere it was already used. Only new links follow their name.
-* Fixed: with a persistent object cache, a failed database lookup was cached as "link not found" with no expiry, so a brief database error could 404 a short link until it was edited. Failed lookups are no longer cached, and genuine misses expire after ten minutes.
-* Fixed: database migrations ran only in wp-admin, so an automatic update from an older version could 404 every short link until someone opened the dashboard. They now run on the first request after an update.
-* Fixed: on phones the links list showed only checkboxes. Link names, actions and the expand toggle now appear.
-* Fixed: after Quick Edit changed a slug, the row's copy button and link still pointed at the old URL.
-* Improved: admin icons, a quieter Geo column that flags rules saved while country routing is off, date-only Created column, a full-width destination field, shorter rows, and an Edit Link title and menu highlight when editing.
+* Fixed: after an automatic update from 1.7 or earlier, every short link could return 404 until someone opened the dashboard. Database updates now run on the first request after an update.
+* Fixed: Quick Edit could rewrite a regex pattern or direct path as if it were a slug. Changing only the destination of `^old/(.*)$` saved the pattern as `old`, which then matched every URL containing "old". Renaming a link also changed its slug, and saving with Advanced redirects off turned direct and regex links into standard ones. Existing links now keep their slug, path or pattern.
+* Fixed: with a persistent object cache, one failed database lookup could keep a short link returning 404 until it was edited.
+* Privacy: analytics keeps minute-level detail only as long as individual click records (seven days by default), then reduces each day to daily totals, existing data included. Country-rule outcomes are recorded only when countries are on, and empty or scripted user agents are no longer counted.
+* Fixed: analytics stopped collecting at 100 MB and blamed stale reports. Collection no longer stops for size; past a storage warning level you set, **Delete old data** removes old days and frees the space. CSV export now works on long ranges and exports daily totals; its `time` column is now `date`.
+* New: Top links shows each link's destination URL.
+* Improved: the links list works on phones, rows are shorter, and the admin has clearer icons, status notices and an Edit Link title.
 
 = 1.9.0 =
 * Add opt-in Advanced Analytics with WordPress-time trends, referring-page and link reports, instant breakdown tabs, and CSV exports.
@@ -477,7 +473,7 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 == Upgrade Notice ==
 
 = 1.9.1 =
-Advanced Analytics no longer stops collecting at 100 MB; you get a storage warning and a Delete old data action instead. Also fixes Quick Edit corrupting regex and direct links, slugs changing on rename, and short links that could 404 after a database error or an automatic update.
+Fixes short links that could 404 after updating from older versions, Quick Edit damaging regex and direct links, and analytics stopping at 100 MB. Analytics now keeps minute-level detail for seven days, then daily totals.
 
 = 1.9.0 =
 Adds optional Advanced Analytics, clearer settings and diagnostics, and redirect/CSV security fixes. Analytics remains off until you enable it. Existing links and basic click counts are preserved.

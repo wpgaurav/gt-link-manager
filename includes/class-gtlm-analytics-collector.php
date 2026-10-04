@@ -32,7 +32,8 @@ class GTLM_Analytics_Collector {
 			return false;
 		}
 		$agent = self::server_value( 'HTTP_USER_AGENT', 512 );
-		if ( preg_match( '/bot|crawler|spider|slurp|headless|facebookexternalhit|preview|prerender/i', $agent ) ) {
+		// An empty agent (also what an oversized one reads as) is a script, not a browser.
+		if ( '' === $agent || preg_match( '/bot|crawler|spider|slurp|headless|facebookexternalhit|preview|prerender|curl|wget|python-|go-http-client|okhttp|axios|node-fetch|scrapy|libwww|httpclient|java\/|lighthouse|gtmetrix|pingdom|uptime/i', $agent ) ) {
 			return false;
 		}
 		$device = 'unknown';
@@ -83,7 +84,8 @@ class GTLM_Analytics_Collector {
 			'campaign'    => self::campaign( (array) ( $config['campaigns'] ?? array() ) ),
 			'status'      => $status,
 			'mode'        => in_array( $link['link_mode'] ?? '', array( 'standard', 'direct', 'regex' ), true ) ? $link['link_mode'] : 'standard',
-			'geo'         => null === $geo ? 'off' : ( ! empty( $geo['matched'] ) ? 'matched' : 'fallback' ),
+			// Whether a country rule matched reveals the visitor's region, so it follows the countries setting.
+			'geo'         => null === $geo || 'none' === $source ? 'off' : ( ! empty( $geo['matched'] ) ? 'matched' : 'fallback' ),
 		);
 		if ( in_array( $config['schema'], array( '2', '3' ), true ) ) {
 			$event['page'] = $referrer['page'];

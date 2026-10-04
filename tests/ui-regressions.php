@@ -60,6 +60,25 @@ $name=gtlm_test_access($rc->getMethod('column_name'))->invoke($table,$db->get_li
 ui_check(!str_contains($name,'gtlm-copy-url')&&str_contains($name,'data-link-mode="standard"'),'Row actions skip Copy URL while the Branded URL column is visible',$name);
 ui_check(''===gtlm_icon('no-such-icon')&&str_contains(gtlm_icon('copy'),'aria-hidden="true"')&&str_contains(gtlm_icon('copy'),'focusable="false"'),'Icons are decorative and unknown names render nothing');
 
+// Advanced redirects off: the edit form must carry a regex link's stored mode, not reset it.
+$s->update(array_merge($s->all(),['enable_advanced_redirects'=>0]));$pages=new GTLM_Admin_Pages($db,$s,(new ReflectionClass(GTLM_Import::class))->newInstanceWithoutConstructor());
+$_GET=['page'=>'gtlm-links-edit','link_id'=>$regex];ob_start();$pages->render_edit_page();$form=ob_get_clean();$_GET=[];
+ui_check(str_contains($form,'name="link_mode" value="regex"')&&str_contains($form,'name="regex_replacement"')&&str_contains($form,'name="priority"')&&str_contains($form,'uses regex mode'),'Advanced redirects off keeps a regex link in regex mode on save',substr($form,0,400));
+$_GET=['page'=>'gtlm-links-edit','link_id'=>$std];ob_start();$pages->render_edit_page();$form=ob_get_clean();$_GET=[];
+ui_check(str_contains($form,'name="link_mode" value="standard"')&&!str_contains($form,'name="regex_replacement"'),'Standard links keep the plain hidden mode field');
+$s->update(array_merge($s->all(),['enable_advanced_redirects'=>1]));
+
+// Collector: scripts and region leaks.
+require_once GTLM_PATH.'includes/class-gtlm-analytics.php';require_once GTLM_PATH.'includes/class-gtlm-analytics-collector.php';
+GTLM_Analytics::delete();GTLM_Analytics::enable(['country_source'=>'none']);$events=GTLM_Analytics_DB::events_table();$link=$db->get_link_by_id($std);
+wp_set_current_user(0);$_SERVER['REQUEST_METHOD']='GET';$_SERVER['HTTP_REFERER']='https://fixture.example.org/post';
+$_SERVER['HTTP_USER_AGENT']='';$empty=GTLM_Analytics_Collector::collect($link,302,null);
+$_SERVER['HTTP_USER_AGENT']='curl/8.7.1';$curl=GTLM_Analytics_Collector::collect($link,302,null);
+$_SERVER['HTTP_USER_AGENT']='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1';$geo=GTLM_Analytics_Collector::collect($link,302,['matched'=>true,'country'=>'IN']);wp_set_current_user(1);
+ui_check(!$empty&&!$curl,'Empty and curl user agents are not counted as clicks');
+ui_check($geo&&'off'===$wpdb->get_var("SELECT geo FROM {$events} ORDER BY id DESC LIMIT 1"),'Geo rule outcome is not stored while countries are off');
+GTLM_Analytics::delete();
+
 remove_all_filters('wp_doing_ajax');remove_all_filters('wp_die_ajax_handler');
 foreach([$regex,$direct,$std] as $id){$db->delete_link($id);}
 $out=['passed'=>count(array_filter($checks,fn($c)=>$c['ok'])),'checks'=>$checks,'failed'=>array_values(array_filter($checks,fn($c)=>!$c['ok']))];echo json_encode($out,JSON_PRETTY_PRINT);exit($out['failed']?1:0);

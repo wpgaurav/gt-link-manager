@@ -425,16 +425,16 @@ class GTLM_Admin {
 
 		if ( $this->settings->analytics_initialized() ) {
 			$content  = '<p>' . esc_html__( 'GT Link Manager stores configured links and redirects visitors. Basic lifetime click counts, if enabled, are independent of advanced analytics.', 'gt-link-manager' ) . '</p>';
-			$content .= '<p>' . esc_html__( 'This site has opted in to advanced link analytics. Eligible redirect requests may store a short-lived timestamp, link ID, referring hostname and page URL without credentials, query strings or fragments, coarse device/browser/OS families, an allowlisted campaign ID, redirect type, and optionally a country code supplied by a trusted proxy. Dated aggregate summaries are retained under the configured retention policy. Pausing collection retains previously collected reports until their retention period ends or they are deleted.', 'gt-link-manager' ) . '</p>';
+			$content .= '<p>' . esc_html__( 'This site has opted in to advanced link analytics. Eligible redirect requests may store a short-lived timestamp, link ID, referring hostname and page URL without credentials, query strings or fragments, coarse device/browser/OS families, an allowlisted campaign ID, redirect type, and optionally a country code supplied by a trusted proxy and whether a country rule matched. After the individual-record period, clicks are kept only as daily totals per link, grouped by these same fields. On a link with very few clicks, a daily total can still describe a single click: its date, referring page, country and device type. Pausing collection retains previously collected reports until their retention period ends or they are deleted.', 'gt-link-manager' ) . '</p>';
 			$content .= '<p>' . esc_html__( 'The plugin does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or referring URL credentials, query strings or fragments, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required.', 'gt-link-manager' ) . '</p>';
 			$config   = get_option( 'gtlm_analytics', array() );
 			if ( is_array( $config ) && isset( $config['event_days'], $config['summary_days'] ) ) {
 				if ( 0 === (int) $config['summary_days'] ) {
 					/* translators: %d: Individual event retention in days. */
-					$content .= '<p>' . esc_html( sprintf( __( 'Individual click records are kept for %d days. Aggregate reports are kept until manually deleted.', 'gt-link-manager' ), $config['event_days'] ) ) . '</p>';
+					$content .= '<p>' . esc_html( sprintf( __( 'Individual click records, with their time to the minute, are kept for %d days and then reduced to daily totals. Daily totals are kept until manually deleted.', 'gt-link-manager' ), $config['event_days'] ) ) . '</p>';
 				} else {
 					/* translators: 1: event days, 2: summary days. */
-					$content .= '<p>' . esc_html( sprintf( __( 'Configured retention: click records for %1$d days and aggregate summaries for %2$d days. Maintenance must run for scheduled deletion to take place.', 'gt-link-manager' ), $config['event_days'], $config['summary_days'] ) ) . '</p>';
+					$content .= '<p>' . esc_html( sprintf( __( 'Configured retention: individual click records, with their time to the minute, for %1$d days; daily totals for %2$d days. Maintenance must run for scheduled reduction and deletion to take place.', 'gt-link-manager' ), $config['event_days'], $config['summary_days'] ) ) . '</p>';
 				}
 			}
 		}

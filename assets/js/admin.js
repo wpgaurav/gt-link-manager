@@ -388,7 +388,12 @@
 
 	function getSelectedMode() {
 		var checked = document.querySelector('input[name="link_mode"]:checked');
-		return checked ? checked.value : 'standard';
+		if (checked) {
+			return checked.value;
+		}
+		// With Advanced redirects off the stored mode travels in a hidden field.
+		var stored = document.querySelector('input[type="hidden"][name="link_mode"]');
+		return stored ? stored.value : 'standard';
 	}
 
 	function slugify(str) {

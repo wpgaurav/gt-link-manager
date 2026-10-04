@@ -126,7 +126,16 @@ class GTLM_Admin_Pages {
 		if ( $advanced_enabled ) {
 			$this->render_link_mode_field( (string) $form['link_mode'] );
 		} else {
-			echo '<input type="hidden" name="link_mode" value="standard" />';
+			// Hiding the mode controls must not rewrite links that already use direct or regex
+			// mode (CSV import, REST, or an earlier setting): carry their stored values through.
+			echo '<input type="hidden" name="link_mode" value="' . esc_attr( (string) $form['link_mode'] ) . '" />';
+			if ( 'standard' !== $form['link_mode'] ) {
+				echo '<input type="hidden" name="regex_replacement" value="' . esc_attr( (string) $form['regex_replacement'] ) . '" />';
+				echo '<input type="hidden" name="priority" value="' . (int) $form['priority'] . '" />';
+				$mode_label = 'regex' === $form['link_mode'] ? __( 'regex', 'gt-link-manager' ) : __( 'direct', 'gt-link-manager' );
+				/* translators: %s: link mode, "direct" or "regex". */
+				echo '<tr><th scope="row"></th><td><div class="notice notice-info inline"><p>' . esc_html( sprintf( __( 'This link uses %s mode. Turn on Advanced redirects in Settings to change its mode or pattern options; saving here keeps them as they are.', 'gt-link-manager' ), $mode_label ) ) . '</p></div></td></tr>';
+			}
 		}
 
 		$this->render_text_field( 'slug', __( 'Slug', 'gt-link-manager' ), (string) $form['slug'], false );

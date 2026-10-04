@@ -126,7 +126,14 @@ class GTLM_Analytics_Controller {
 		if ( GTLM_Analytics::SCHEMA !== ( $config['schema'] ?? '' ) ) {
 			return new WP_Error( 'gtlm_analytics_schema', __( 'Analytics storage is not ready.', 'gt-link-manager' ) );
 		}
+		// Days past the individual-record window are stored as daily totals, so an hourly
+		// trend reaching into them would pile each day's clicks onto midnight.
+		$hourly_limited = 'hour' === $filters['granularity'] && ! empty( $config['rolled_until'] ) && $filters['from_utc'] < $config['rolled_until'];
+		if ( $hourly_limited ) {
+			$filters['granularity'] = 'day';
+		}
 		$report                       = ( new GTLM_Analytics_DB() )->report( $filters, $include_pages );
+		$report['hourly_limited']     = $hourly_limited;
 		$report['collection']         = GTLM_Analytics::status();
 		$span                         = strtotime( $filters['to_utc'] . ' UTC' ) - strtotime( $filters['from_utc'] . ' UTC' );
 		$prior_start                  = strtotime( $filters['prior_from_utc'] . ' UTC' );
@@ -269,7 +276,12 @@ class GTLM_Analytics_Controller {
 		require_once __DIR__ . '/class-gtlm-csv.php';
 		$db = new GTLM_Analytics_DB();
 		$db->start_export();
-		if ( ! $db->export_size_allowed( $filters ) ) {
+		try {
+			$link_ids = $db->export_size_allowed( $filters ) ? $db->export_link_ids( $filters ) : null;
+		} catch ( Throwable $error ) {
+			$link_ids = null;
+		}
+		if ( null === $link_ids ) {
 			$db->finish_export();
 			wp_die( esc_html__( 'This export is too large or unavailable. Select a smaller date range or a single link.', 'gt-link-manager' ) );
 		}
@@ -281,24 +293,20 @@ class GTLM_Analytics_Controller {
 			if ( false === $output ) {
 				return;
 			}
-			fputcsv( $output, array( 'link_id', 'name', 'time', 'timezone', 'dimension', 'value', 'clicks' ), ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
-			$cursor = array();
-			do {
-				$rows = $db->export_page( $filters, $cursor );
-				foreach ( $rows as $row ) {
-					$values = array( $row['link_id'], $row['name'], wp_date( 'Y-m-d H:i:s P', strtotime( $row['bucket_start'] . ' UTC' ) ), wp_timezone_string(), $row['dimension'], $row['value'], $row['clicks'] );
+			// Daily totals per link, matching the reports. Minute rows are never exported.
+			fputcsv( $output, array( 'link_id', 'name', 'date', 'timezone', 'dimension', 'value', 'clicks' ), ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
+			foreach ( array_chunk( $link_ids, 25 ) as $chunk ) {
+				if ( connection_aborted() ) {
+					break;
+				}
+				foreach ( $db->export_rows( $filters, $chunk ) as $row ) {
 					$values = array_map(
-						static function ( $value ): string {
-							$value = (string) $value;
-							return GTLM_CSV::text( $value );
-						},
-						$values
+						static fn( $value ): string => GTLM_CSV::text( (string) $value ),
+						array( $row['link_id'], $row['name'], $row['day'], wp_timezone_string(), $row['dimension'], $row['value'], $row['clicks'] )
 					);
 					fputcsv( $output, $values, ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
-					$cursor = array( $row['link_id'], $row['bucket_start'], $row['dimension'], $row['value'] );
 				}
-				$more = 500 === count( $rows );
-			} while ( $more && ! connection_aborted() );
+			}
 			fclose( $output ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		} finally {
 			$db->finish_export();
