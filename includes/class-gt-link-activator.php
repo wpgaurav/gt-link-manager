@@ -114,6 +114,24 @@ class GTLM_Activator {
 			return;
 		}
 
+		// This can now run on a front-end request, so keep concurrent requests from
+		// running dbDelta together. A lock older than a minute is treated as stale.
+		$lock = 'gtlm_upgrade_lock';
+		if ( ! add_option( $lock, time(), '', false ) ) {
+			if ( time() - (int) get_option( $lock, 0 ) < MINUTE_IN_SECONDS ) {
+				return;
+			}
+			update_option( $lock, time(), false );
+		}
+
+		try {
+			self::run_upgrade();
+		} finally {
+			delete_option( $lock );
+		}
+	}
+
+	private static function run_upgrade(): void {
 		// Re-run dbDelta to add any missing columns / indexes.
 		self::create_tables();
 
@@ -177,6 +195,12 @@ class GTLM_Activator {
 		);
 
 		update_option( 'gtlm_db_version', GTLM_VERSION, true );
+
+		// Lookups cached by the previous version may hold rows from the old schema,
+		// or misses recorded while a column was missing.
+		if ( function_exists( 'wp_cache_supports' ) && wp_cache_supports( 'flush_group' ) ) {
+			wp_cache_flush_group( GTLM_DB::CACHE_GROUP );
+		}
 	}
 
 	/**

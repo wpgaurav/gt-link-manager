@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/icons.php';
+
 if ( ! class_exists( 'WP_List_Table' ) ) {
 	require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 }
@@ -27,6 +29,8 @@ class GTLM_List_Table extends WP_List_Table {
 	 * Current view context: '' (all non-trashed), 'active', 'inactive', 'trash'.
 	 */
 	private string $view;
+
+	private ?bool $branded_hidden = null;
 
 	/**
 	 * @param array<int, array<string, mixed>> $categories Categories.
@@ -49,6 +53,22 @@ class GTLM_List_Table extends WP_List_Table {
 	/**
 	 * @return array<int, string>
 	 */
+	/**
+	 * Name carries the row actions. Without this, core picks the first column
+	 * (ID, hidden by default), and below 782px every row collapses to a checkbox.
+	 */
+	protected function get_default_primary_column_name(): string {
+		return 'name';
+	}
+
+	/** Whether the Branded URL column, which has its own open link and copy button, is hidden. */
+	private function branded_column_hidden(): bool {
+		if ( null === $this->branded_hidden ) {
+			$this->branded_hidden = $this->screen && in_array( 'branded_url', get_hidden_columns( $this->screen ), true );
+		}
+		return $this->branded_hidden;
+	}
+
 	protected function get_table_classes(): array {
 		$classes   = parent::get_table_classes();
 		$classes[] = 'gtlm-links-table';
@@ -184,7 +204,7 @@ class GTLM_List_Table extends WP_List_Table {
 		}
 
 		echo '<p>' . esc_html__( 'No links found.', 'gt-link-manager' ) . '</p>';
-		echo '<a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="button button-primary">' . esc_html__( 'Create your first link', 'gt-link-manager' ) . '</a>';
+		echo '<a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="button button-primary gtlm-button-icon">' . gtlm_icon( 'plus' ) . esc_html__( 'Create your first link', 'gt-link-manager' ) . '</a>';
 	}
 
 	/**
@@ -289,12 +309,12 @@ class GTLM_List_Table extends WP_List_Table {
 
 		$actions = array(
 			'edit'       => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'gt-link-manager' ) . '</a>',
-			'quick_edit' => '<a href="#" class="gtlm-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '" data-slug="' . esc_attr( (string) $item['slug'] ) . '" data-rel="' . esc_attr( (string) $item['rel'] ) . '" data-category-id="' . (int) ( $item['category_id'] ?? 0 ) . '" data-is-active="' . (int) $item['is_active'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
+			'quick_edit' => '<a href="#" class="gtlm-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '" data-slug="' . esc_attr( (string) $item['slug'] ) . '" data-link-mode="' . esc_attr( $mode ) . '" data-rel="' . esc_attr( (string) $item['rel'] ) . '" data-category-id="' . (int) ( $item['category_id'] ?? 0 ) . '" data-is-active="' . (int) $item['is_active'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
 			'toggle'     => '<a href="' . esc_url( $toggle_url ) . '">' . $toggle_label . '</a>',
 			'trash'      => '<a href="' . esc_url( $trash_url ) . '">' . esc_html__( 'Trash', 'gt-link-manager' ) . '</a>',
 		);
 
-		if ( '' !== $branded_url ) {
+		if ( '' !== $branded_url && $this->branded_column_hidden() ) {
 			$actions['copy_url'] = '<a href="#" class="gtlm-copy-url" data-copy-url="' . esc_attr( $branded_url ) . '">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</a>';
 			$actions['view']     = '<a href="' . esc_url( $branded_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View', 'gt-link-manager' ) . '</a>';
 		}
@@ -354,8 +374,8 @@ class GTLM_List_Table extends WP_List_Table {
 			'<span class="gtlm-branded-cell">'
 				. '<a class="gtlm-url-cell" href="%1$s" target="_blank" rel="noopener noreferrer" title="%2$s"><code>%3$s</code></a>'
 				. '<button type="button" class="gtlm-copy-inline" data-copy-url="%1$s" aria-label="%4$s" title="%4$s">'
-					. '<span class="gtlm-copy-inline__icon dashicons dashicons-admin-page" aria-hidden="true"></span>'
-					. '<span class="gtlm-copy-inline__done" aria-hidden="true">%5$s</span>'
+					. '<span class="gtlm-copy-inline__icon">%6$s</span>'
+					. '<span class="gtlm-copy-inline__done" aria-hidden="true">%7$s%5$s</span>'
 				. '</button>'
 				. '<span class="screen-reader-text" aria-live="polite"></span>'
 			. '</span>',
@@ -364,7 +384,9 @@ class GTLM_List_Table extends WP_List_Table {
 			esc_html( $path ),
 			/* translators: %s: branded link path. */
 			esc_attr( sprintf( __( 'Copy branded URL for %s', 'gt-link-manager' ), $path ) ),
-			esc_html__( 'Copied', 'gt-link-manager' )
+			esc_html__( 'Copied', 'gt-link-manager' ),
+			gtlm_icon( 'copy' ),
+			gtlm_icon( 'check', 14 )
 		);
 	}
 
@@ -431,11 +453,16 @@ class GTLM_List_Table extends WP_List_Table {
 	 * @param array<string, mixed> $item Item.
 	 */
 	protected function column_status( $item ): string {
-		if ( ! empty( $item['is_active'] ) ) {
-			return '<span class="gtlm-status gtlm-status--active">' . esc_html__( 'Active', 'gt-link-manager' ) . '</span>';
+		return self::status_badge( ! empty( $item['is_active'] ) );
+	}
+
+	/** Shared with quick edit, which swaps the badge in place after saving. */
+	public static function status_badge( bool $active ): string {
+		if ( $active ) {
+			return '<span class="gtlm-status gtlm-status--active">' . gtlm_icon( 'circle-check', 14 ) . esc_html__( 'Active', 'gt-link-manager' ) . '</span>';
 		}
 
-		return '<span class="gtlm-status gtlm-status--inactive">' . esc_html__( 'Inactive', 'gt-link-manager' ) . '</span>';
+		return '<span class="gtlm-status gtlm-status--inactive">' . gtlm_icon( 'player-pause', 14 ) . esc_html__( 'Inactive', 'gt-link-manager' ) . '</span>';
 	}
 
 	/**
@@ -469,18 +496,35 @@ class GTLM_List_Table extends WP_List_Table {
 	 */
 	protected function column_geo( array $item ): string {
 		if ( 'off' === (string) ( $item['geo_mode'] ?? 'off' ) ) {
-			return '<span class="gtlm-status gtlm-status--na" aria-label="' . esc_attr__( 'No geo rules', 'gt-link-manager' ) . '">' . esc_html__( 'N/A', 'gt-link-manager' ) . '</span>';
+			return '<span aria-hidden="true">&mdash;</span><span class="screen-reader-text">' . esc_html__( 'No country rules', 'gt-link-manager' ) . '</span>';
 		}
 
 		$count = GTLM_Geo::rule_count( $item );
+		$label = sprintf(
+			/* translators: %d: number of country rules */
+			_n( '%d rule', '%d rules', $count, 'gt-link-manager' ),
+			$count
+		);
 
-		return '<span class="gtlm-status gtlm-status--active">' . esc_html(
-			sprintf(
-				/* translators: %d: number of country rules */
-				_n( '%d rule', '%d rules', $count, 'gt-link-manager' ),
-				$count
-			)
-		) . '</span>';
+		// Rules are kept but ignored while country routing is off in Settings; say so instead of implying they apply.
+		if ( empty( GTLM_Settings::get_instance()->all()['enable_geo_targeting'] ) ) {
+			return '<span class="gtlm-geo gtlm-geo--off" title="' . esc_attr__( 'Country routing is turned off in Settings, so these rules are not applied.', 'gt-link-manager' ) . '">' . gtlm_icon( 'world', 14 ) . esc_html( $label ) . ' <span class="gtlm-geo__off">' . esc_html__( '(off)', 'gt-link-manager' ) . '</span></span>';
+		}
+
+		return '<span class="gtlm-geo">' . gtlm_icon( 'world', 14 ) . esc_html( $label ) . '</span>';
+	}
+
+	/**
+	 * Date only; the full stored timestamp stays in the title attribute.
+	 *
+	 * @param array<string, mixed> $item Item.
+	 */
+	protected function column_created_at( $item ): string {
+		$created = (string) ( $item['created_at'] ?? '' );
+		if ( '' === $created ) {
+			return '&mdash;';
+		}
+		return '<span title="' . esc_attr( $created ) . '">' . esc_html( mysql2date( (string) get_option( 'date_format' ), $created ) ) . '</span>';
 	}
 
 	protected function column_default( $item, $column_name ): string {

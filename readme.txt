@@ -143,6 +143,8 @@ The block editor assets (blocks/link-inserter/build/) are compiled from the sour
 To build from source:
 `cd blocks/link-inserter && npm install && npm run build`
 
+Admin icons are from [Tabler Icons](https://tabler.io/icons) (MIT License), inlined as SVG. Only the icons the admin uses are included.
+
 == Installation ==
 
 1. Upload the plugin folder to `/wp-content/plugins/`.
@@ -273,6 +275,13 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 * New: Delete old data removes analytics older than a chosen number of days and compacts the tables, so the reported size and the disk usage both drop. Also available as `wp gt-link-manager analytics prune --older-than=<days> --yes`.
 * New: Top links now shows each link's destination URL.
 * Improved: accurate status notices for a stalled scheduler, a failed report update, and a processing backlog, each with an Update reports now button. A single failed update no longer pauses collection.
+* Fixed: Quick Edit rewrote regex patterns and direct paths as if they were slugs. Changing only the destination of `^old/(.*)$` saved the pattern as `old`, which then redirected every URL containing "old". Quick Edit now edits slugs for standard links only, and only when you change them.
+* Fixed: renaming an existing link on the edit screen silently changed its slug, breaking the short link everywhere it was already used. Only new links follow their name.
+* Fixed: with a persistent object cache, a failed database lookup was cached as "link not found" with no expiry, so a brief database error could 404 a short link until it was edited. Failed lookups are no longer cached, and genuine misses expire after ten minutes.
+* Fixed: database migrations ran only in wp-admin, so an automatic update from an older version could 404 every short link until someone opened the dashboard. They now run on the first request after an update.
+* Fixed: on phones the links list showed only checkboxes. Link names, actions and the expand toggle now appear.
+* Fixed: after Quick Edit changed a slug, the row's copy button and link still pointed at the old URL.
+* Improved: admin icons, a quieter Geo column that flags rules saved while country routing is off, date-only Created column, a full-width destination field, shorter rows, and an Edit Link title and menu highlight when editing.
 
 = 1.9.0 =
 * Add opt-in Advanced Analytics with WordPress-time trends, referring-page and link reports, instant breakdown tabs, and CSV exports.
@@ -468,7 +477,7 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 == Upgrade Notice ==
 
 = 1.9.1 =
-Advanced Analytics no longer stops collecting at 100 MB. You get a storage warning and a Delete old data action instead. Top links also shows destination URLs.
+Advanced Analytics no longer stops collecting at 100 MB; you get a storage warning and a Delete old data action instead. Also fixes Quick Edit corrupting regex and direct links, slugs changing on rename, and short links that could 404 after a database error or an automatic update.
 
 = 1.9.0 =
 Adds optional Advanced Analytics, clearer settings and diagnostics, and redirect/CSV security fixes. Analytics remains off until you enable it. Existing links and basic click counts are preserved.

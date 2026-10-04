@@ -325,44 +325,68 @@ class GTLM_Analytics_DB extends GTLM_DB {
 	/** Delete events and summaries before $cutoff (UTC) in batches until done or $budget seconds pass. */
 	public function delete_before( string $cutoff, float $budget ): array {
 		global $wpdb;
-		$start = microtime( true );
-		$rows  = 0;
-		foreach ( array(
-			self::hourly_table() => 'bucket_start',
-			self::events_table() => 'occurred_at',
-		) as $table => $column ) {
+		$start       = microtime( true );
+		$rows        = 0;
+		$unprocessed = 0;
+		$events      = self::events_table();
+		// Unprocessed clicks (left by a long cron outage) are deleted in their own step so
+		// exactly the ones removed are counted as a gap, as retention pruning does.
+		$steps = array(
+			array( self::hourly_table(), 'bucket_start', '', false ),
+			array( $events, 'occurred_at', ' AND processed = 0', true ),
+			array( $events, 'occurred_at', '', false ),
+		);
+		foreach ( $steps as list( $table, $column, $extra, $gap ) ) {
 			do {
-				$count = $this->must_query( $wpdb->prepare( "DELETE FROM {$table} WHERE {$column} < %s ORDER BY {$column} LIMIT 5000", $cutoff ) );
+				$count = $this->must_query( $wpdb->prepare( "DELETE FROM {$table} WHERE {$column} < %s{$extra} ORDER BY {$column} LIMIT 5000", $cutoff ) );
 				$rows += $count;
+				if ( $gap ) {
+					$unprocessed += $count;
+				}
 			} while ( 5000 === $count && microtime( true ) - $start < $budget );
 			if ( 5000 === $count ) {
 				return array(
-					'rows'     => $rows,
-					'complete' => false,
+					'rows'        => $rows,
+					'complete'    => false,
+					'unprocessed' => $unprocessed,
 				);
 			}
 		}
 		return array(
-			'rows'     => $rows,
-			'complete' => true,
+			'rows'        => $rows,
+			'complete'    => true,
+			'unprocessed' => $unprocessed,
 		);
 	}
 
 	/**
 	 * Rebuild both tables. InnoDB keeps deleted pages allocated, so without this
 	 * neither the disk usage nor the reported size drops after a delete.
-	 * Best effort: an online rebuild the database user cannot run is skipped.
+	 * Best effort: returns false when a rebuild failed or was not permitted.
 	 */
-	public function reclaim_space(): void {
+	public function reclaim_space(): bool {
 		global $wpdb;
-		$old = $wpdb->suppress_errors( true );
+		$old  = $wpdb->suppress_errors( true );
+		$wait = $wpdb->get_var( 'SELECT @@SESSION.lock_wait_timeout' );
+		$ok   = true;
 		try {
+			// A rebuild needs a brief exclusive metadata lock; give up after 30s instead of
+			// queueing reports behind it for the server default (a day on MariaDB).
+			$wpdb->query( 'SET SESSION lock_wait_timeout = 30' );
 			foreach ( array( self::hourly_table(), self::events_table() ) as $table ) {
-				$wpdb->query( "OPTIMIZE TABLE {$table}" );
+				$result = $wpdb->get_results( "OPTIMIZE TABLE {$table}", ARRAY_A );
+				// OPTIMIZE reports failures as result rows (Msg_type error), not as query errors.
+				if ( '' !== $wpdb->last_error || ! is_array( $result ) || in_array( 'error', array_map( 'strtolower', array_column( $result, 'Msg_type' ) ), true ) ) {
+					$ok = false;
+				}
 			}
 		} finally {
+			if ( is_numeric( $wait ) ) {
+				$wpdb->query( $wpdb->prepare( 'SET SESSION lock_wait_timeout = %d', (int) $wait ) );
+			}
 			$wpdb->suppress_errors( $old );
 		}
+		return $ok;
 	}
 
 	public function health(): array {

@@ -57,17 +57,20 @@ storage_check(str_contains($html,'name="storage_warning_mb"')&&str_contains($htm
 // Delete old data: bounded, resumable, and honest about deleted history.
 $stamp=gmdate('Y-m-d H:00:00',time()-200*DAY_IN_SECONDS);$values=[];for($i=0;$i<5005;$i++){$values[]=$wpdb->prepare('(%d,%s,%s,%s,%s,1)',$id,$stamp,'','source','old-'.$i);}
 $wpdb->query("INSERT INTO {$hourly} (link_id,bucket_start,page_key,dimension,value,clicks) VALUES ".implode(',',$values));
-$event=$wpdb->get_row("SELECT * FROM {$events} LIMIT 1",ARRAY_A);unset($event['id']);$event['occurred_at']=$stamp;$event['processed']=1;$wpdb->insert($events,$event);
+$event=$wpdb->get_row("SELECT * FROM {$events} LIMIT 1",ARRAY_A);unset($event['id']);$event['occurred_at']=$stamp;$event['processed']=1;$wpdb->insert($events,$event);$event['processed']=0;$wpdb->insert($events,$event);$gaps=(int)(GTLM_Analytics::config()['expired_pending']??0);
 $recent=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$hourly} WHERE bucket_start >= %s",gmdate('Y-m-d H:i:s',time()-90*DAY_IN_SECONDS)));
-$r=GTLM_Analytics::delete_older_than(90,0.0);storage_check(!is_wp_error($r)&&5000===$r['deleted_rows']&&false===$r['complete'],'Deletion stops at its time budget and reports leftovers',$r);
-$r=GTLM_Analytics::delete_older_than(90);storage_check(!is_wp_error($r)&&6===$r['deleted_rows']&&true===$r['complete'],'A second run finishes summaries and raw events',$r);
+$r=GTLM_Analytics::delete_older_than(90,0.0);storage_check(!is_wp_error($r)&&5000===$r['deleted_rows']&&false===$r['complete']&&false===$r['compacted'],'Deletion stops at its time budget, reports leftovers and skips the rebuild',$r);
+$r=GTLM_Analytics::delete_older_than(90);storage_check(!is_wp_error($r)&&7===$r['deleted_rows']&&true===$r['complete']&&true===$r['compacted'],'A second run finishes summaries and raw events, then compacts',$r);
+storage_check($gaps+1===(int)GTLM_Analytics::config()['expired_pending'],'Unprocessed clicks removed by the delete are counted as a gap');
+$cut=GTLM_Analytics::config()['data_deleted_before'];storage_check(( new DateTimeImmutable('today',wp_timezone()) )->modify('-90 days')->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s')===$cut,'Cutoff snaps to local midnight',$cut);
 storage_check(0===(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$hourly} WHERE bucket_start < %s",gmdate('Y-m-d H:i:s',time()-90*DAY_IN_SECONDS)))&&$recent>0&&$recent===(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$hourly} WHERE bucket_start >= %s",gmdate('Y-m-d H:i:s',time()-90*DAY_IN_SECONDS))),'Only data older than the cutoff is deleted');
 storage_check(is_wp_error(GTLM_Analytics::delete_older_than(0)),'Zero days is rejected');
 $c=GTLM_Analytics::config();$c['started_at']='2000-01-01 00:00:00';update_option('gtlm_analytics',$c,false);$today=current_datetime();
 $r7=GTLM_Analytics_Controller::report(['from'=>$today->modify('-6 days')->format('Y-m-d'),'to'=>$today->format('Y-m-d')],false);
 $r90=GTLM_Analytics_Controller::report(['from'=>$today->modify('-89 days')->format('Y-m-d'),'to'=>$today->format('Y-m-d')],false);
 storage_check(null!==$r7['previous']&&null===$r90['previous'],'Deleted history is not compared as a complete period',[$r7['previous'],$r90['previous']]);
-storage_check(str_contains(storage_render(['view'=>'settings','deleted_old'=>'6','old_complete'=>'1']),'Deleted 6 rows of old analytics data'),'Deletion result notice renders');
+storage_check(str_contains(storage_render(['view'=>'settings','deleted_old'=>'6','old_complete'=>'1','compacted'=>'1']),'Deleted 6 rows of old analytics data. Analytics data now uses'),'Deletion result notice renders');
+storage_check(str_contains(storage_render(['view'=>'settings','deleted_old'=>'6','old_complete'=>'1']),'could not be compacted'),'A failed rebuild is reported, not hidden');
 
 GTLM_Analytics::delete();$db->delete_link($id);$_GET=[];
 $out=['passed'=>count(array_filter($checks,fn($c)=>$c['ok'])),'checks'=>$checks,'failed'=>array_values(array_filter($checks,fn($c)=>!$c['ok']))];echo json_encode($out,JSON_PRETTY_PRINT);exit($out['failed']?1:0);

@@ -102,10 +102,30 @@ class GTLM_DB {
 		$row  = $wpdb->get_row( $sql, ARRAY_A );
 		$link = is_array( $row ) ? $this->normalize_link_row( $row ) : null;
 
-		$ttl = (int) apply_filters( 'gtlm_cache_ttl', 0, $slug, $link );
-		wp_cache_set( $cache_key, $link, self::CACHE_GROUP, max( 0, $ttl ) );
+		$this->cache_lookup( $cache_key, $link, $slug, '' !== $wpdb->last_error );
 
 		return $link;
+	}
+
+	/**
+	 * Store a redirect lookup in the object cache.
+	 *
+	 * A failed query is never cached: with a persistent cache and the default TTL
+	 * of 0 it would be stored as "no such link" and 404 that link until its next
+	 * edit. A genuine miss expires within ten minutes, so probed or mistyped slugs
+	 * cannot pin permanent keys.
+	 *
+	 * @param mixed $value Lookup result.
+	 */
+	private function cache_lookup( string $key, $value, string $subject, bool $failed ): void {
+		if ( $failed ) {
+			return;
+		}
+		$ttl = max( 0, (int) apply_filters( 'gtlm_cache_ttl', 0, $subject, $value ) );
+		if ( null === $value ) {
+			$ttl = 0 === $ttl ? 10 * MINUTE_IN_SECONDS : min( $ttl, 10 * MINUTE_IN_SECONDS );
+		}
+		wp_cache_set( $key, $value, self::CACHE_GROUP, $ttl );
 	}
 
 	/** Protected WordPress endpoints are never link-manager routes. */
@@ -1116,8 +1136,7 @@ class GTLM_DB {
 		$row  = $wpdb->get_row( $sql, ARRAY_A );
 		$link = is_array( $row ) ? $this->normalize_link_row( $row ) : null;
 
-		$ttl = (int) apply_filters( 'gtlm_cache_ttl', 0, $path, $link );
-		wp_cache_set( $cache_key, $link, self::CACHE_GROUP, max( 0, $ttl ) );
+		$this->cache_lookup( $cache_key, $link, $path, '' !== $wpdb->last_error );
 
 		return $link;
 	}
@@ -1141,7 +1160,8 @@ class GTLM_DB {
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		$sql = 'SELECT ' . self::LINK_COLUMNS . " FROM {$table} WHERE link_mode = 'regex' AND is_active = 1 AND trashed_at IS NULL ORDER BY priority ASC, id ASC";
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
+		$rows   = $wpdb->get_results( $sql, ARRAY_A );
+		$failed = '' !== $wpdb->last_error;
 
 		if ( ! is_array( $rows ) ) {
 			$rows = array();
@@ -1149,8 +1169,8 @@ class GTLM_DB {
 
 		$rules = array_map( array( $this, 'normalize_link_row' ), $rows );
 
-		$ttl = (int) apply_filters( 'gtlm_cache_ttl', 0, 'regex_rules', $rules );
-		wp_cache_set( $cache_key, $rules, self::CACHE_GROUP, max( 0, $ttl ) );
+		// An empty rule list is a valid, cacheable answer; a failed query is not.
+		$this->cache_lookup( $cache_key, $rules, 'regex_rules', $failed );
 
 		return $rules;
 	}

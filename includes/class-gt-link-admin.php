@@ -36,6 +36,8 @@ class GTLM_Admin {
 		}
 
 		add_action( 'admin_menu', array( $this, 'register_menus' ) );
+		add_filter( 'admin_title', array( $this, 'edit_screen_title' ), 10, 2 );
+		add_filter( 'submenu_file', array( $this, 'edit_screen_submenu' ) );
 		add_filter( 'admin_footer_text', array( $this, 'review_footer' ) );
 		add_action( 'admin_init', array( $this, 'handle_actions' ) );
 		add_filter( 'set-screen-option', array( $this, 'set_screen_option' ), 10, 3 );
@@ -184,14 +186,14 @@ class GTLM_Admin {
 			'gt-link-manager-admin',
 			GTLM_URL . 'assets/css/admin.css',
 			array(),
-			GTLM_VERSION
+			self::asset_version( 'assets/css/admin.css' )
 		);
 
 		wp_enqueue_script(
 			'gt-link-manager-admin',
 			GTLM_URL . 'assets/js/admin.js',
 			array(),
-			GTLM_VERSION,
+			self::asset_version( 'assets/js/admin.js' ),
 			true
 		);
 
@@ -217,6 +219,12 @@ class GTLM_Admin {
 				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
 				'quickEditNonce'  => wp_create_nonce( 'gtlm_quick_edit' ),
 				'prefix'          => $this->settings->prefix(),
+				// Branded URLs are built from the site's home URL, which can differ from the admin origin.
+				'homeUrl'         => untrailingslashit( home_url() ),
+				'statusHtml'      => class_exists( 'GTLM_List_Table', false ) ? array(
+					'active'   => GTLM_List_Table::status_badge( true ),
+					'inactive' => GTLM_List_Table::status_badge( false ),
+				) : array(),
 				'advancedEnabled' => ! empty( $this->settings->all()['enable_advanced_redirects'] ),
 				'categories'      => $categories_data,
 				'highlight'       => isset( $_GET['highlight'] ) ? absint( $_GET['highlight'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -263,6 +271,46 @@ class GTLM_Admin {
 		);
 	}
 
+	/**
+	 * Version plus file time, so a rebuilt asset is fetched fresh even when the
+	 * plugin version did not change (redeploys, release candidates, hotfixes).
+	 */
+	private static function asset_version( string $relative ): string {
+		$time = @filemtime( GTLM_PATH . $relative ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A missing file falls back to the plugin version.
+		return false === $time ? GTLM_VERSION : GTLM_VERSION . '.' . $time;
+	}
+
+	/** The edit screen is registered as "Add New"; editing an existing link should not say so. */
+	private function editing_link(): bool {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only screen detection.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		return 'gtlm-links-edit' === $page && isset( $_GET['link_id'] ) && absint( $_GET['link_id'] ) > 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	}
+
+	public function edit_screen_title( string $admin_title, string $title ): string {
+		if ( ! $this->editing_link() || '' === $title ) {
+			return $admin_title;
+		}
+		$position = strpos( $admin_title, $title );
+		return false === $position ? $admin_title : substr_replace( $admin_title, __( 'Edit Link', 'gt-link-manager' ), $position, strlen( $title ) );
+	}
+
+	/** Highlight All Links, not Add New, while editing. */
+	public function edit_screen_submenu( $submenu_file ) {
+		return $this->editing_link() ? 'gtlm-links' : $submenu_file;
+	}
+
+	/** Absolute branded URL for standard and direct links; regex rules have none. */
+	private function branded_url_for( array $link ): string {
+		$mode = (string) ( $link['link_mode'] ?? 'standard' );
+		if ( 'regex' === $mode ) {
+			return '';
+		}
+		$slug = ltrim( (string) ( $link['slug'] ?? '' ), '/' );
+		return home_url( 'direct' === $mode ? '/' . $slug : '/' . trim( $this->settings->prefix(), '/' ) . '/' . $slug );
+	}
+
 	public function ajax_quick_edit(): void {
 		if ( ! current_user_can( $this->links_capability( 'quick_edit' ) ) ) {
 			wp_send_json_error();
@@ -290,10 +338,18 @@ class GTLM_Admin {
 			'redirect_type' => $redirect_type,
 		);
 
-		if ( isset( $_POST['slug'] ) ) {
-			$updates['slug'] = sanitize_title( (string) wp_unslash( $_POST['slug'] ) );
-			if ( '' === $updates['slug'] ) {
+		// Quick Edit renames standard slugs only, and only when the value changed.
+		// Direct paths and regex patterns are not slugs: sanitize_title() turns
+		// `^old/(.*)$` into `old`, which (matching is unanchored) then captures every
+		// URL containing "old". Those are edited in the full editor.
+		$mode = (string) ( $link['link_mode'] ?? 'standard' );
+		if ( isset( $_POST['slug'] ) && 'standard' === $mode ) {
+			$slug = sanitize_title( (string) wp_unslash( $_POST['slug'] ) );
+			if ( '' === $slug ) {
 				wp_send_json_error();
+			}
+			if ( $slug !== (string) $link['slug'] ) {
+				$updates['slug'] = $slug;
 			}
 		}
 
@@ -326,6 +382,7 @@ class GTLM_Admin {
 				'url'           => (string) ( $updated_link['url'] ?? $url ),
 				'redirect_type' => (int) ( $updated_link['redirect_type'] ?? $redirect_type ),
 				'slug'          => (string) ( $updated_link['slug'] ?? '' ),
+				'branded_url'   => $this->branded_url_for( (array) $updated_link ),
 				'rel'           => (string) ( $updated_link['rel'] ?? '' ),
 				'category_id'   => (int) ( $updated_link['category_id'] ?? 0 ),
 				'is_active'     => (int) ( $updated_link['is_active'] ?? 1 ),

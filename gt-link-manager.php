@@ -48,8 +48,11 @@ register_deactivation_hook( GTLM_FILE, array( 'GTLM_Deactivator', 'deactivate' )
  * Bootstrap plugin services.
  */
 function gtlm_bootstrap(): void {
-	// Run schema migrations when DB version is behind plugin version.
-	if ( is_admin() ) {
+	// Run schema migrations whenever the stored version is behind, in any context.
+	// Auto-updates and `wp plugin update` install code that redirects query at once;
+	// gating this on wp-admin left every short link 404ing on a missing column until
+	// someone opened the dashboard. gtlm_db_version is autoloaded, so this is free.
+	if ( version_compare( (string) get_option( 'gtlm_db_version', '0' ), GTLM_VERSION, '<' ) ) {
 		GTLM_Activator::maybe_upgrade();
 	}
 

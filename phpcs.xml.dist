@@ -18,6 +18,15 @@
 		</properties>
 	</rule>
 
+	<!-- gtlm_icon() returns fixed SVG path data with escaped attributes. -->
+	<rule ref="WordPress.Security.EscapeOutput">
+		<properties>
+			<property name="customAutoEscapedFunctions" type="array">
+				<element value="gtlm_icon"/>
+			</property>
+		</properties>
+	</rule>
+
 	<!-- Allow assignment in while for fgetcsv pattern. -->
 	<rule ref="Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition">
 		<severity>0</severity>

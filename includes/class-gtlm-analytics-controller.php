@@ -235,12 +235,13 @@ class GTLM_Analytics_Controller {
 				'view'         => 'settings',
 				'deleted_old'  => (int) $result['deleted_rows'],
 				'old_complete' => $result['complete'] ? 1 : 0,
+				'compacted'    => ! empty( $result['compacted'] ) ? 1 : 0,
 			);
 		}
 		// The forms post to their own URL, where wp_get_referer() returns false by design.
 		$referer = (string) wp_validate_redirect( (string) wp_get_raw_referer(), '' );
 		if ( 'process' === $action && str_contains( $referer, 'page=gtlm-links-analytics' ) ) {
-			wp_safe_redirect( add_query_arg( 'updated', 1, remove_query_arg( array( 'saved', 'updated', 'deleted_old', 'old_complete' ), $referer ) ) );
+			wp_safe_redirect( add_query_arg( 'updated', 1, remove_query_arg( array( 'saved', 'updated', 'deleted_old', 'old_complete', 'compacted' ), $referer ) ) );
 			exit;
 		}
 		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );

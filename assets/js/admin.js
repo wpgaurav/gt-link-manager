@@ -69,9 +69,13 @@
 		// Row 2: Slug + Rel + Category + Status
 		var row2 = el('div', { className: 'gtlm-qe-row' });
 
+		// Only standard links have an editable slug here; direct paths and regex
+		// patterns are edited in the full editor, where they are validated as such.
+		var editableSlug = (data.linkMode || 'standard') === 'standard';
 		var slugLabel = el('label', { textContent: 'Slug ' });
-		var slugInput = el('input', { type: 'text', className: 'gtlm-quick-slug', value: data.slug || '' });
-		slugLabel.appendChild(slugInput);
+		if (editableSlug) {
+			slugLabel.appendChild(el('input', { type: 'text', className: 'gtlm-quick-slug', value: data.slug || '' }));
+		}
 
 		var relFieldset = el('span', { className: 'gtlm-qe-rel' });
 		relFieldset.appendChild(document.createTextNode('Rel '));
@@ -103,8 +107,10 @@
 		statusSelect.value = String(data.isActive);
 		statusLabel.appendChild(statusSelect);
 
-		row2.appendChild(slugLabel);
-		row2.appendChild(document.createTextNode(' '));
+		if (editableSlug) {
+			row2.appendChild(slugLabel);
+			row2.appendChild(document.createTextNode(' '));
+		}
 		row2.appendChild(relFieldset);
 		row2.appendChild(document.createTextNode(' '));
 		row2.appendChild(catLabel);
@@ -146,7 +152,10 @@
 			formData.append('link_id', data.linkId);
 			formData.append('url', quickTr.querySelector('.gtlm-quick-url').value);
 			formData.append('redirect_type', quickTr.querySelector('.gtlm-quick-type').value);
-			formData.append('slug', quickTr.querySelector('.gtlm-quick-slug').value);
+			var slugField = quickTr.querySelector('.gtlm-quick-slug');
+			if (slugField && slugField.value !== (data.slug || '')) {
+				formData.append('slug', slugField.value);
+			}
 			formData.append('category_id', quickTr.querySelector('.gtlm-quick-category').value);
 			formData.append('is_active', quickTr.querySelector('.gtlm-quick-status').value);
 
@@ -192,9 +201,12 @@
 					var statusCell = tr.querySelector('td.column-status');
 					if (statusCell) {
 						var isActive = parseInt(d.is_active, 10);
-						statusCell.innerHTML = isActive
-							? '<span class="gtlm-status gtlm-status--active">Active</span>'
-							: '<span class="gtlm-status gtlm-status--inactive">Inactive</span>';
+						var badges = window.gtlmAdmin.statusHtml || {};
+						var badge = isActive ? badges.active : badges.inactive;
+						if (badge) {
+							// Server-rendered, translated markup from GTLM_List_Table::status_badge().
+							statusCell.innerHTML = badge;
+						}
 					}
 					var catCell = tr.querySelector('td.column-category');
 					if (catCell) {
@@ -206,9 +218,21 @@
 						});
 						catCell.textContent = catName;
 					}
-					var brandedCell = tr.querySelector('td.column-branded_url code');
-					if (brandedCell && d.slug) {
-						brandedCell.textContent = window.location.origin + '/' + (window.gtlmAdmin.prefix || 'go') + '/' + d.slug;
+					var brandedCell = tr.querySelector('td.column-branded_url a.gtlm-url-cell code');
+					if (brandedCell && d.branded_url) {
+						// Match the server cell: show the path, link and copy the full URL.
+						var full = d.branded_url;
+						var home = window.gtlmAdmin.homeUrl || window.location.origin;
+						brandedCell.textContent = full.indexOf(home) === 0 ? full.slice(home.length) || '/' : full;
+						var brandedLink = brandedCell.closest('a');
+						if (brandedLink) {
+							brandedLink.href = full;
+							brandedLink.title = full;
+						}
+						var brandedCopy = tr.querySelector('td.column-branded_url .gtlm-copy-inline');
+						if (brandedCopy) {
+							brandedCopy.setAttribute('data-copy-url', full);
+						}
 					}
 
 					// Update quick edit data attributes
@@ -247,6 +271,7 @@
 				url: quickLink.getAttribute('data-url') || '',
 				redirectType: quickLink.getAttribute('data-redirect-type') || '301',
 				slug: quickLink.getAttribute('data-slug') || '',
+				linkMode: quickLink.getAttribute('data-link-mode') || 'standard',
 				rel: quickLink.getAttribute('data-rel') || '',
 				categoryId: quickLink.getAttribute('data-category-id') || '0',
 				isActive: quickLink.getAttribute('data-is-active') || '1'
@@ -356,7 +381,10 @@
 	var prefix = window.gtlmAdmin.prefix || 'go';
 	var preview = document.getElementById('gtlm-branded-preview');
 	var copyBtn = document.getElementById('gtlm-copy-preview');
-	var slugTouched = false;
+	// An existing link's slug is already live in posts, so renaming the link must
+	// never rewrite it. Only a new link with an empty slug follows its name.
+	var linkIdField = document.querySelector('input[name="link_id"]');
+	var slugTouched = !!(linkIdField && parseInt(linkIdField.value, 10) > 0) || !!(slugField && slugField.value.trim());
 
 	function getSelectedMode() {
 		var checked = document.querySelector('input[name="link_mode"]:checked');
@@ -382,12 +410,13 @@
 			return;
 		}
 		var mode = getSelectedMode();
+		var home = window.gtlmAdmin.homeUrl || window.location.origin;
 		if (mode === 'direct') {
-			preview.textContent = window.location.origin + '/' + slug;
+			preview.textContent = home + '/' + slug;
 		} else if (mode === 'regex') {
 			preview.textContent = slug + ' (regex pattern)';
 		} else {
-			preview.textContent = window.location.origin + '/' + prefix + '/' + slug;
+			preview.textContent = home + '/' + prefix + '/' + slug;
 		}
 	}
 
@@ -459,10 +488,12 @@
 			if (!text || text === '-') {
 				return;
 			}
+			// Only the label changes, so the icon stays in place.
+			var copyLabel = copyBtn.querySelector('.gtlm-button-label') || copyBtn;
 			window.navigator.clipboard.writeText(text).then(function () {
-				copyBtn.textContent = window.gtlmAdmin.i18n.copied;
+				copyLabel.textContent = window.gtlmAdmin.i18n.copied;
 				window.setTimeout(function () {
-					copyBtn.textContent = window.gtlmAdmin.i18n.copyUrl;
+					copyLabel.textContent = window.gtlmAdmin.i18n.copyUrl;
 				}, 1200);
 			});
 		});

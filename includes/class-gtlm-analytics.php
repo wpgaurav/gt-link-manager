@@ -371,18 +371,32 @@ class GTLM_Analytics {
 			if ( ! $config || self::SCHEMA !== ( $config['schema'] ?? '' ) ) {
 				return new WP_Error( 'gtlm_analytics_disabled', __( 'Analytics has not been initialized.', 'gt-link-manager' ) );
 			}
-			$cutoff = $db->event_cutoff( $days );
+			// Snap to local midnight so the oldest remaining report day is whole.
+			$cutoff = ( new DateTimeImmutable( 'today', wp_timezone() ) )->modify( '-' . $days . ' days' )->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );
 			$result = $db->delete_before( $cutoff, $budget );
-			$db->reclaim_space();
+			// Record the cutoff and renew the lease before compacting: a rebuild can outlast
+			// both the request and the 15-minute lease, and neither may be lost if it does.
 			// Reports before the cutoff are now partial, so period comparisons must not treat them as complete history.
 			$config['data_deleted_before'] = max( (string) ( $config['data_deleted_before'] ?? '' ), $cutoff );
-			$config['health']              = $db->health();
+			$config['expired_pending']     = (int) ( $config['expired_pending'] ?? 0 ) + $result['unprocessed'];
+			if ( GTLM_Settings::get_instance()->advanced_analytics_enabled() && 'active' === ( $config['state'] ?? '' ) ) {
+				$config['lease_until'] = time() + 900;
+			}
+			$config['health'] = $db->health();
 			self::save( $config );
+			// Partial runs are repeated, and each rebuild copies the whole table, so compact once at the end.
+			$compacted = $result['complete'] ? $db->reclaim_space() : false;
+			if ( $compacted ) {
+				$config           = self::fresh_config();
+				$config['health'] = $db->health();
+				self::save( $config );
+			}
 			return array_merge(
 				self::status(),
 				array(
 					'deleted_rows' => $result['rows'],
 					'complete'     => $result['complete'],
+					'compacted'    => $compacted,
 				)
 			);
 		} catch ( Throwable $error ) {

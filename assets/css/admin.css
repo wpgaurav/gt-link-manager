@@ -224,7 +224,9 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 /* ── Status badges ───────────────────────────────────────────── */
 .gtlm-status {
-	display: inline-block;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
 	padding: 2px 8px;
 	border-radius: 4px;
 	font-size: 12px;
@@ -730,9 +732,11 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 
 /* 3. Ceilings on the columns that carry long values, so one very long
       URL cannot push every other column off screen. */
+/* Wide enough that the row actions take two lines, not four: hidden row
+   actions still reserve their height, so this sets the row height. */
 .wp-list-table.gtlm-links-table .column-name {
-	min-width: 200px;
-	max-width: 320px;
+	min-width: 280px;
+	max-width: 360px;
 }
 
 .wp-list-table.gtlm-links-table .column-branded_url {
@@ -845,11 +849,14 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	box-shadow: none;
 }
 
-.gtlm-copy-inline .dashicons {
-	width: 16px;
-	height: 16px;
-	font-size: 16px;
-	line-height: 16px;
+.gtlm-copy-inline__icon,
+.gtlm-copy-inline__done {
+	align-items: center;
+	gap: 3px;
+}
+
+.gtlm-copy-inline__icon {
+	display: inline-flex;
 }
 
 /* The "Copied" badge replaces the icon in place, so the row does not reflow. */
@@ -867,7 +874,7 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 }
 
 .gtlm-copy-inline.is-copied .gtlm-copy-inline__done {
-	display: inline;
+	display: inline-flex;
 }
 
 .gtlm-copy-inline.is-copied {
@@ -1010,3 +1017,17 @@ body.no-js .gtlm-breakdown-nav { display:none; }
 .gtlm-retention-warning { color:#6e4100; background:#fff4ce; border-inline-start:3px solid #996800; padding:10px 12px; max-width:640px; }
 .gtlm-retention-warning[hidden] { display:none; }
 .gtlm-diagnostics-current { margin-bottom:20px; }
+
+/* ── Icons ───────────────────────────────────────────────────────
+   Inline Tabler SVGs from GTLM_Icons. They draw in currentColor, so
+   they follow admin colour schemes and the text they sit beside. */
+.gtlm-icon { flex: 0 0 auto; vertical-align: -0.18em; }
+.gtlm-button-icon { display: inline-flex; align-items: center; gap: 6px; }
+.gtlm-geo { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.gtlm-geo--off { color: #50575e; }
+.gtlm-geo__off { font-size: 12px; }
+.gtlm-heading-icon { display: flex; align-items: center; gap: 8px; }
+.gtlm-heading-icon .gtlm-icon { color: var(--wp-admin-theme-color, #2271b1); }
+.gtlm-breakdown-nav .nav-tab { display: inline-flex; align-items: center; gap: 6px; }
+.gtlm-analytics-metric > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.gtlm-tooltip-trigger .gtlm-icon { vertical-align: middle; color: #50575e; }
