@@ -273,7 +273,8 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 = 1.10.0 =
 * New: AI agent support through Site Agent, a free plugin that connects agents such as Claude, ChatGPT and Cursor to your site. With Site Agent 0.4 or later, a connected agent gets the GT Link Manager skill automatically: it can find, create and update links, set country rules, organize categories and read analytics, using the same checks as the REST API.
 * New: `gtlm_agent()` for integrations. It returns every link with the branded short link as `url` and the destination as `target_url`, the same shape as link lists. Permanent deletion and analytics changes stay in the dashboard.
-* Settings → AI tools and REST API explains the Site Agent option.
+* New: an AI agents page in the GT Links menu shows what a connected agent can do and how to connect one.
+* Improved: settings are grouped into cards.
 
 = 1.9.1 =
 * Fixed: after an automatic update from 1.7 or earlier, every short link could return 404 until someone opened the dashboard. Database updates now run on the first request after an update.
@@ -476,6 +477,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.10.0 =
+Adds AI agent support through the free Site Agent plugin and groups settings into cards. Links and redirects are unchanged.
 
 = 1.9.1 =
 Fixes short links that could 404 after updating from older versions, Quick Edit damaging regex and direct links, and analytics stopping at 100 MB. Analytics now keeps minute-level detail for seven days, then daily totals.
