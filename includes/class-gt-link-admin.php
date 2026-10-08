@@ -178,7 +178,7 @@ class GTLM_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics', 'gtlm-links-ai-agents' ), true ) ) {
 			return;
 		}
 
@@ -599,7 +599,7 @@ class GTLM_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics', 'gtlm-links-ai-agents' ), true ) ) {
 			return;
 		}
 

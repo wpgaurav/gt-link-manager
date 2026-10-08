@@ -1032,3 +1032,10 @@ body.no-js .gtlm-breakdown-nav { display:none; }
 .gtlm-breakdown-nav .nav-tab { display: inline-flex; align-items: center; gap: 6px; }
 .gtlm-analytics-metric > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
 .gtlm-tooltip-trigger .gtlm-icon { vertical-align: middle; color: #50575e; }
+
+.gtlm-ai-agents .gtlm-ai-lead { font-size:14px; max-width:780px; }
+.gtlm-ai-agents .gtlm-ai-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin:16px 0; max-width:1200px; }
+.gtlm-ai-agents .gtlm-ai-card { background:#fff; border:1px solid #c3c4c7; border-radius:4px; padding:4px 18px 12px; }
+.gtlm-ai-agents .gtlm-ai-card ul, .gtlm-ai-agents .gtlm-ai-card ol { margin-left:18px; }
+.gtlm-ai-agents .gtlm-ai-card ul { list-style:disc; }
+.gtlm-ai-agents .gtlm-ai-card li { margin-bottom:6px; }

@@ -182,3 +182,9 @@ add_filter(
 		return $skills;
 	}
 );
+
+if ( is_admin() ) {
+	add_action( 'admin_menu', array( 'GTLM_Agent', 'menu' ), 99 );
+	add_action( 'admin_notices', array( 'GTLM_Agent', 'card' ) );
+	add_action( 'admin_post_gtlm_dismiss_site_agent', array( 'GTLM_Agent', 'dismiss' ) );
+}
