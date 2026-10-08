@@ -276,15 +276,15 @@ class GTLM_Admin_Pages {
 		$this->render_notice();
 		echo '<form method="post">';
 		wp_nonce_field( 'gtlm_settings_save' );
-		echo '<input type="hidden" name="gtlm_settings_action" value="save_settings"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'link', 20 ) . esc_html__( 'Link defaults', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
+		echo '<input type="hidden" name="gtlm_settings_action" value="save_settings"><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'link', 20 ) . esc_html__( 'Link defaults', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_text_field( 'base_prefix', __( 'Link prefix', 'gt-link-manager' ), (string) $settings['base_prefix'], true );
 		$this->render_redirect_type_field( (int) $settings['default_redirect_type'], 'default_redirect_type', __( 'Redirect type', 'gt-link-manager' ) );
 		$this->render_rel_field( implode( ',', (array) $settings['default_rel'] ), 'default_rel[]', __( 'Link attributes', 'gt-link-manager' ) );
 		$this->render_checkbox_field( 'default_noindex', __( 'Search engines', 'gt-link-manager' ), __( 'Keep new short links out of search results', 'gt-link-manager' ), ! empty( $settings['default_noindex'] ) );
-		echo '</tbody></table><h2 class="gtlm-heading-icon">' . gtlm_icon( 'click', 20 ) . esc_html__( 'Basic click counts', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
+		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'click', 20 ) . esc_html__( 'Basic click counts', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_click_tracking', __( 'Lifetime totals', 'gt-link-manager' ), __( 'Keep a running click total next to each link', 'gt-link-manager' ), ! empty( $settings['enable_click_tracking'] ) );
-		echo '</tbody></table><p>' . esc_html__( 'For date trends, sources and devices, use the separate analytics feature.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-analytics&view=settings' ) ) . '">' . esc_html__( 'Open analytics settings', 'gt-link-manager' ) . '</a></p>';
-		echo '<section class="gtlm-settings-section"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'api', 20 ) . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><div class="gtlm-site-agent-note"><p><strong>' . esc_html__( 'Easiest with Site Agent.', 'gt-link-manager' ) . '</strong> ' . esc_html__( 'Site Agent is a free plugin that connects AI agents such as Claude, ChatGPT and Cursor to this site. With Site Agent 0.4 or later, a connected agent already has the GT Link Manager skill and signs in with OAuth, so no Application Password or setup prompt is needed.', 'gt-link-manager' ) . ' <a href="https://gauravtiwari.org/product/site-agent/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Get Site Agent', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a></p></div><p>' . esc_html__( 'For other AI tools and scripts, use the REST API with an Application Password:', 'gt-link-manager' ) . '</p><a href="https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Read the REST API guide for AI tools', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';
+		echo '</tbody></table><p>' . esc_html__( 'For date trends, sources and devices, use the separate analytics feature.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-analytics&view=settings' ) ) . '">' . esc_html__( 'Open analytics settings', 'gt-link-manager' ) . '</a></p></section>';
+		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'api', 20 ) . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><div class="gtlm-site-agent-note"><p><strong>' . esc_html__( 'Easiest with Site Agent.', 'gt-link-manager' ) . '</strong> ' . esc_html__( 'Site Agent is a free plugin that connects AI agents such as Claude, ChatGPT and Cursor to this site with an OAuth sign-in. Connected agents get the GT Link Manager skill automatically, with no Application Password or setup prompt.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-ai-agents' ) ) . '">' . esc_html__( 'See how it works', 'gt-link-manager' ) . '</a></p></div><p>' . esc_html__( 'For other AI tools and scripts, use the REST API with an Application Password:', 'gt-link-manager' ) . '</p><a href="https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Read the REST API guide for AI tools', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';
 		$prompt = sprintf(
 			/* translators: 1: this WordPress site's URL, 2: the setup guide URL. */
 			__(
@@ -302,20 +302,20 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		);
 		echo '<p><label for="gtlm-ai-prompt"><strong>' . esc_html__( 'Copy this setup prompt into your AI tool', 'gt-link-manager' ) . '</strong></label></p><textarea id="gtlm-ai-prompt" class="large-text" rows="10" readonly>' . esc_textarea( $prompt ) . '</textarea><p class="gtlm-ai-prompt-actions"><button type="button" class="button" id="gtlm-copy-ai-prompt" data-copied="' . esc_attr__( 'Prompt copied.', 'gt-link-manager' ) . '" data-failed="' . esc_attr__( 'Copy failed. Select the prompt and copy it manually.', 'gt-link-manager' ) . '">' . esc_html__( 'Copy setup prompt', 'gt-link-manager' ) . '</button><span id="gtlm-ai-prompt-status" role="status" aria-live="polite"></span></p></section>';
 
-		echo '<section class="gtlm-settings-section"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'world', 20 ) . esc_html__( 'Country-based redirects', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Send visitors to different destinations using the country rules on each link.', 'gt-link-manager' ) . '</p><table class="form-table" role="presentation"><tbody>';
+		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'world', 20 ) . esc_html__( 'Country-based redirects', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Send visitors to different destinations using the country rules on each link.', 'gt-link-manager' ) . '</p><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_geo_targeting', __( 'Country routing', 'gt-link-manager' ), __( 'Allow links to use country rules', 'gt-link-manager' ), ! empty( $settings['enable_geo_targeting'] ) );
 		$this->render_geo_method_field( (string) $settings['geo_detection_method'] );
 		$this->render_text_field( 'geo_custom_header', __( 'Custom header (optional)', 'gt-link-manager' ), (string) $settings['geo_custom_header'], false );
 		$this->render_checkbox_field( 'geo_debug_header', __( 'Troubleshooting', 'gt-link-manager' ), __( 'Show country details in redirect response headers', 'gt-link-manager' ), ! empty( $settings['geo_debug_header'] ) );
 		$this->render_geo_detection_status();
-		echo '</tbody></table></section><section class="gtlm-settings-section"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'adjustments', 20 ) . esc_html__( 'Advanced redirects and data cleanup', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
+		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'adjustments', 20 ) . esc_html__( 'Advanced redirects and data cleanup', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced redirects', 'gt-link-manager' ), __( 'Allow prefix-free paths and regular expressions', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
 		$this->render_retention_field( (int) $settings['trash_retention_days'] );
 		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Uninstall cleanup', 'gt-link-manager' ), __( 'Delete all plugin data when the plugin is uninstalled', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
 		echo '</tbody></table></section>';
 		submit_button( __( 'Save settings', 'gt-link-manager' ) );
-		echo '</form><section class="gtlm-settings-section"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'tool', 20 ) . esc_html__( 'Tools and diagnostics', 'gt-link-manager' ) . '</h2>';
-		echo '<div class="gtlm-card">';
+		echo '</form><section class="gtlm-settings-group"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'tool', 20 ) . esc_html__( 'Tools and diagnostics', 'gt-link-manager' ) . '</h2>';
+		echo '<div class="gtlm-card gtlm-settings-card">';
 		echo '<h2>' . esc_html__( 'Tools', 'gt-link-manager' ) . '</h2>';
 		echo '<div class="gtlm-settings-actions">';
 
@@ -334,7 +334,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '</div>';
 		echo '</div>';
 
-		echo '<div class="gtlm-card">';
+		echo '<div class="gtlm-card gtlm-settings-card">';
 		echo '<h2>' . esc_html__( 'Diagnostics', 'gt-link-manager' ) . '</h2>';
 		$bytes = $this->db->storage_bytes();
 		echo '<table class="gtlm-diagnostics-table gtlm-diagnostics-current"><tbody><tr><th scope="row">' . esc_html__( 'Database size (all GT Link Manager tables)', 'gt-link-manager' ) . '</th><td>' . esc_html( null === $bytes ? __( 'Unavailable', 'gt-link-manager' ) : size_format( $bytes, 2 ) ) . '<p class="description">' . esc_html__( 'Estimated table data and indexes, including analytics tables when present.', 'gt-link-manager' ) . '</p></td></tr>';

@@ -1039,3 +1039,19 @@ body.no-js .gtlm-breakdown-nav { display:none; }
 .gtlm-ai-agents .gtlm-ai-card ul, .gtlm-ai-agents .gtlm-ai-card ol { margin-left:18px; }
 .gtlm-ai-agents .gtlm-ai-card ul { list-style:disc; }
 .gtlm-ai-agents .gtlm-ai-card li { margin-bottom:6px; }
+
+/* ── Settings cards ───────────────────────────────────────────── */
+.gtlm-main-settings { max-width: 880px; }
+.gtlm-settings-card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); padding: 20px 24px; margin: 0 0 20px; }
+.gtlm-main-settings .gtlm-settings-card > h2,
+.gtlm-settings-card > h2:first-child { margin: 0 0 12px; padding: 0 0 12px; border-bottom: 1px solid #f0f0f1; font-size: 15px; font-weight: 600; }
+.gtlm-settings-card .form-table { margin: 0; }
+.gtlm-settings-card .form-table th { width: 190px; padding-left: 0; }
+.gtlm-settings-card .form-table td { padding-right: 0; }
+.gtlm-settings-card > p:last-child, .gtlm-settings-card > .form-table:last-child { margin-bottom: 0; }
+.gtlm-settings-card .gtlm-site-agent-note { margin-top: 0; }
+.gtlm-settings-group { margin-top: 28px; }
+.gtlm-settings-group > h2 { margin: 0 0 12px; font-size: 16px; }
+.gtlm-settings-group .gtlm-card.gtlm-settings-card { margin-top: 0; }
+@media (max-width: 782px) { .gtlm-settings-card { padding: 16px; } .gtlm-settings-card .form-table th { width: auto; } }
+@media (forced-colors: active) { .gtlm-settings-card { border: 1px solid CanvasText; } }
