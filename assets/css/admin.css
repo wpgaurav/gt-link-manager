@@ -953,6 +953,7 @@ span.gtlm-destination { color:#50575e; }
 
 /* Accessible controls and visible settings groups, scoped to GT Link Manager. */
 .gtlm-settings-section { border-top:1px solid #c3c4c7; padding:20px 0; margin-top:20px; }
+.gtlm-site-agent-note { border-left:3px solid #2271b1; background:#f0f6fc; color:#1d2327; padding:4px 14px; margin:12px 0; max-width:780px; }
 .gtlm-settings-section > h2 { margin:0 0 16px; font-size:16px; }
 .gtlm-analytics-settings input[type=text], .gtlm-analytics-settings input[type=number], .gtlm-analytics-settings select,
 .gtlm-main-settings input[type=text], .gtlm-main-settings input[type=number], .gtlm-main-settings select { min-height:44px; border:1px solid #646970; border-radius:4px; padding:8px 12px; font-size:14px; line-height:1.4; max-width:100%; box-sizing:border-box; }

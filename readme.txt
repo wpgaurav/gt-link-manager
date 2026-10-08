@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.9.1
+Stable tag: 1.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -269,6 +269,11 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.10.0 =
+* New: AI agent support through Site Agent, a free plugin that connects agents such as Claude, ChatGPT and Cursor to your site. With Site Agent 0.4 or later, a connected agent gets the GT Link Manager skill automatically: it can find, create and update links, set country rules, organize categories and read analytics, using the same checks as the REST API.
+* New: `gtlm_agent()` for integrations. It returns every link with the branded short link as `url` and the destination as `target_url`, the same shape as link lists. Permanent deletion and analytics changes stay in the dashboard.
+* Settings → AI tools and REST API explains the Site Agent option.
 
 = 1.9.1 =
 * Fixed: after an automatic update from 1.7 or earlier, every short link could return 404 until someone opened the dashboard. Database updates now run on the first request after an update.

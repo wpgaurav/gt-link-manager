@@ -3,7 +3,7 @@
  * Plugin Name:       GT Link Manager
  * Plugin URI:        https://gauravtiwari.org/product/gt-link-manager/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
- * Version:           1.9.1
+ * Version:           1.10.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Gaurav Tiwari
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GTLM_VERSION' ) ) {
-	define( 'GTLM_VERSION', '1.9.1' );
+	define( 'GTLM_VERSION', '1.10.0' );
 }
 
 if ( ! defined( 'GTLM_FILE' ) ) {
@@ -40,6 +40,7 @@ require_once GTLM_PATH . 'includes/class-gt-link-deactivator.php';
 require_once GTLM_PATH . 'includes/class-gt-link-db.php';
 require_once GTLM_PATH . 'includes/class-gt-link-geo.php';
 require_once GTLM_PATH . 'includes/class-gt-link-redirect.php';
+require_once GTLM_PATH . 'includes/class-gtlm-agent.php';
 
 register_activation_hook( GTLM_FILE, array( 'GTLM_Activator', 'activate' ) );
 register_deactivation_hook( GTLM_FILE, array( 'GTLM_Deactivator', 'deactivate' ) );
@@ -155,3 +156,29 @@ function gtlm_upgrade_analytics(): void {
 	require_once GTLM_PATH . 'includes/class-gtlm-analytics.php';
 	GTLM_Analytics::upgrade();
 }
+
+if ( ! function_exists( 'gtlm_agent' ) ) {
+	/**
+	 * Commands for AI agents. See agent-skills/gt-link-manager/SKILL.md.
+	 *
+	 * @param array<string, mixed> $input Command input.
+	 * @return array<string, mixed>
+	 */
+	function gtlm_agent( string $command, array $input = array() ): array {
+		return GTLM_Agent::call( $command, $input );
+	}
+}
+
+/** Serve the bundled skill through Site Agent 0.4+ list-skills and get-skill. */
+add_filter(
+	'site_agent_skills',
+	static function ( $skills ) {
+		$skills                    = is_array( $skills ) ? $skills : array();
+		$skills['gt-link-manager'] = array(
+			'directory' => GTLM_PATH . 'agent-skills/gt-link-manager',
+			'plugin'    => 'GT Link Manager',
+			'version'   => GTLM_VERSION,
+		);
+		return $skills;
+	}
+);
