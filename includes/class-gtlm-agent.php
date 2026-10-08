@@ -25,7 +25,7 @@ final class GTLM_Agent {
 	public static function call( string $command, array $input = array() ): array {
 		$routes = array(
 			'context'             => null,
-			'links.list'          => array( 'GET', '/links', 'list' ),
+			'links.list'          => array( 'GET', '/links', 'links' ),
 			'links.get'           => null,
 			'links.create'        => array( 'POST', '/links', 'link' ),
 			'links.update'        => null,

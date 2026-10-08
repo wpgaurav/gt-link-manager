@@ -43,7 +43,7 @@ try {
  $moved=gtlm_agent('links.bulk_category',['link_ids'=>[$id],'category_id'=>$cat_id,'mode'=>'move']);
  agent_check($moved['ok']&&(int)gtlm_agent('links.get',['id'=>$id])['link']['category_id']===$cat_id,'links.bulk_category moves links',$moved);
  $listed=gtlm_agent('links.list',['search'=>'Agent','per_page'=>10]);
- agent_check($listed['ok']&&$listed['total']>=2,'links.list searches with a total',$listed);
+ agent_check($listed['ok']&&$listed['total']>=2&&count($listed['links'])>=2&&isset($listed['links'][0]['target_url']),'links.list searches with a total',$listed);
  agent_check(gtlm_agent('analytics.status')['ok'],'An administrator reads analytics status');
 
  wp_set_current_user($editor);
