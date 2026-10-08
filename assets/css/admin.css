@@ -953,6 +953,7 @@ span.gtlm-destination { color:#50575e; }
 
 /* Accessible controls and visible settings groups, scoped to GT Link Manager. */
 .gtlm-settings-section { border-top:1px solid #c3c4c7; padding:20px 0; margin-top:20px; }
+.gtlm-site-agent-note { border-left:3px solid #2271b1; background:#f0f6fc; color:#1d2327; padding:4px 14px; margin:12px 0; max-width:780px; }
 .gtlm-settings-section > h2 { margin:0 0 16px; font-size:16px; }
 .gtlm-analytics-settings input[type=text], .gtlm-analytics-settings input[type=number], .gtlm-analytics-settings select,
 .gtlm-main-settings input[type=text], .gtlm-main-settings input[type=number], .gtlm-main-settings select { min-height:44px; border:1px solid #646970; border-radius:4px; padding:8px 12px; font-size:14px; line-height:1.4; max-width:100%; box-sizing:border-box; }
@@ -1031,3 +1032,26 @@ body.no-js .gtlm-breakdown-nav { display:none; }
 .gtlm-breakdown-nav .nav-tab { display: inline-flex; align-items: center; gap: 6px; }
 .gtlm-analytics-metric > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
 .gtlm-tooltip-trigger .gtlm-icon { vertical-align: middle; color: #50575e; }
+
+.gtlm-ai-agents .gtlm-ai-lead { font-size:14px; max-width:780px; }
+.gtlm-ai-agents .gtlm-ai-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin:16px 0; max-width:1200px; }
+.gtlm-ai-agents .gtlm-ai-card { background:#fff; border:1px solid #c3c4c7; border-radius:4px; padding:4px 18px 12px; }
+.gtlm-ai-agents .gtlm-ai-card ul, .gtlm-ai-agents .gtlm-ai-card ol { margin-left:18px; }
+.gtlm-ai-agents .gtlm-ai-card ul { list-style:disc; }
+.gtlm-ai-agents .gtlm-ai-card li { margin-bottom:6px; }
+
+/* ── Settings cards ───────────────────────────────────────────── */
+.gtlm-main-settings { max-width: 880px; }
+.gtlm-settings-card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); padding: 20px 24px; margin: 0 0 20px; }
+.gtlm-main-settings .gtlm-settings-card > h2,
+.gtlm-settings-card > h2:first-child { margin: 0 0 12px; padding: 0 0 12px; border-bottom: 1px solid #f0f0f1; font-size: 15px; font-weight: 600; }
+.gtlm-settings-card .form-table { margin: 0; }
+.gtlm-settings-card .form-table th { width: 190px; padding-left: 0; }
+.gtlm-settings-card .form-table td { padding-right: 0; }
+.gtlm-settings-card > p:last-child, .gtlm-settings-card > .form-table:last-child { margin-bottom: 0; }
+.gtlm-settings-card .gtlm-site-agent-note { margin-top: 0; }
+.gtlm-settings-group { margin-top: 28px; }
+.gtlm-settings-group > h2 { margin: 0 0 12px; font-size: 16px; }
+.gtlm-settings-group .gtlm-card.gtlm-settings-card { margin-top: 0; }
+@media (max-width: 782px) { .gtlm-settings-card { padding: 16px; } .gtlm-settings-card .form-table th { width: auto; } }
+@media (forced-colors: active) { .gtlm-settings-card { border: 1px solid CanvasText; } }

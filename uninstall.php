@@ -37,6 +37,9 @@ delete_option( 'gt_link_manager_settings' );
 delete_option( 'gt_link_manager_db_version' );
 delete_option( 'gt_link_manager_diagnostics' );
 
+// Per-user dismissal of the Site Agent card.
+delete_metadata( 'user', 0, 'gtlm_site_agent_card_dismissed', '', true );
+
 // Analytics data is covered by the same explicit uninstall deletion setting.
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}gtlm_analytics_events, {$wpdb->prefix}gtlm_analytics_hourly" );
