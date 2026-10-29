@@ -118,6 +118,12 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 - Geo links should use 302. A 301 is cached by the browser and pins a visitor to their first detected country; the editor warns on 301.
 - The redirect path resolves the link *first*, then checks `geo_mode` — detection must never run for links that don't opt in.
 
+### Prefix-free links
+
+- `prefix_free_links` (off by default) serves standard links at `/{slug}`. Build every branded URL through `GTLM_Settings::link_url()` / `build_link_url()` with `link_base()` -- never `home_url( '/' . prefix() . '/' ... )` -- or prefix-free sites get wrong URLs in the list, REST, editor and agent.
+- The prefixed route still resolves in this mode, so links already published as `/{prefix}/{slug}` keep working. Diagnostics still tests that route.
+- Root lookups only run for single-segment, slug-shaped paths, and only a live standard link claims one. A miss falls through to WordPress with no 404, because the path may be a real page. A matching link beats a page or post with the same slug; `GTLM_DB::root_slug_conflicts()` feeds the settings warning and the save handler warns via `url_to_postid()`.
+
 ### Click counting
 
 Opt-in via the `enable_click_tracking` setting, off by default. That default is a privacy commitment, not a UX choice: with it off, the plugin's registered privacy-policy content states that it does not log requests, and that statement has to stay true. `GTLM_Admin::register_privacy_content()` swaps the redirect paragraph based on the setting -- if you change what is recorded, change that text in the same commit.
@@ -132,7 +138,7 @@ Production runs on an xCloud-managed server. **The WordPress root is `/var/www/g
 - WP-CLI lives at `/usr/local/bin/wp` and needs `--skip-plugins --skip-themes` on this install.
 - Back the plugin up before overwriting, matching the convention already on the box:
   `~/gtlm-backups/gt-link-manager-<version>-<YYYYmmdd-HHMMSS>.tar.gz`
-- The live install is large (~1,300 links, a few hundred geo-targeted). Check trashed/inactive counts before shipping any change to redirect resolution, because those are the rows whose HTTP behaviour changes.
+- The live install is large (~1,650 links, a few hundred geo-targeted). Its links table is `utf8mb4_unicode_520_ci` while `wp_posts` is `utf8mb4_unicode_ci`, so joins between plugin and core tables must compare with `BINARY` (see `root_slug_conflicts()`). Check trashed/inactive counts before shipping any change to redirect resolution, because those are the rows whose HTTP behaviour changes.
 
 ## Conventions
 

@@ -238,14 +238,8 @@ class GTLM_List_Table extends WP_List_Table {
 			admin_url( 'admin.php' )
 		);
 
-		$mode = (string) ( $item['link_mode'] ?? 'standard' );
-		if ( 'direct' === $mode ) {
-			$branded_url = home_url( '/' . (string) $item['slug'] );
-		} elseif ( 'regex' === $mode ) {
-			$branded_url = '';
-		} else {
-			$branded_url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
-		}
+		$mode        = (string) ( $item['link_mode'] ?? 'standard' );
+		$branded_url = GTLM_Settings::build_link_url( $this->prefix, (string) $item['slug'], $mode );
 
 		if ( 'trash' === $this->view ) {
 			$restore_url = wp_nonce_url(
@@ -359,13 +353,8 @@ class GTLM_List_Table extends WP_List_Table {
 			return '<code class="gtlm-url-cell" title="' . esc_attr__( 'Regex pattern', 'gt-link-manager' ) . '">' . esc_html( (string) $item['slug'] ) . '</code>';
 		}
 
-		if ( 'direct' === $mode ) {
-			$path = '/' . ltrim( (string) $item['slug'], '/' );
-		} else {
-			$path = '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'];
-		}
-
-		$url = home_url( $path );
+		$url  = GTLM_Settings::build_link_url( $this->prefix, (string) $item['slug'], $mode );
+		$path = substr( $url, strlen( untrailingslashit( home_url() ) ) );
 
 		// Show the path rather than the absolute URL: it is what identifies the
 		// link, it stays readable in a narrow column, and the full URL is still

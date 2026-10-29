@@ -332,19 +332,12 @@ class GTLM_REST_API {
 			$total_pages = $per_page > 0 ? (int) ceil( $total / $per_page ) : 1;
 		}
 
-		$prefix = trim( $this->settings->prefix(), '/' );
+		$base = $this->settings->link_base();
 
 		$items = array_map(
-			static function ( array $row ) use ( $prefix ): array {
-				$slug = (string) $row['slug'];
-				$mode = (string) ( $row['link_mode'] ?? 'standard' );
-				if ( 'direct' === $mode ) {
-					$branded_url = home_url( '/' . $slug );
-				} elseif ( 'regex' === $mode ) {
-					$branded_url = '';
-				} else {
-					$branded_url = home_url( '/' . $prefix . '/' . $slug );
-				}
+			static function ( array $row ) use ( $base ): array {
+				$slug        = (string) $row['slug'];
+				$branded_url = GTLM_Settings::build_link_url( $base, $slug, (string) ( $row['link_mode'] ?? 'standard' ) );
 				return array(
 					'id'                => (int) $row['id'],
 					'name'              => (string) $row['name'],

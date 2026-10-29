@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.10.0
+Stable tag: 1.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,7 +16,7 @@ Fast branded redirects with opt-in click analytics, country targeting, CSV migra
 
 Redirects use indexed custom database tables and resolve before theme templates load. Advanced Analytics adds no visitor tracking scripts, cookies, or beacon requests.
 
-Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix is configurable and can even be removed on individual links).
+Your links follow a clean URL pattern: **yoursite.com/go/your-slug** (the prefix is configurable, can be removed on individual links, or dropped for every link).
 
 **[Official Page & Documentation](https://gauravtiwari.org/product/gt-link-manager/)** | **[Free Training Course](https://gauravtiwari.org/course/gt-link-manager-training/)** | **[REST API & AI Tools Guide](https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/)**
 
@@ -240,7 +240,9 @@ Trashed links also stay in the **Trash** view until you delete them. Automatic c
 
 = Can I use links without the /go/ prefix? =
 
-Yes. Turn on **Advanced Redirects** under Settings and a link can use direct mode, which serves it from the site root as `yoursite.com/your-slug`.
+Yes, two ways. To drop the prefix for every link, turn on **Prefix-free links** under **Settings > Advanced redirects and data cleanup**. Links are then served and shown as `yoursite.com/your-slug`, and links you already shared as `yoursite.com/go/your-slug` keep redirecting. A link takes priority over a page or post with the same slug, so the settings screen lists any links that clash with published content.
+
+To drop it for a single link instead, turn on **Advanced Redirects** and use direct mode, which also accepts nested paths such as `docs/getting-started`.
 
 WordPress paths such as `wp-admin`, `wp-json`, `wp-login.php`, and `feed` are blocked as slugs, because claiming one of those would break the site rather than shorten a link.
 
@@ -269,6 +271,12 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.11.0 =
+* New: Prefix-free links. Turn it on under **Settings > Advanced redirects and data cleanup** to serve every standard link from the site root, as `yoursite.com/your-slug`. Links already shared with the prefix keep redirecting, so nothing published breaks. The settings screen lists links that share a URL with a published page or post, and saving a link that takes over a post or page URL shows a warning.
+* New: a **Random slug** button next to the Slug field. It fills in a six-character slug without look-alike characters such as 0 and o. Slugs still follow the Link Name until you type or generate one, and clearing the field hands it back to the name.
+* Improved: the Site Agent note in Settings links to the Site Agent page.
+* Updated: translation template.
 
 = 1.10.0 =
 * New: AI agent support through Site Agent, a free plugin that connects agents such as Claude, ChatGPT and Cursor to your site. With Site Agent 0.4 or later, a connected agent gets the GT Link Manager skill automatically: it can find, create and update links, set country rules, organize categories and read analytics, using the same checks as the REST API.
@@ -477,6 +485,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.11.0 =
+Adds optional prefix-free links and a Random slug button. Prefix-free mode is off by default, and existing /go/ links keep working when you turn it on. No database changes.
 
 = 1.10.0 =
 Adds AI agent support through the free Site Agent plugin and groups settings into cards. Links and redirects are unchanged.

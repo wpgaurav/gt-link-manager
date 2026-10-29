@@ -139,10 +139,8 @@ final class GTLM_Agent {
 		if ( ! is_array( $link ) || array_key_exists( 'target_url', $link ) || ! isset( $link['slug'] ) ) {
 			return $link;
 		}
-		$mode               = (string) ( $link['link_mode'] ?? 'standard' );
-		$prefix             = trim( GTLM_Settings::get_instance()->prefix(), '/' );
 		$link['target_url'] = (string) ( $link['url'] ?? '' );
-		$link['url']        = 'direct' === $mode ? home_url( '/' . $link['slug'] ) : ( 'regex' === $mode ? '' : home_url( '/' . $prefix . '/' . $link['slug'] ) );
+		$link['url']        = GTLM_Settings::get_instance()->link_url( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
 		return $link;
 	}
 
@@ -179,7 +177,7 @@ final class GTLM_Agent {
 			'api_version'    => self::VERSION,
 			'plugin_version' => GTLM_VERSION,
 			'site_url'       => home_url( '/' ),
-			'link_base'      => home_url( '/' . trim( (string) $settings['base_prefix'], '/' ) . '/' ),
+			'link_base'      => GTLM_Settings::get_instance()->link_url( '' ),
 			'defaults'       => array(
 				'redirect_type' => (int) $settings['default_redirect_type'],
 				'rel'           => array_values( (array) $settings['default_rel'] ),

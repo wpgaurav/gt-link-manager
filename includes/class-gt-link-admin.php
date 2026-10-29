@@ -218,7 +218,7 @@ class GTLM_Admin {
 			array(
 				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
 				'quickEditNonce'  => wp_create_nonce( 'gtlm_quick_edit' ),
-				'prefix'          => $this->settings->prefix(),
+				'prefix'          => $this->settings->link_base(),
 				// Branded URLs are built from the site's home URL, which can differ from the admin origin.
 				'homeUrl'         => untrailingslashit( home_url() ),
 				'statusHtml'      => class_exists( 'GTLM_List_Table', false ) ? array(
@@ -303,12 +303,7 @@ class GTLM_Admin {
 
 	/** Absolute branded URL for standard and direct links; regex rules have none. */
 	private function branded_url_for( array $link ): string {
-		$mode = (string) ( $link['link_mode'] ?? 'standard' );
-		if ( 'regex' === $mode ) {
-			return '';
-		}
-		$slug = ltrim( (string) ( $link['slug'] ?? '' ), '/' );
-		return home_url( 'direct' === $mode ? '/' . $slug : '/' . trim( $this->settings->prefix(), '/' ) . '/' . $slug );
+		return $this->settings->link_url( (string) ( $link['slug'] ?? '' ), (string) ( $link['link_mode'] ?? 'standard' ) );
 	}
 
 	public function ajax_quick_edit(): void {
@@ -973,20 +968,34 @@ class GTLM_Admin {
 
 		$save_and_add  = ! empty( $_POST['save_add_another'] );
 		$save_view_all = ! empty( $_POST['save_view_all'] );
+		$saved_notice  = $ok && $this->shadows_content( $data ) ? 'saved_shadows_content' : 'saved';
 
 		if ( $ok && $save_view_all ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links&highlight=' . $link_id ), 'saved' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links&highlight=' . $link_id ), $saved_notice );
 		}
 
 		if ( $ok && $save_and_add ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' ), 'saved' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' ), $saved_notice );
 		}
 
 		if ( $ok ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit&link_id=' . $link_id ), 'saved' );
+			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit&link_id=' . $link_id ), $saved_notice );
 		}
 
 		$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' . ( $link_id > 0 ? '&link_id=' . $link_id : '' ) ), 'save_failed' );
+	}
+
+	/**
+	 * Whether a prefix-free standard link now takes over a post or page URL.
+	 *
+	 * @param array<string, mixed> $data Saved link data.
+	 */
+	private function shadows_content( array $data ): bool {
+		if ( 'standard' !== ( $data['link_mode'] ?? 'standard' ) || ! $this->settings->prefix_free() || '' === (string) ( $data['slug'] ?? '' ) ) {
+			return false;
+		}
+
+		return url_to_postid( home_url( '/' . (string) $data['slug'] . '/' ) ) > 0;
 	}
 
 	private function handle_category_actions(): void {
@@ -1063,6 +1072,7 @@ class GTLM_Admin {
 				'trash_retention_days'      => isset( $_POST['trash_retention_days'] ) ? absint( wp_unslash( $_POST['trash_retention_days'] ) ) : 30,
 				'enable_click_tracking'     => ! empty( $_POST['enable_click_tracking'] ) ? 1 : 0,
 				'enable_advanced_redirects' => ! empty( $_POST['enable_advanced_redirects'] ) ? 1 : 0,
+				'prefix_free_links'         => ! empty( $_POST['prefix_free_links'] ) ? 1 : 0,
 				'enable_geo_targeting'      => ! empty( $_POST['enable_geo_targeting'] ) ? 1 : 0,
 				'geo_detection_method'      => sanitize_key( (string) wp_unslash( $_POST['geo_detection_method'] ?? 'auto' ) ),
 				'geo_custom_header'         => sanitize_text_field( (string) wp_unslash( $_POST['geo_custom_header'] ?? '' ) ),

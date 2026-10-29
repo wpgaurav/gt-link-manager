@@ -378,9 +378,11 @@
 
 	var nameField = document.getElementById('name');
 	var slugField = document.getElementById('slug');
-	var prefix = window.gtlmAdmin.prefix || 'go';
+	// Empty in prefix-free mode, where standard links live at the site root.
+	var prefix = typeof window.gtlmAdmin.prefix === 'string' ? window.gtlmAdmin.prefix : 'go';
 	var preview = document.getElementById('gtlm-branded-preview');
 	var copyBtn = document.getElementById('gtlm-copy-preview');
+	var randomSlugBtn = document.getElementById('gtlm-random-slug');
 	// An existing link's slug is already live in posts, so renaming the link must
 	// never rewrite it. Only a new link with an empty slug follows its name.
 	var linkIdField = document.querySelector('input[name="link_id"]');
@@ -405,6 +407,20 @@
 			.replace(/-+/g, '-');
 	}
 
+	// Lowercase letters and digits without look-alikes (0/o, 1/i/l), so a slug
+	// read off a slide or printout is typed correctly. 31^6 is ~887 million.
+	var SLUG_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
+
+	function randomSlug(length) {
+		var bytes = new Uint8Array(length);
+		window.crypto.getRandomValues(bytes);
+		var out = '';
+		for (var i = 0; i < length; i++) {
+			out += SLUG_ALPHABET.charAt(bytes[i] % SLUG_ALPHABET.length);
+		}
+		return out;
+	}
+
 	function updatePreview() {
 		if (!preview || !slugField) {
 			return;
@@ -421,7 +437,7 @@
 		} else if (mode === 'regex') {
 			preview.textContent = slug + ' (regex pattern)';
 		} else {
-			preview.textContent = home + '/' + prefix + '/' + slug;
+			preview.textContent = home + '/' + (prefix ? prefix + '/' : '') + slug;
 		}
 	}
 
@@ -437,6 +453,10 @@
 		hints.forEach(function (el) {
 			el.style.display = el.getAttribute('data-mode') === mode ? '' : 'none';
 		});
+
+		if (randomSlugBtn) {
+			randomSlugBtn.hidden = mode === 'regex';
+		}
 
 		// Update slug field label.
 		var slugLabel = slugField ? slugField.closest('tr') : null;
@@ -485,6 +505,17 @@
 			updatePreview();
 		});
 		updatePreview();
+	}
+
+	// An addition to the name-based slug, not a replacement: clearing the field
+	// hands the slug back to the Link Name.
+	if (randomSlugBtn && slugField) {
+		randomSlugBtn.addEventListener('click', function () {
+			slugField.value = randomSlug(6);
+			slugTouched = true;
+			updatePreview();
+			slugField.focus();
+		});
 	}
 
 	if (copyBtn && preview) {

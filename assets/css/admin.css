@@ -222,6 +222,21 @@ body.gtlm-links_page_gtlm-links-import-export .tablenav.bottom {
 	vertical-align: middle;
 }
 
+.gtlm-slug-field {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.gtlm-slug-field .regular-text {
+	margin: 0;
+}
+
+.gtlm-slug-field .button[hidden] {
+	display: none;
+}
+
 /* ── Status badges ───────────────────────────────────────────── */
 .gtlm-status {
 	display: inline-flex;
