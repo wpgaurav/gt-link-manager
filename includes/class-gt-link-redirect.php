@@ -87,6 +87,22 @@ class GTLM_Redirect {
 			}
 		}
 
+		// Step 1b: In prefix-free mode a single-segment path can be a standard slug.
+		// The prefixed lookup above still runs first, so links already shared
+		// with the prefix keep redirecting after the setting is switched on.
+		if ( null === $link && ! $prefix_matched && $this->settings->prefix_free() ) {
+			$root_slug = $this->extract_root_slug_from_request();
+			if ( '' !== $root_slug ) {
+				$candidate = $this->db->get_link_by_slug( $root_slug );
+				// Only a live standard link claims a root path. Anything else falls
+				// through, because the path may be a real page.
+				if ( is_array( $candidate ) && 'standard' === ( $candidate['link_mode'] ?? 'standard' ) && empty( $candidate['trashed_at'] ) && ! empty( $candidate['is_active'] ) ) {
+					$link       = $candidate;
+					$match_slug = $root_slug;
+				}
+			}
+		}
+
 		// Step 2 & 3: Try direct and regex matches if advanced redirects are enabled.
 		if ( null === $link && ! empty( $this->settings->all()['enable_advanced_redirects'] ) ) {
 			$path = $this->extract_path_from_request();
@@ -448,6 +464,22 @@ class GTLM_Redirect {
 		}
 
 		return sanitize_title( $slug );
+	}
+
+	/**
+	 * A single-segment request path that is already slug-shaped, or ''.
+	 *
+	 * Nested paths and file-like paths (favicon.ico, sitemap_index.xml) never
+	 * reach the database, so prefix-free mode costs ordinary page views at most
+	 * one indexed, object-cached slug lookup.
+	 */
+	private function extract_root_slug_from_request(): string {
+		$path = strtolower( $this->extract_path_from_request() );
+		if ( '' === $path || str_contains( $path, '/' ) ) {
+			return '';
+		}
+
+		return sanitize_title( $path ) === $path ? $path : '';
 	}
 
 	/**

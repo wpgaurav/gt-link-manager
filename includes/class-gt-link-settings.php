@@ -40,6 +40,7 @@ class GTLM_Settings {
 			'trash_retention_days'      => 30,
 			'enable_click_tracking'     => 0,
 			'enable_advanced_redirects' => 0,
+			'prefix_free_links'         => 0,
 			'enable_geo_targeting'      => 0,
 			'geo_detection_method'      => 'auto',
 			'geo_custom_header'         => '',
@@ -78,6 +79,7 @@ class GTLM_Settings {
 		$settings['trash_retention_days']      = $this->sanitize_retention_days( $settings['trash_retention_days'] ?? 30 );
 		$settings['enable_click_tracking']     = (int) ! empty( $settings['enable_click_tracking'] );
 		$settings['enable_advanced_redirects'] = (int) ! empty( $settings['enable_advanced_redirects'] );
+		$settings['prefix_free_links']         = (int) ! empty( $settings['prefix_free_links'] );
 		$settings['enable_geo_targeting']      = (int) ! empty( $settings['enable_geo_targeting'] );
 		$settings['geo_detection_method']      = $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) );
 		$settings['geo_custom_header']         = $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) );
@@ -109,6 +111,44 @@ class GTLM_Settings {
 	}
 
 	/**
+	 * Whether standard links are served from the site root (example.com/slug).
+	 *
+	 * The prefix route keeps working in this mode, so links already published
+	 * as /{prefix}/{slug} never break when the setting is switched on.
+	 */
+	public function prefix_free(): bool {
+		return ! empty( $this->all()['prefix_free_links'] );
+	}
+
+	/**
+	 * Path segment new standard links are shown under; empty in prefix-free mode.
+	 */
+	public function link_base(): string {
+		return $this->prefix_free() ? '' : $this->prefix();
+	}
+
+	/**
+	 * Absolute branded URL for a link. Regex rules have none.
+	 */
+	public function link_url( string $slug, string $mode = 'standard' ): string {
+		return self::build_link_url( $this->link_base(), $slug, $mode );
+	}
+
+	/**
+	 * Absolute branded URL from an explicit base, for callers that already hold one.
+	 */
+	public static function build_link_url( string $base, string $slug, string $mode = 'standard' ): string {
+		if ( 'regex' === $mode ) {
+			return '';
+		}
+
+		$base = 'direct' === $mode ? '' : trim( $base, '/' );
+		$slug = ltrim( $slug, '/' );
+
+		return home_url( '/' . ( '' === $base ? '' : $base . '/' ) . $slug );
+	}
+
+	/**
 	 * Update settings in one write.
 	 *
 	 * @param array<string, mixed> $settings Raw settings.
@@ -123,6 +163,7 @@ class GTLM_Settings {
 			'trash_retention_days'      => $this->sanitize_retention_days( $settings['trash_retention_days'] ?? 30 ),
 			'enable_click_tracking'     => (int) ! empty( $settings['enable_click_tracking'] ),
 			'enable_advanced_redirects' => (int) ! empty( $settings['enable_advanced_redirects'] ),
+			'prefix_free_links'         => (int) ! empty( $settings['prefix_free_links'] ),
 			'enable_geo_targeting'      => (int) ! empty( $settings['enable_geo_targeting'] ),
 			'geo_detection_method'      => $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) ),
 			'geo_custom_header'         => $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) ),

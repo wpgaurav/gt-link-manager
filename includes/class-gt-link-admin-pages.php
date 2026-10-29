@@ -38,7 +38,7 @@ class GTLM_Admin_Pages {
 		}
 
 		$categories = $this->db->get_categories();
-		$table      = new GTLM_List_Table( $this->db, $categories, $this->settings->prefix(), $view );
+		$table      = new GTLM_List_Table( $this->db, $categories, $this->settings->link_base(), $view );
 		$table->prepare_items();
 
 		echo '<div class="wrap">';
@@ -138,7 +138,7 @@ class GTLM_Admin_Pages {
 			}
 		}
 
-		$this->render_text_field( 'slug', __( 'Slug', 'gt-link-manager' ), (string) $form['slug'], false );
+		$this->render_slug_field( (string) $form['slug'], (string) $form['link_mode'] );
 
 		if ( $advanced_enabled ) {
 			echo '<tr class="gtlm-field-regex-replacement" style="' . ( 'regex' !== $form['link_mode'] ? 'display:none;' : '' ) . '">';
@@ -284,7 +284,11 @@ class GTLM_Admin_Pages {
 		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'click', 20 ) . esc_html__( 'Basic click counts', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_click_tracking', __( 'Lifetime totals', 'gt-link-manager' ), __( 'Keep a running click total next to each link', 'gt-link-manager' ), ! empty( $settings['enable_click_tracking'] ) );
 		echo '</tbody></table><p>' . esc_html__( 'For date trends, sources and devices, use the separate analytics feature.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-analytics&view=settings' ) ) . '">' . esc_html__( 'Open analytics settings', 'gt-link-manager' ) . '</a></p></section>';
-		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'api', 20 ) . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><div class="gtlm-site-agent-note"><p><strong>' . esc_html__( 'Easiest with Site Agent.', 'gt-link-manager' ) . '</strong> ' . esc_html__( 'Site Agent is a free plugin that connects AI agents such as Claude, ChatGPT and Cursor to this site with an OAuth sign-in. Connected agents get the GT Link Manager skill automatically, with no Application Password or setup prompt.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-ai-agents' ) ) . '">' . esc_html__( 'See how it works', 'gt-link-manager' ) . '</a></p></div><p>' . esc_html__( 'For other AI tools and scripts, use the REST API with an Application Password:', 'gt-link-manager' ) . '</p><a href="https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Read the REST API guide for AI tools', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';
+		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'api', 20 ) . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><div class="gtlm-site-agent-note"><p><strong>' . esc_html__( 'Easiest with Site Agent.', 'gt-link-manager' ) . '</strong> ' . sprintf(
+			/* translators: %s: linked "Site Agent" plugin name */
+			esc_html__( '%s is a free plugin that connects AI agents such as Claude, ChatGPT and Cursor to this site with an OAuth sign-in. Connected agents get the GT Link Manager skill automatically, with no Application Password or setup prompt.', 'gt-link-manager' ),
+			'<a href="' . esc_url( GTLM_Agent::SITE_AGENT_URL ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Site Agent', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>'
+		) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-ai-agents' ) ) . '">' . esc_html__( 'See how it works', 'gt-link-manager' ) . '</a></p></div><p>' . esc_html__( 'For other AI tools and scripts, use the REST API with an Application Password:', 'gt-link-manager' ) . '</p><a href="https://gauravtiwari.org/gt-link-manager-rest-api-guide-ai-tools/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Read the REST API guide for AI tools', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';
 		$prompt = sprintf(
 			/* translators: 1: this WordPress site's URL, 2: the setup guide URL. */
 			__(
@@ -310,6 +314,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		$this->render_geo_detection_status();
 		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'adjustments', 20 ) . esc_html__( 'Advanced redirects and data cleanup', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced redirects', 'gt-link-manager' ), __( 'Allow prefix-free paths and regular expressions', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
+		$this->render_prefix_free_field( ! empty( $settings['prefix_free_links'] ) );
 		$this->render_retention_field( (int) $settings['trash_retention_days'] );
 		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Uninstall cleanup', 'gt-link-manager' ), __( 'Delete all plugin data when the plugin is uninstalled', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
 		echo '</tbody></table></section>';
@@ -402,6 +407,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		$notice = sanitize_key( (string) wp_unslash( $_GET['gtlm_notice'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$map    = array(
 			'saved'                  => array( 'success', __( 'Saved successfully.', 'gt-link-manager' ) ),
+			'saved_shadows_content'  => array( 'warning', __( 'Saved. A post or page already uses this URL, so visitors now get the redirect instead. Change the slug to keep that content reachable.', 'gt-link-manager' ) ),
 			'deleted'                => array( 'success', __( 'Deleted permanently.', 'gt-link-manager' ) ),
 			'trashed'                => array( 'success', __( 'Link moved to trash.', 'gt-link-manager' ) ),
 			'restored'               => array( 'success', __( 'Link restored from trash.', 'gt-link-manager' ) ),
@@ -528,6 +534,39 @@ Set up the appropriate authenticated REST API connection and verify it with read
 
 	private function render_text_field( string $name, string $label, string $value, bool $required = false, string $type = 'text' ): void {
 		echo '<tr><th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th><td><input name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '" type="' . esc_attr( $type ) . '" class="' . ( 'url' === $type ? 'large-text' : 'regular-text' ) . '" value="' . esc_attr( $value ) . '" ' . ( $required ? 'required' : '' ) . ' /></td></tr>';
+	}
+
+	/**
+	 * Slug input with a random-slug button. Regex patterns cannot be random, so
+	 * the button hides in regex mode.
+	 */
+	private function render_slug_field( string $value, string $mode ): void {
+		echo '<tr><th scope="row"><label for="slug">' . esc_html__( 'Slug', 'gt-link-manager' ) . '</label></th><td><div class="gtlm-slug-field">';
+		echo '<input name="slug" id="slug" type="text" class="regular-text" value="' . esc_attr( $value ) . '" />';
+		echo '<button type="button" class="button gtlm-button-icon" id="gtlm-random-slug"' . ( 'regex' === $mode ? ' hidden' : '' ) . '>' . gtlm_icon( 'arrows-shuffle' ) . '<span class="gtlm-button-label">' . esc_html__( 'Random slug', 'gt-link-manager' ) . '</span></button>';
+		echo '</div></td></tr>';
+	}
+
+	/**
+	 * Prefix-free mode control, with the pages it would shadow once enabled.
+	 */
+	private function render_prefix_free_field( bool $checked ): void {
+		$home = untrailingslashit( home_url() );
+		echo '<tr><th scope="row">' . esc_html__( 'Prefix-free links', 'gt-link-manager' ) . '</th><td>';
+		echo '<label><input type="checkbox" name="prefix_free_links" value="1" aria-describedby="prefix_free_links-description" ' . checked( $checked, true, false ) . ' /> ' . esc_html__( 'Serve links from the site root, without a prefix', 'gt-link-manager' ) . '</label>';
+		echo '<p class="description" id="prefix_free_links-description">' . sprintf(
+			/* translators: 1: example prefix-free URL, 2: example prefixed URL */
+			esc_html__( 'Links look like %1$s instead of %2$s. Links already shared with the prefix keep redirecting. A link takes priority over a page or post with the same slug.', 'gt-link-manager' ),
+			'<code>' . esc_html( $home . '/your-slug' ) . '</code>',
+			'<code>' . esc_html( $home . '/' . $this->settings->prefix() . '/your-slug' ) . '</code>'
+		) . '</p>';
+
+		$conflicts = $checked ? $this->db->root_slug_conflicts( 6 ) : array();
+		if ( ! empty( $conflicts ) ) {
+			$shown = array_slice( $conflicts, 0, 5 );
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'These links share a URL with a published page or post, so visitors are redirected instead of seeing it:', 'gt-link-manager' ) . ' <code>' . implode( '</code>, <code>', array_map( 'esc_html', $shown ) ) . '</code>' . ( count( $conflicts ) > 5 ? ' ' . esc_html__( 'and more.', 'gt-link-manager' ) : '' ) . '</p></div>';
+		}
+		echo '</td></tr>';
 	}
 
 	/**
@@ -903,8 +942,9 @@ Set up the appropriate authenticated REST API connection and verify it with read
 	}
 
 	private function render_link_mode_field( string $current ): void {
-		$modes = array(
-			'standard' => __( 'Standard (with prefix)', 'gt-link-manager' ),
+		$prefix_free = $this->settings->prefix_free();
+		$modes       = array(
+			'standard' => $prefix_free ? __( 'Standard', 'gt-link-manager' ) : __( 'Standard (with prefix)', 'gt-link-manager' ),
 			'direct'   => __( 'Direct (no prefix)', 'gt-link-manager' ),
 			'regex'    => __( 'Regex (pattern match)', 'gt-link-manager' ),
 		);
@@ -913,7 +953,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		foreach ( $modes as $value => $label ) {
 			echo '<label style="margin-right:12px;"><input type="radio" name="link_mode" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . ' class="gtlm-link-mode-radio" /> ' . esc_html( $label ) . '</label>';
 		}
-		echo '<p class="description gtlm-mode-hint" data-mode="standard">' . esc_html__( 'URL: yoursite.com/prefix/slug', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description gtlm-mode-hint" data-mode="standard">' . esc_html( $prefix_free ? __( 'URL: yoursite.com/slug', 'gt-link-manager' ) : __( 'URL: yoursite.com/prefix/slug', 'gt-link-manager' ) ) . '</p>';
 		echo '<p class="description gtlm-mode-hint" data-mode="direct" style="display:none;">' . esc_html__( 'URL: yoursite.com/path — redirects without the prefix.', 'gt-link-manager' ) . '</p>';
 		echo '<p class="description gtlm-mode-hint" data-mode="regex" style="display:none;">' . esc_html__( 'Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL.', 'gt-link-manager' ) . '</p>';
 		echo '</td></tr>';

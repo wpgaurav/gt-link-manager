@@ -1109,6 +1109,38 @@ class GTLM_DB {
 	}
 
 	/**
+	 * Live standard links whose slug is also a published top-level page, or a
+	 * post when posts are served at the site root. In prefix-free mode the
+	 * link wins that URL, so the settings screen lists them.
+	 *
+	 * @return array<int, string> Conflicting slugs, at most $limit.
+	 */
+	public function root_slug_conflicts( int $limit = 5 ): array {
+		global $wpdb;
+
+		$types = array( 'page' );
+		if ( '%postname%' === trim( (string) get_option( 'permalink_structure' ), '/' ) ) {
+			$types[] = 'post';
+		}
+
+		$table        = self::links_table();
+		$placeholders = implode( ', ', array_fill( 0, count( $types ), '%s' ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Table names are internal; placeholders are generated for each post type.
+		$sql = $wpdb->prepare( "SELECT l.slug FROM {$table} l INNER JOIN {$wpdb->posts} p ON BINARY p.post_name = BINARY l.slug WHERE l.link_mode = 'standard' AND l.is_active = 1 AND l.trashed_at IS NULL AND p.post_status = 'publish' AND p.post_parent = 0 AND p.post_type IN ({$placeholders}) GROUP BY l.slug ORDER BY l.slug LIMIT %d", array_merge( $types, array( max( 1, $limit ) ) ) );
+
+		// BINARY: the links table and wp_posts often carry different collations
+		// (unicode_520_ci vs unicode_ci), which makes a plain '=' join an error.
+		// Both sides are lowercase sanitize_title() slugs, so a byte compare is exact.
+		// Any other failure must cost the warning, not the screen.
+		$suppressed = $wpdb->suppress_errors( true );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$slugs = $wpdb->get_col( $sql );
+		$wpdb->suppress_errors( $suppressed );
+
+		return array_map( 'strval', is_array( $slugs ) ? $slugs : array() );
+	}
+
+	/**
 	 * Fetch a single direct-mode link by its path.
 	 *
 	 * @return array<string, mixed>|null
