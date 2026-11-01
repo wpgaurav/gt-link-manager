@@ -44,6 +44,7 @@ All service classes use a static `init()` factory that takes dependencies, const
 | `GTLM_DB` | Data access layer. Core link SQL lives here; the optional GTLM_Analytics_DB subclass owns analytics schema, aggregation and reporting. Object cache per-slug with `gtlm_links` cache group. |
 | `GTLM_Redirect` | Early redirect on `init` priority 0. Parses REQUEST_URI, looks up slug, sends Location header + exit. |
 | `GTLM_Geo` | Country detection and geo rule resolution. Header-based only — reads `$_SERVER` keys the CDN/web server already set (no DB file, no HTTP call). Memoizes detection and its settings-derived config per request. Owns rule validation (`normalize_rules`/`encode_rules`/`decode_rules`) shared by REST, admin, and CSV. |
+| `GTLM_Novashare` | Optional. Answers Novashare's `novashare_short_link_url` filter with a branded link, creating it on first share. Loaded only when the setting is on. |
 | `GTLM_Settings` | Singleton. Reads/writes `gtlm_settings` option. Exposes `prefix()`. |
 | `GTLM_Admin` | Admin menu pages, form handlers, AJAX quick edit. Renders all admin UI inline (no template files). |
 | `GTLM_REST_API` | REST endpoints under `gt-link-manager/v1`. CRUD for links and categories. |
@@ -110,6 +111,7 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 | `gtlm_trash_purged` | action | Fires after the retention cron purges trashed links |
 | `gtlm_count_click` | filter | Return false to skip counting a click |
 | `gtlm_click_recorded` | action | Fires after a click has been counted |
+| `gtlm_novashare_should_shorten` | filter | Decide whether a URL shared through Novashare becomes a branded link |
 
 ### Geolocation notes
 
@@ -123,6 +125,13 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 - `prefix_free_links` (off by default) serves standard links at `/{slug}`. Build every branded URL through `GTLM_Settings::link_url()` / `build_link_url()` with `link_base()` -- never `home_url( '/' . prefix() . '/' ... )` -- or prefix-free sites get wrong URLs in the list, REST, editor and agent.
 - The prefixed route still resolves in this mode, so links already published as `/{prefix}/{slug}` keep working. Diagnostics still tests that route.
 - Root lookups only run for single-segment, slug-shaped paths, and only a live standard link claims one. A miss falls through to WordPress with no 404, because the path may be a real page. A matching link beats a page or post with the same slug; `GTLM_DB::root_slug_conflicts()` feeds the settings warning and the save handler warns via `url_to_postid()`.
+
+### Novashare
+
+- `novashare_short_links` (off by default) loads `GTLM_Novashare`, which hooks Novashare's documented `novashare_short_link_url` filter. The site owner must still choose **Custom** as the shortener in Novashare. Built from the docs at https://novashare.io/docs/link-shortening/#custom, so it deliberately relies on nothing else in Novashare (no constants, options or meta keys).
+- The filter can run while a public page renders, so link creation is a write reachable by anonymous visitors. `is_shareable()` limits it to published content on this site with no query args beyond `utm_*`, `p` and `page_id`. Loosening this creates an open redirect or a new row per query string. `gtlm_novashare_should_shorten` is the deliberate override; the `http`/`https` check runs before it and cannot be overridden.
+- Slugs are `ns-` plus a hash of the URL, so the UNIQUE index is what guarantees one link per URL across networks and concurrent first shares. A lost insert race re-reads the winning row. A slug held by another destination moves to a longer hash.
+- Trashed or paused links return Novashare's default and are never revived: that state is the owner's decision.
 
 ### Click counting
 

@@ -60,6 +60,7 @@ GT Link Manager stores links in **custom database tables**, not custom post type
 * **CSV import and export.** Import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets. Manual column mapping also supports compatible CSV exports from **ThirstyAffiliates, ClickWhale, Lasso, BetterLinks, GeniusLink**, and others. Map the name and destination URL fields, review the preview, and choose how to handle duplicates.
 * **Block editor integration.** Search and insert managed links into rich text and the core Button block without leaving the editor
 * **Branded URL preview.** See the full branded URL as you type, with one-click copy
+* **Novashare short links.** Use your own branded links when posts are shared through [Novashare](https://novashare.io/), with no code or API key
 * **Prefix-free and regex redirects.** Route ordinary paths without `/go/`, or use regular expressions and capture groups for more complex rules. Protected WordPress endpoints cannot be claimed by redirect rules.
 * **Geolocation targeting.** Send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from a header your CDN already sends, whether that is Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module, so there is **no GeoIP database to install and no external lookup**. Links without country rules skip country detection.
 * **Independent lifetime counts.** Optional running totals remain separate from Advanced Analytics. When analytics is enabled, click a count in All Links to open that link's report.
@@ -93,6 +94,7 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_click_recorded`, action fired after a click has been counted
 * `gtlm_analytics_should_record`, filter to suppress an advanced analytics event
 * `gtlm_analytics_capability`, filter the capability required to view analytics reports
+* `gtlm_novashare_should_shorten`, filter whether a URL shared through Novashare becomes a branded link
 
 = Independent Click Counting =
 
@@ -246,6 +248,14 @@ To drop it for a single link instead, turn on **Advanced Redirects** and use dir
 
 WordPress paths such as `wp-admin`, `wp-json`, `wp-login.php`, and `feed` are blocked as slugs, because claiming one of those would break the site rather than shorten a link.
 
+= Does it work with Novashare? =
+
+Yes. Turn on **Short links** under **Settings > Novashare**. Then, in Novashare, open **Configuration**, go to **Link Shortening**, turn on **Enable Link Shortening** and choose **Custom**. You don't need any code.
+
+Each shared URL gets one link in a **Novashare** category, using your link defaults. Only published posts and pages on your site are shortened, and the only query parameters allowed are UTM tags, so a visitor can't create links by changing a URL. Clicks count like any other link.
+
+Novashare saves the short link it receives. If you trash or deactivate one of these links, shares that already use it stop working, and GT Link Manager won't bring it back. Short links Novashare saved before you switched stay as they are.
+
 = My geo rule is not matching. What should I check? =
 
 Country detection reads a header your CDN or server adds to the request, so the first question is whether anything is adding one. Open **GT Links > Settings** and use **Check Detection**. It lists every country header present on the current request with its raw value, and runs a loopback test so you can confirm detection works even on a local install with no CDN in front of it.
@@ -271,6 +281,10 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 5. **Import/Export**, CSV import with column mapping preview and preset support
 
 == Changelog ==
+
+= 1.12.0 =
+* New: Novashare short links. Turn it on under **Settings > Novashare**, choose **Custom** as the link shortener in Novashare, and shared posts use your branded links with no code. Each shared URL gets one link in a Novashare category.
+* New: `gtlm_novashare_should_shorten` filter to decide which shared URLs become branded links.
 
 = 1.11.0 =
 * New: Prefix-free links. Turn it on under **Settings > Advanced redirects and data cleanup** to serve every standard link from the site root, as `yoursite.com/your-slug`. Links already shared with the prefix keep redirecting, so nothing published breaks. The settings screen lists links that share a URL with a published page or post, and saving a link that takes over a post or page URL shows a warning.
@@ -485,6 +499,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.12.0 =
+Adds optional Novashare short links. The setting is off by default. No database changes.
 
 = 1.11.0 =
 Adds optional prefix-free links and a Random slug button. Prefix-free mode is off by default, and existing /go/ links keep working when you turn it on. No database changes.
