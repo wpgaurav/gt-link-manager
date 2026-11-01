@@ -467,7 +467,6 @@ class GTLM_Admin {
 		}
 
 		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
-		$config = GTLM_Integrations::config();
 		foreach ( GTLM_Integrations::tools() as $key => $tool ) {
 			if ( ! in_array( $key, $keys, true ) ) {
 				continue;
@@ -475,7 +474,7 @@ class GTLM_Admin {
 			$type             = in_array( 'ga4_browser', $keys, true ) && 'ga4' === $key ? 'browser' : (string) $tool['type'];
 			$found[ $type ][] = (string) $tool['label'];
 		}
-		$found['share_visitor_data'] = ! empty( $config['share_visitor_data'] ) && ! empty( $found['service'] );
+		$found['share_visitor_data'] = GTLM_Integrations::shares_visitor_data();
 
 		return $found;
 	}
@@ -827,6 +826,18 @@ class GTLM_Admin {
 			);
 		}
 
+		// Leaving the picker on its placeholder must not strip every selected link's category.
+		$picked      = isset( $_REQUEST['bulk_category_id'] ) ? (int) $_REQUEST['bulk_category_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$category_id = max( 0, $picked );
+		if ( 'bulk_set_category' === $action && 0 === $picked ) {
+			return array(
+				'notice'      => 'bulk_category_missing',
+				'count'       => 0,
+				'undo_ids'    => array(),
+				'undo_action' => '',
+			);
+		}
+
 		$rel_map = array(
 			'bulk_rel_none'      => '',
 			'bulk_rel_nofollow'  => 'nofollow',
@@ -855,7 +866,6 @@ class GTLM_Admin {
 			}
 
 			if ( 'bulk_set_category' === $action ) {
-				$category_id = isset( $_REQUEST['bulk_category_id'] ) ? absint( $_REQUEST['bulk_category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				if ( $this->db->update_link( $id, array_merge( $link, array( 'category_id' => $category_id ) ) ) ) {
 					++$count;
 				}
@@ -966,12 +976,8 @@ class GTLM_Admin {
 			$link_mode = 'standard';
 		}
 
-		// Standard slugs use sanitize_title; direct/regex slugs preserve special characters.
-		if ( 'standard' === $link_mode ) {
-			$slug = sanitize_title( (string) wp_unslash( $_POST['slug'] ?? '' ) );
-		} else {
-			$slug = sanitize_text_field( (string) wp_unslash( $_POST['slug'] ?? '' ) );
-		}
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized for its link mode by clean_slug().
+		$slug = GTLM_DB::clean_slug( (string) wp_unslash( $_POST['slug'] ?? '' ), $link_mode );
 
 		$data = array(
 			'name'              => sanitize_text_field( (string) wp_unslash( $_POST['name'] ?? '' ) ),
@@ -982,7 +988,8 @@ class GTLM_Admin {
 			'rel'               => $this->sanitize_rel_from_post( wp_unslash( $_POST['rel'] ?? array() ) ),
 			'noindex'           => ! empty( $_POST['noindex'] ) ? 1 : 0,
 			'link_mode'         => $link_mode,
-			'regex_replacement' => sanitize_text_field( (string) wp_unslash( $_POST['regex_replacement'] ?? '' ) ),
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by clean_pattern().
+			'regex_replacement' => GTLM_DB::clean_pattern( (string) wp_unslash( $_POST['regex_replacement'] ?? '' ) ),
 			'priority'          => max( 0, absint( $_POST['priority'] ?? 10 ) ),
 			'geo_mode'          => 'targeted' === sanitize_key( (string) wp_unslash( $_POST['geo_mode'] ?? 'off' ) ) ? 'targeted' : 'off',
 			'geo_rules'         => $this->geo_rules_from_post(),
@@ -991,38 +998,20 @@ class GTLM_Admin {
 			'notes'             => sanitize_textarea_field( (string) wp_unslash( $_POST['notes'] ?? '' ) ),
 		);
 
+		$link_id  = absint( $_POST['link_id'] ?? 0 );
+		$edit_url = admin_url( 'admin.php?page=gtlm-links-edit' . ( $link_id > 0 ? '&link_id=' . $link_id : '' ) );
+
 		if ( '' === $data['name'] || '' === $data['url'] ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' ), 'invalid' );
+			$this->redirect_with_notice( $edit_url, 'invalid' );
 		}
 
 		if ( '' === $data['slug'] ) {
 			$data['slug'] = sanitize_title( $data['name'] );
 		}
 
-		// Validate regex pattern.
-		if ( 'regex' === $link_mode && '' !== $data['slug'] ) {
-			// Reject overly complex patterns that could cause ReDoS.
-			if ( mb_strlen( $data['slug'] ) > 500 || false === preg_match( '#' . $data['slug'] . '#', 'test' ) ) {
-				$this->redirect_with_notice(
-					admin_url( 'admin.php?page=gtlm-links-edit' . ( absint( $_POST['link_id'] ?? 0 ) > 0 ? '&link_id=' . absint( $_POST['link_id'] ) : '' ) ),
-					'invalid_regex'
-				);
-			}
+		if ( ! GTLM_DB::valid_link_definition( $data ) ) {
+			$this->redirect_with_notice( $edit_url, 'regex' === $link_mode ? 'invalid_regex' : 'reserved_path' );
 		}
-
-		// Block reserved WordPress paths for direct links.
-		if ( 'direct' === $link_mode && '' !== $data['slug'] ) {
-			$reserved      = array( 'wp-admin', 'wp-content', 'wp-includes', 'wp-login.php', 'wp-cron.php', 'wp-json', 'xmlrpc.php', 'feed', 'comments' );
-			$first_segment = explode( '/', trim( $data['slug'], '/' ) )[0];
-			if ( in_array( strtolower( $first_segment ), $reserved, true ) ) {
-				$this->redirect_with_notice(
-					admin_url( 'admin.php?page=gtlm-links-edit' . ( absint( $_POST['link_id'] ?? 0 ) > 0 ? '&link_id=' . absint( $_POST['link_id'] ) : '' ) ),
-					'reserved_path'
-				);
-			}
-		}
-
-		$link_id = absint( $_POST['link_id'] ?? 0 );
 
 		if ( $link_id > 0 ) {
 			$existing = $this->db->get_link_by_id( $link_id );
@@ -1182,7 +1171,17 @@ class GTLM_Admin {
 		$cats_exist = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_cats ) ) === $table_cats;
 		$tables_ok  = $links_exist && $cats_exist;
 
-		$sample           = $this->db->list_links( array(), 1, 1, 'id', 'DESC' );
+		// Only a live standard link can answer on the prefixed route.
+		$sample           = $this->db->list_links(
+			array(
+				'status'    => 'active',
+				'link_mode' => 'standard',
+			),
+			1,
+			1,
+			'id',
+			'DESC'
+		);
 		$loopback_ok      = null;
 		$loopback_message = __( 'No link available for runtime redirect test.', 'gt-link-manager' );
 

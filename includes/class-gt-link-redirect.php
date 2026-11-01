@@ -276,8 +276,9 @@ class GTLM_Redirect {
 		ignore_user_abort( true );
 		header( 'Content-Length: 0', true );
 		header( 'Connection: close', true );
-		while ( ob_get_level() > 0 ) {
-			ob_end_flush();
+		// A buffer that cannot be removed would make this loop forever otherwise.
+		while ( ob_get_level() > 0 && @ob_end_flush() ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Failure is the loop's exit condition.
+			continue;
 		}
 		flush();
 	}
@@ -296,13 +297,12 @@ class GTLM_Redirect {
 		$same = strtolower( $home['host'] ?? '' ) === $host;
 		$ip   = trim( $host, '[]' );
 		if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-			if ( ! $same && ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-				return false;
-			}
-		} elseif ( strlen( $host ) > 253 || ! preg_match( '/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.?$/i', $host ) ) {
-			return false;
+			return $same || false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
 		}
-		return ! isset( $parts['port'] ) || in_array( $parts['port'], array( 80, 443, 8080 ), true ) || ( $same && ( $home['port'] ?? 0 ) === $parts['port'] );
+
+		// wp_sanitize_redirect() has percent-encoded any international domain by now.
+		$name = rawurldecode( $host );
+		return strlen( $name ) <= 253 && 1 === preg_match( '/^(?:[\p{L}\p{N}_](?:[\p{L}\p{M}\p{N}_-]{0,61}[\p{L}\p{M}\p{N}_])?\.)*[\p{L}\p{N}_](?:[\p{L}\p{M}\p{N}_-]{0,61}[\p{L}\p{M}\p{N}_])?\.?$/u', $name );
 	}
 
 	/**
@@ -460,12 +460,7 @@ class GTLM_Redirect {
 			return sanitize_title( $slug );
 		}
 
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		if ( '' === $request_uri ) {
-			return '';
-		}
-
-		$path      = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
+		$path      = $this->request_path();
 		$prefix    = trim( $this->settings->prefix(), '/' );
 		$home_path = trim( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ), '/' );
 
@@ -513,7 +508,23 @@ class GTLM_Redirect {
 			return '';
 		}
 
-		return sanitize_title( $path ) === $path ? $path : '';
+		// A non-Latin slug is stored percent-encoded, while the request path is decoded.
+		$slug = sanitize_title( $path );
+
+		return $slug === $path || rawurldecode( $slug ) === $path ? $slug : '';
+	}
+
+	/**
+	 * The request path, decoded, with no outer slashes.
+	 *
+	 * Decoding comes first because sanitize_text_field() deletes anything shaped like
+	 * %xx, which would read /go/%E0%A4%B9 as /go/ and /foo%20bar as /foobar. The caller
+	 * has already refused control characters at any decoding depth via protected_path().
+	 */
+	private function request_path(): string {
+		$uri = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized once decoded, below.
+
+		return trim( sanitize_text_field( rawurldecode( (string) wp_parse_url( $uri, PHP_URL_PATH ) ) ), '/' );
 	}
 
 	/**
@@ -521,12 +532,7 @@ class GTLM_Redirect {
 	 * Used for direct and regex matching.
 	 */
 	private function extract_path_from_request(): string {
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		if ( '' === $request_uri ) {
-			return '';
-		}
-
-		$path      = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
+		$path      = $this->request_path();
 		$home_path = trim( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ), '/' );
 
 		if ( '' !== $home_path ) {
@@ -559,8 +565,9 @@ class GTLM_Redirect {
 			}
 
 			// Use # as delimiter to avoid conflicts with / in patterns.
-			$regex  = '#' . $pattern . '#';
-			$result = preg_match( $regex, $path, $matches );
+			$regex = '#' . $pattern . '#';
+			// A malformed stored pattern must not log a warning on every page view.
+			$result = @preg_match( $regex, $path, $matches ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 			if ( false === $result ) {
 				continue;
 			}
@@ -577,8 +584,9 @@ class GTLM_Redirect {
 					}
 				} else {
 					// Apply simple $1, $2 substitution on the destination URL.
-					foreach ( $matches as $i => $match ) {
-						if ( $i > 0 ) {
+					// Highest group first, or $1 would also consume the start of $10.
+					foreach ( array_reverse( $matches, true ) as $i => $match ) {
+						if ( is_int( $i ) && $i > 0 ) {
 							$target_url = str_replace( '$' . $i, $match, $target_url );
 						}
 					}

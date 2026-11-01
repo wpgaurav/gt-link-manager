@@ -150,9 +150,6 @@ class GTLM_Admin_Pages {
 			echo '<th scope="row"><label for="priority">' . esc_html__( 'Priority', 'gt-link-manager' ) . '</label></th>';
 			echo '<td><input name="priority" id="priority" type="number" class="small-text" value="' . (int) $form['priority'] . '" min="0" step="1" />';
 			echo '<p class="description">' . esc_html__( 'Lower numbers are matched first.', 'gt-link-manager' ) . '</p></td></tr>';
-
-			echo '<tr class="gtlm-field-conflict-warning" style="display:none;">';
-			echo '<th scope="row"></th><td><div class="notice notice-warning inline"><p id="gtlm-conflict-message"></p></div></td></tr>';
 		}
 
 		echo '<tr><th scope="row">' . esc_html__( 'Branded URL Preview', 'gt-link-manager' ) . '</th><td>';
@@ -454,6 +451,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 			'undo_failed'            => array( 'error', __( 'Could not undo that action.', 'gt-link-manager' ) ),
 			'bulk_none'              => array( 'warning', __( 'No links were selected.', 'gt-link-manager' ) ),
 			'bulk_updated'           => array( 'success', __( 'Links updated.', 'gt-link-manager' ) ),
+			'bulk_category_missing'  => array( 'warning', __( 'Choose a category first. No links were changed.', 'gt-link-manager' ) ),
 			'clicks_reset'           => array( 'success', __( 'Click count reset.', 'gt-link-manager' ) ),
 			'clicks_reset_failed'    => array( 'error', __( 'Could not reset the click count.', 'gt-link-manager' ) ),
 		);
@@ -742,7 +740,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '<p class="description">' . esc_html__( 'Previews your unsaved rules in the browser. No request is made.', 'gt-link-manager' ) . '</p>';
 		echo '</div>';
 
-		echo '<p class="description">' . esc_html__( 'Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description">' . esc_html( $this->shares_visitor_data() ? __( 'Privacy: the country comes from a header your CDN already sends, and the plugin never stores it. This site shares it with analytics services under GT Links > Integrations.', 'gt-link-manager' ) : __( 'Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored.', 'gt-link-manager' ) ) . '</p>';
 		echo '<p class="description">' . esc_html__( 'A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN.', 'gt-link-manager' ) . '</p>';
 
 		// __INDEX__ is replaced by admin.js when a row is cloned.
@@ -935,7 +933,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '</td></tr>';
 
 		echo '<tr><th scope="row">' . esc_html__( 'Privacy', 'gt-link-manager' ) . '</th><td>';
-		echo '<p class="description">' . esc_html__( 'Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor\'s IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description">' . esc_html( $this->shares_visitor_data() ? __( 'Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never calls an external geolocation service and never stores the country. This site also shares visitors\' IP addresses and countries with analytics services, under GT Links > Integrations.', 'gt-link-manager' ) : __( 'Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor\'s IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination.', 'gt-link-manager' ) ) . '</p>';
 		echo '<p class="description">' . sprintf(
 			/* translators: %s: link to the Privacy Settings screen */
 			esc_html__( 'Suggested wording for your privacy policy is available under %s.', 'gt-link-manager' ),
@@ -962,6 +960,17 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '<p class="description gtlm-mode-hint" data-mode="direct" style="display:none;">' . esc_html__( 'URL: yoursite.com/path — redirects without the prefix.', 'gt-link-manager' ) . '</p>';
 		echo '<p class="description gtlm-mode-hint" data-mode="regex" style="display:none;">' . esc_html__( 'Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL.', 'gt-link-manager' ) . '</p>';
 		echo '</td></tr>';
+	}
+
+	/** Whether this site's copy may still promise that IP addresses and countries stay here. */
+	private function shares_visitor_data(): bool {
+		if ( ! $this->settings->enabled_integrations() ) {
+			return false;
+		}
+
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
+
+		return GTLM_Integrations::shares_visitor_data();
 	}
 
 	private function links_capability( string $context ): string {

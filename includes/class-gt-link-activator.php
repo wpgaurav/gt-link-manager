@@ -194,6 +194,8 @@ class GTLM_Activator {
 			)
 		);
 
+		( new GTLM_DB() )->recount_categories();
+
 		update_option( 'gtlm_db_version', GTLM_VERSION, true );
 
 		// Lookups cached by the previous version may hold rows from the old schema,

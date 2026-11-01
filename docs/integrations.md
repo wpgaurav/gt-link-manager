@@ -9,7 +9,7 @@ A tool uses one of three routes, chosen by what it actually offers:
 | Route | Tools | How a click arrives |
 |---|---|---|
 | Plugin | Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, Matomo for WordPress | PHP call into the plugin's own tracker on this site. No outbound request from us. |
-| Service | GA4, Plausible, Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, Clicky | `wp_safe_remote_request()` from this server. |
+| Service | GA4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, Clicky | `wp_safe_remote_request()` from this server. |
 | Browser | Google Tag Manager, Fathom, Microsoft Clarity, GA4 in browser mode | `assets/js/integrations.js` calls the tag already on the page. |
 
 Fathom and Clarity have no server-side event API, and Fathom's Events API returns "no longer available" for event creation. The older docs snippet that posted to `cdn.usefathom.com/script.js` could not have worked.
@@ -48,6 +48,8 @@ Off by default, sharing is the `share_visitor_data` setting.
 | Country | not sent | sent only when a geo link detected one |
 
 Some services are worse off with sharing off, because they use the sending server's address instead: Plausible Cloud's bot filter can drop the click, Plausible and Rybbit otherwise attribute clicks to one server-side visitor and location, and Amplitude geolocates the server. PostHog and Mixpanel are told not to geolocate (`$geoip_disable`, `ip=0`). Matomo ignores an IP without a token. All of this is why sharing exists as an option.
+
+Plausible carries a Beta badge on the Integrations screen because that server-address drop on Plausible Cloud hasn't been measured against a real Plausible site yet. The test button reads Plausible's `x-plausible-dropped` header, so use it to confirm a site's clicks are being kept, and remove the `beta` flag from the tool's registry entry once they are.
 
 GA4 reuses the visitor's `_ga` and `_ga_<stream>` cookies when present, in both GS1 and GS2 formats, so the event joins their session. No other cookie is read, apart from Burst's and Koko's own.
 

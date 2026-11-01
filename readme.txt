@@ -64,7 +64,7 @@ GT Link Manager stores links in **custom database tables**, not custom post type
 * **Prefix-free and regex redirects.** Route ordinary paths without `/go/`, or use regular expressions and capture groups for more complex rules. Protected WordPress endpoints cannot be claimed by redirect rules.
 * **Geolocation targeting.** Send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from a header your CDN already sends, whether that is Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module, so there is **no GeoIP database to install and no external lookup**. Links without country rules skip country detection.
 * **Independent lifetime counts.** Optional running totals remain separate from Advanced Analytics. When analytics is enabled, click a count in All Links to open that link's report.
-* **Analytics integrations.** Send short link clicks to Google Analytics 4, Independent Analytics, Plausible, Matomo and 16 other tools from one settings screen, with no code
+* **Analytics integrations.** Send short link clicks to Google Analytics 4, Independent Analytics, Plausible (beta), Matomo and 16 other tools from one settings screen, with no code
 * **AI and REST API workflows.** Create, update, categorize, trash and restore links through authenticated endpoints. The settings page links directly to the AI-tools guide.
 * **Safer CSV handling.** Preview and map columns before import. Temporary files stay outside public uploads, and spreadsheet-style formulas are neutralized on export.
 * **Data cleanup controls.** Restore trashed links, configure trash retention, and choose whether uninstall removes plugin data.
@@ -135,7 +135,7 @@ GT Link Manager does not perform automatic keyword linking. Country detection de
 Send short link clicks to the analytics tool you already use. Open **GT Links > Integrations** and turn on the ones you want. There's no code to write, and everything is off until you turn it on.
 
 * **WordPress plugins, recorded on your own site.** Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat Analytics, Statify, and Matomo for WordPress.
-* **Services, sent from your server.** Google Analytics 4, Plausible, Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky.
+* **Services, sent from your server.** Google Analytics 4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky. Plausible is in beta because Plausible Cloud can drop clicks sent from a server address unless you share visitor data.
 * **Browser tags, for tools with no server API.** Google Tag Manager, Fathom Analytics, and Microsoft Clarity. GA4 can also send through your existing tag if you'd rather not create an API secret.
 * **Your existing setup is detected.** MonsterInsights, ExactMetrics, Analytify, Site Kit, GA Google Analytics, Plausible Analytics, Connect Matomo, Clicky, and GTM4WP settings are picked up when you leave a field blank.
 * **No delay for visitors.** Your server sends the event after the redirect has gone out, so a slow or broken analytics service can't hold anyone up.
@@ -198,7 +198,7 @@ Advanced Analytics adds no visitor script or cookie. It counts eligible redirect
 
 = Does it work with Google Analytics, Independent Analytics, or my analytics plugin? =
 
-Yes. Open **GT Links > Integrations** and turn on your tool. GA4, Plausible, Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky get each click from your server. Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress record it in their own reports. Google Tag Manager, Fathom, and Microsoft Clarity have no server API, so a small script reports clicks on your own pages.
+Yes. Open **GT Links > Integrations** and turn on your tool. GA4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky get each click from your server. Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress record it in their own reports. Google Tag Manager, Fathom, and Microsoft Clarity have no server API, so a small script reports clicks on your own pages.
 
 Jetpack Stats and Cloudflare Web Analytics aren't supported because neither documents a way to record custom events. Clicks also count as page views in Independent Analytics and Koko Analytics, because a page view is what their free versions can record.
 
@@ -321,7 +321,7 @@ GT Link Manager contacts no external service by default. It only contacts a serv
 Every service receives the short link's address, name and slug, its destination URL and domain, its category name, the redirect status, the referring page without its query string, and the visitor's browser user agent. A random identifier is sent with each click. The visitor's IP address, the country detected for the redirect, and an identifier that stays the same for a visitor for one day are only sent if you turn on **IP address and country** on the same screen.
 
 * **Google Analytics 4 (Google).** Measures traffic. Data goes to `www.google-analytics.com` or `region1.google-analytics.com`. The visitor's existing Google Analytics client and session identifiers are included when they have those cookies. [Terms](https://policies.google.com/terms), [Privacy Policy](https://policies.google.com/privacy).
-* **Plausible Analytics.** Measures traffic. Data goes to `plausible.io` or the self-hosted address you enter. [Terms](https://plausible.io/terms), [Privacy Policy](https://plausible.io/privacy).
+* **Plausible Analytics (beta).** Measures traffic. Data goes to `plausible.io` or the self-hosted address you enter. [Terms](https://plausible.io/terms), [Privacy Policy](https://plausible.io/privacy).
 * **Matomo.** Measures traffic. Data goes to the Matomo address you enter. [Terms](https://matomo.org/website-terms/), [Privacy Policy](https://matomo.org/privacy-policy/).
 * **Umami.** Measures traffic. Data goes to `gateway.umami.is` or the self-hosted address you enter. [Terms](https://umami.is/terms), [Privacy Policy](https://umami.is/privacy).
 * **Simple Analytics.** Measures traffic. Data goes to `queue.simpleanalyticscdn.com`. [Terms](https://www.simpleanalytics.com/general-terms-and-conditions), [Privacy Policy](https://www.simpleanalytics.com/privacy-policy).
@@ -346,13 +346,28 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 = 1.12.0 =
 * New: Novashare short links. Turn it on under **GT Links > Integrations > Social sharing**, choose **Custom** as the link shortener in Novashare, and shared posts use your branded links with no code. Each shared URL gets one link in a Novashare category.
 * New: `gtlm_novashare_should_shorten` filter to decide which shared URLs become branded links.
-* New: Analytics integrations under **GT Links > Integrations**. Send short link clicks to Google Analytics 4, Plausible, Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky from your server, or to Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress on your own site, with no code. Everything is off by default.
+* New: Analytics integrations under **GT Links > Integrations**. Send short link clicks to Google Analytics 4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky from your server, or to Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress on your own site, with no code. Everything is off by default.
 * New: Browser tag support for Google Tag Manager, Fathom Analytics, and Microsoft Clarity, which have no server-side API. GA4 can use this route too if you'd rather not create an API secret.
 * New: Settings detection for MonsterInsights, ExactMetrics, Analytify, Site Kit, GA Google Analytics, Plausible Analytics, Connect Matomo, Clicky, and GTM4WP. Leave a field blank to use what they already hold.
 * New: A setting for sharing visitor IP addresses and countries with analytics services, off by default. The suggested privacy policy text updates to name the tools you've turned on and what they receive.
 * New: Six developer hooks for integrations, including `gtlm_integrations_should_send` for visitor consent.
 * Improved: On LiteSpeed servers the redirect now reaches the visitor before click counting starts, as it already did on PHP-FPM.
 * Fixed: REST link lists returned an empty `link_mode` for every link, and PHP logged an undefined variable warning. This started in 1.11.0.
+* Fixed: Links with non-Latin slugs and direct paths with encoded characters now resolve.
+* Fixed: A direct path entered with slashes, such as `/old-page/`, now matches. Links with a custom port, an underscore or an international domain in the destination no longer return a 404.
+* Fixed: Bulk copy and CSV auto-suffix no longer rewrite direct paths as slugs. A regex rule can't take a suffix, so it's now counted as failed or skipped instead of being corrupted.
+* Fixed: Regex patterns and replacements keep `<`, `>` and `%xx` when saved, and `$10` in a replacement no longer reads as `$1` followed by `0`.
+* Fixed: Editing a direct or regex link on a site with an object cache now clears its cached copy.
+* Fixed: Turning off geolocation on a link now pauses its rules instead of deleting them.
+* Fixed: A partial REST update to a category no longer clears the fields it left out, and a REST update can no longer blank a link's slug.
+* Fixed: Restoring or toggling a link through REST returns the same shape as every other link response, and a 404 for a missing link.
+* Fixed: The privacy text on the link editor and Settings screens now says so when this site shares visitor data with an analytics service.
+* Fixed: The editor's link inserter only offers active links with a usable address, and inserts the link name when no text is selected.
+* Fixed: Bulk **Set category** with nothing chosen no longer clears categories. A new **No category** option does that on purpose.
+* Fixed: Category counts no longer include trashed links. Stored counts are corrected on upgrade.
+* Fixed: Trash retention uses site time, so links aren't purged hours early on sites west of UTC.
+* Fixed: The rewrite rule is removed on deactivation, staged CSV files are deleted on uninstall, and a visitor can no longer cancel the geo self-test.
+* Fixed: Smaller issues with copy buttons on plain HTTP admin screens, referrers containing quotes, the rel filter on older rows, the Diagnostics sample link, the geo preview, and validation errors while editing a link.
 * Updated: translation template.
 
 = 1.11.0 =
@@ -570,7 +585,7 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 == Upgrade Notice ==
 
 = 1.12.0 =
-Adds analytics integrations for GA4, Independent Analytics, Plausible, Matomo and 16 other tools, plus optional Novashare short links, and fixes an empty `link_mode` in REST link lists. Every new feature is off by default. No database changes.
+Adds analytics integrations for GA4, Independent Analytics, Plausible (beta), Matomo and 16 other tools, plus optional Novashare short links, and fixes an empty `link_mode` in REST link lists. Every new feature is off by default. No database changes.
 
 = 1.11.0 =
 Adds optional prefix-free links and a Random slug button. Prefix-free mode is off by default, and existing /go/ links keep working when you turn it on. No database changes.

@@ -11,6 +11,10 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
+// A staged CSV is temporary whatever the data setting says, and its expiry job dies with the plugin.
+require_once __DIR__ . '/includes/class-gtlm-import-file.php';
+GTLM_Import_File::delete_all();
+
 $gtlm_settings = get_option( 'gtlm_settings', array() );
 
 // Never leave retained analytics implicitly active on a later reinstall.

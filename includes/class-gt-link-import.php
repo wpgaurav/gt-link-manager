@@ -406,7 +406,11 @@ class GTLM_Import {
 					continue;
 				}
 
-				$data['slug'] = $this->next_available_slug( (string) $data['slug'] );
+				$data['slug'] = $this->db->unique_slug( (string) $data['slug'], (string) $data['link_mode'] );
+				if ( '' === $data['slug'] ) {
+					++$skipped;
+					continue;
+				}
 			}
 
 			$link_id = $this->db->insert_link( $data );
@@ -501,7 +505,7 @@ class GTLM_Import {
 		$name      = sanitize_text_field( $get( 'name' ) );
 		$url       = esc_url_raw( $get( 'url' ) );
 		$link_mode = in_array( $get( 'link_mode' ), array( 'direct', 'regex' ), true ) ? $get( 'link_mode' ) : 'standard';
-		$slug      = 'standard' === $link_mode ? sanitize_title( $get( 'slug' ) ) : sanitize_text_field( $get( 'slug' ) );
+		$slug      = GTLM_DB::clean_slug( $get( 'slug' ), $link_mode );
 		if ( '' === $slug ) {
 			$slug = sanitize_title( $name );
 		}
@@ -538,7 +542,7 @@ class GTLM_Import {
 			'notes'             => sanitize_textarea_field( $get( 'notes' ) ),
 			'geo_mode'          => in_array( $get( 'geo_mode' ), array( 'off', 'targeted' ), true ) ? $get( 'geo_mode' ) : ( '' !== $geo_rules ? 'targeted' : 'off' ),
 			'link_mode'         => $link_mode,
-			'regex_replacement' => sanitize_text_field( $get( 'regex_replacement' ) ),
+			'regex_replacement' => GTLM_DB::clean_pattern( $get( 'regex_replacement' ) ),
 			'priority'          => '' === $get( 'priority' ) ? 10 : max( 0, (int) $get( 'priority' ) ),
 			'is_active'         => '' === $get( 'is_active' ) ? 1 : (int) in_array( strtolower( $get( 'is_active' ) ), array( '1', 'yes', 'true' ), true ),
 			'geo_rules'         => $geo_rules,
@@ -566,22 +570,6 @@ class GTLM_Import {
 				'parent_id' => 0,
 			)
 		);
-	}
-
-	private function next_available_slug( string $base_slug ): string {
-		$base_slug = sanitize_title( $base_slug );
-		if ( '' === $base_slug ) {
-			$base_slug = 'link';
-		}
-
-		$slug = $base_slug;
-		$i    = 2;
-		while ( null !== $this->db->get_link_by_slug( $slug ) ) {
-			$slug = $base_slug . '-' . $i;
-			++$i;
-		}
-
-		return $slug;
 	}
 
 	/**

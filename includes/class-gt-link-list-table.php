@@ -532,7 +532,7 @@ class GTLM_List_Table extends WP_List_Table {
 		$category      = isset( $_GET['category_id'] ) ? absint( $_GET['category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$redirect_type = isset( $_GET['redirect_type'] ) ? absint( $_GET['redirect_type'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$rel           = isset( $_GET['rel'] ) ? sanitize_key( (string) wp_unslash( $_GET['rel'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$bulk_category = isset( $_REQUEST['bulk_category_id'] ) ? absint( $_REQUEST['bulk_category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$bulk_category = isset( $_REQUEST['bulk_category_id'] ) ? (int) $_REQUEST['bulk_category_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		$current_m = isset( $_GET['m'] ) ? absint( $_GET['m'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$months    = $this->db->get_link_months();
@@ -591,6 +591,7 @@ class GTLM_List_Table extends WP_List_Table {
 		echo '<label class="screen-reader-text" for="gtlm-bulk-category">' . esc_html__( 'Category for bulk action', 'gt-link-manager' ) . '</label>';
 		echo '<select name="bulk_category_id" id="gtlm-bulk-category">';
 		echo '<option value="0">' . esc_html__( 'Category for bulk action', 'gt-link-manager' ) . '</option>';
+		echo '<option value="-1" ' . selected( $bulk_category, -1, false ) . '>' . esc_html__( 'No category', 'gt-link-manager' ) . '</option>';
 		foreach ( $this->categories as $cat ) {
 			echo '<option value="' . (int) $cat['id'] . '" ' . selected( $bulk_category, (int) $cat['id'], false ) . '>' . esc_html( (string) $cat['name'] ) . '</option>';
 		}

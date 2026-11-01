@@ -105,7 +105,8 @@ class GTLM_Analytics_Collector {
 	private static function server_value( string $key, int $limit ): string {
 		// Reject oversized values rather than cutting a token into a different valid token.
 		$value = $_SERVER[ $key ] ?? ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated and parsed into fixed fields; never stored raw.
-		return is_string( $value ) && strlen( $value ) <= $limit ? $value : '';
+		// WordPress adds slashes to $_SERVER, and a referrer holding one is refused as malformed.
+		return is_string( $value ) && strlen( $value ) <= $limit ? wp_unslash( $value ) : '';
 	}
 
 	private static function family( string $agent, array $families ): string {

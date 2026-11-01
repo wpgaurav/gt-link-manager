@@ -1,6 +1,7 @@
 import {
 	registerFormatType,
 	applyFormat,
+	insert,
 	useAnchor,
 } from '@wordpress/rich-text';
 import { BlockControls, RichTextToolbarButton } from '@wordpress/block-editor';
@@ -67,13 +68,18 @@ function LinkSearchPopover( { anchor, initialQuery = '', onClose, onSelect } ) {
 				config.restPath +
 				'?search=' +
 				encodeURIComponent( query ) +
-				'&per_page=20',
+				'&per_page=20&status=active',
 		} )
 			.then( ( items ) => {
 				if ( cancelled ) {
 					return;
 				}
-				setResults( Array.isArray( items ) ? items : [] );
+				// A regex rule has no address of its own to link to.
+				setResults(
+					Array.isArray( items )
+						? items.filter( ( item ) => item.url )
+						: []
+				);
 			} )
 			.catch( () => {
 				if ( cancelled ) {
@@ -174,17 +180,27 @@ function LinkInserterEdit( {
 	const [ query, setQuery ] = useState( '' );
 
 	function insertLink( item ) {
-		const rel = normalizeRel( item.rel );
+		const format = {
+			type: 'core/link',
+			attributes: {
+				url: item.url,
+				rel: normalizeRel( item.rel ),
+			},
+		};
 
-		onChange(
-			applyFormat( value, {
-				type: 'core/link',
-				attributes: {
-					url: item.url,
-					rel,
-				},
-			} )
-		);
+		// A collapsed selection has nothing to format, so the link's name becomes its text.
+		if ( value.start === value.end ) {
+			onChange(
+				applyFormat(
+					insert( value, item.name ),
+					format,
+					value.start,
+					value.start + item.name.length
+				)
+			);
+		} else {
+			onChange( applyFormat( value, format ) );
+		}
 		setIsOpen( false );
 	}
 

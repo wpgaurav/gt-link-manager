@@ -136,6 +136,7 @@ class GTLM_Integrations {
 			'plausible'             => array(
 				'label'  => 'Plausible Analytics',
 				'type'   => 'service',
+				'beta'   => true,
 				'docs'   => 'https://plausible.io/docs/events-api',
 				'help'   => __( 'Each click becomes a Link Click event. Add Link Click as a custom event goal in Plausible to see it. Plausible can drop events from server and hosting addresses, which is the address it sees while IP address and country is off. Send a test event to check.', 'gt-link-manager' ),
 				'fields' => array(
@@ -334,6 +335,22 @@ class GTLM_Integrations {
 				'help'  => __( 'Clarity has no server-side API, so this sends a link_click event from the visitor\'s browser through your Clarity script.', 'gt-link-manager' ),
 			),
 		);
+	}
+
+	/** Whether a service currently receives visitor IP addresses and countries. */
+	public static function shares_visitor_data(): bool {
+		$config = self::config();
+		if ( empty( $config['share_visitor_data'] ) ) {
+			return false;
+		}
+
+		foreach ( self::tools() as $key => $tool ) {
+			if ( 'service' === $tool['type'] && ! empty( $config['tools'][ $key ]['enabled'] ) && ( 'ga4' !== $key || 'browser' !== ( $config['tools'][ $key ]['mode'] ?? 'server' ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

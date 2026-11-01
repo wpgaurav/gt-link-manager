@@ -155,6 +155,9 @@ class GTLM_Integrations_Admin {
 		$name      = 'gtlm_integrations[tools][' . $key . ']';
 
 		echo '<details class="gtlm-integration" id="' . esc_attr( $id ) . '"' . ( $enabled ? ' open' : '' ) . '><summary><span class="gtlm-integration-name">' . esc_html( $tool['label'] ) . '</span>';
+		if ( ! empty( $tool['beta'] ) ) {
+			echo '<span class="gtlm-integration-status is-beta">' . esc_html__( 'Beta', 'gt-link-manager' ) . '</span>';
+		}
 		if ( $enabled ) {
 			echo '<span class="gtlm-integration-status is-on">' . esc_html__( 'On', 'gt-link-manager' ) . '</span>';
 		} elseif ( ! $available ) {

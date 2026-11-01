@@ -416,6 +416,9 @@ class GTLM_REST_API {
 		if ( '' === $data['slug'] ) {
 			$data['slug'] = sanitize_title( $data['name'] );
 		}
+		if ( '' === $data['slug'] ) {
+			return new WP_Error( 'gtlm_invalid', __( 'Enter a slug. This link name has no characters a slug can use.', 'gt-link-manager' ), array( 'status' => 400 ) );
+		}
 
 		if ( null !== $this->db->get_link_by_exact_slug( (string) $data['slug'] ) ) {
 			return new WP_Error( 'gtlm_slug_exists', __( 'Slug already exists.', 'gt-link-manager' ), array( 'status' => 409 ) );
@@ -446,6 +449,10 @@ class GTLM_REST_API {
 		}
 		if ( '' === $data['name'] || '' === $data['url'] ) {
 			return new WP_Error( 'gtlm_invalid', __( 'Name and URL are required.', 'gt-link-manager' ), array( 'status' => 400 ) );
+		}
+
+		if ( '' === $data['slug'] ) {
+			return new WP_Error( 'gtlm_invalid', __( 'A link needs a slug.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
 		$slug_exists = $this->db->get_link_by_exact_slug( (string) $data['slug'] );
@@ -511,12 +518,16 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
+		if ( ! is_array( $this->db->get_link_by_id( $id ) ) ) {
+			return new WP_Error( 'gtlm_not_found', __( 'Link not found.', 'gt-link-manager' ), array( 'status' => 404 ) );
+		}
+
 		$ok = $this->db->restore_link( $id );
 		if ( ! $ok ) {
 			return new WP_Error( 'gtlm_restore_failed', __( 'Could not restore link.', 'gt-link-manager' ), array( 'status' => 500 ) );
 		}
 
-		return rest_ensure_response( $this->db->get_link_by_id( $id ) );
+		return rest_ensure_response( $this->prepare_link_row( (array) $this->db->get_link_by_id( $id ) ) );
 	}
 
 	/**
@@ -532,12 +543,16 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
+		if ( ! is_array( $this->db->get_link_by_id( $id ) ) ) {
+			return new WP_Error( 'gtlm_not_found', __( 'Link not found.', 'gt-link-manager' ), array( 'status' => 404 ) );
+		}
+
 		$ok = $this->db->toggle_active( $id, $is_active );
 		if ( ! $ok ) {
 			return new WP_Error( 'gtlm_toggle_failed', __( 'Could not update link status.', 'gt-link-manager' ), array( 'status' => 500 ) );
 		}
 
-		return rest_ensure_response( $this->db->get_link_by_id( $id ) );
+		return rest_ensure_response( $this->prepare_link_row( (array) $this->db->get_link_by_id( $id ) ) );
 	}
 
 	/**
@@ -591,8 +606,13 @@ class GTLM_REST_API {
 				continue;
 			}
 
-			$new_slug = $this->make_unique_slug( (string) $link['slug'] );
-			$new_id   = $this->db->insert_link(
+			$new_slug = $this->db->unique_slug( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
+			if ( '' === $new_slug ) {
+				++$failed;
+				continue;
+			}
+
+			$new_id = $this->db->insert_link(
 				array(
 					'name'              => (string) $link['name'],
 					'slug'              => $new_slug,
@@ -675,7 +695,7 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_category_not_found', __( 'Category not found.', 'gt-link-manager' ), array( 'status' => 404 ) );
 		}
 
-		$data = $this->sanitize_category_payload( $request );
+		$data = $this->sanitize_category_payload( $request, (array) $this->db->get_category( $id ) );
 		if ( '' === $data['name'] ) {
 			return new WP_Error( 'gtlm_category_invalid', __( 'Category name is required.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
@@ -815,23 +835,16 @@ class GTLM_REST_API {
 
 		$rel_values = $this->normalize_rel( $rel );
 
-		// Standard links use sanitize_title; direct/regex links preserve special characters.
-		if ( 'standard' === $link_mode ) {
-			$sanitized_slug = sanitize_title( (string) $slug );
-		} else {
-			$sanitized_slug = sanitize_text_field( (string) $slug );
-		}
-
 		return array(
 			'name'              => sanitize_text_field( (string) $name ),
-			'slug'              => $sanitized_slug,
+			'slug'              => GTLM_DB::clean_slug( (string) $slug, $link_mode ),
 			'url'               => esc_url_raw( (string) $url ),
 			'redirect_type'     => $redirect_type,
 			'rel'               => implode( ',', $rel_values ),
 			'noindex'           => ! empty( $noindex ) ? 1 : 0,
 			'is_active'         => null !== $is_active ? ( ! empty( $is_active ) ? 1 : 0 ) : 1,
 			'link_mode'         => $link_mode,
-			'regex_replacement' => sanitize_text_field( (string) $regex_replacement ),
+			'regex_replacement' => GTLM_DB::clean_pattern( (string) $regex_replacement ),
 			'priority'          => max( 0, (int) $priority ),
 			'geo_mode'          => $geo_mode,
 			'geo_rules'         => GTLM_Geo::encode_rules( $geo_rules ),
@@ -842,13 +855,20 @@ class GTLM_REST_API {
 	}
 
 	/**
+	 * An omitted field keeps its existing value on update, as links do.
+	 *
+	 * @param array<string, mixed> $fallback Existing category.
 	 * @return array<string, mixed>
 	 */
-	private function sanitize_category_payload( WP_REST_Request $request ): array {
-		$name        = sanitize_text_field( (string) $request->get_param( 'name' ) );
-		$slug        = sanitize_title( (string) $request->get_param( 'slug' ) );
-		$description = sanitize_textarea_field( (string) $request->get_param( 'description' ) );
-		$parent_id   = absint( $request->get_param( 'parent_id' ) );
+	private function sanitize_category_payload( WP_REST_Request $request, array $fallback = array() ): array {
+		$value = static function ( string $key ) use ( $request, $fallback ) {
+			return $request->get_param( $key ) ?? ( $fallback[ $key ] ?? '' );
+		};
+
+		$name        = sanitize_text_field( (string) $value( 'name' ) );
+		$slug        = sanitize_title( (string) $value( 'slug' ) );
+		$description = sanitize_textarea_field( (string) $value( 'description' ) );
+		$parent_id   = absint( $value( 'parent_id' ) );
 
 		if ( '' === $slug ) {
 			$slug = sanitize_title( $name );
@@ -888,22 +908,6 @@ class GTLM_REST_API {
 		return array_values( array_unique( $clean ) );
 	}
 
-	private function make_unique_slug( string $base_slug ): string {
-		$base_slug = sanitize_title( $base_slug );
-		if ( '' === $base_slug ) {
-			$base_slug = 'link';
-		}
-
-		$slug = $base_slug;
-		$i    = 2;
-		while ( null !== $this->db->get_link_by_slug( $slug ) ) {
-			$slug = $base_slug . '-' . $i;
-			++$i;
-		}
-
-		return $slug;
-	}
-
 	/**
 	 * @return array<string, array<string, mixed>>
 	 */
@@ -924,10 +928,10 @@ class GTLM_REST_API {
 				'required'          => false,
 				'sanitize_callback' => 'sanitize_text_field',
 			),
+			// sanitize_link_payload() cleans the slug and replacement once it knows the link mode.
 			'slug'              => array(
-				'type'              => 'string',
-				'required'          => false,
-				'sanitize_callback' => 'sanitize_text_field',
+				'type'     => 'string',
+				'required' => false,
 			),
 			'url'               => array(
 				'type'              => 'string',
@@ -975,9 +979,8 @@ class GTLM_REST_API {
 				'enum'     => array( 'standard', 'direct', 'regex' ),
 			),
 			'regex_replacement' => array(
-				'type'              => 'string',
-				'required'          => false,
-				'sanitize_callback' => 'sanitize_text_field',
+				'type'     => 'string',
+				'required' => false,
 			),
 			'priority'          => array(
 				'type'              => 'integer',
@@ -1067,13 +1070,11 @@ class GTLM_REST_API {
 			'description' => array(
 				'type'              => 'string',
 				'required'          => false,
-				'default'           => '',
 				'sanitize_callback' => 'sanitize_textarea_field',
 			),
 			'parent_id'   => array(
 				'type'              => 'integer',
 				'required'          => false,
-				'default'           => 0,
 				'sanitize_callback' => 'absint',
 			),
 		);
