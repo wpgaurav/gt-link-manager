@@ -21,7 +21,9 @@ class GTLM_Analytics_Controller {
 		self::load();
 		try {
 			if ( in_array( $action, array( 'enable', 'resume' ), true ) ) {
-				if ( ! in_array( $request->get_param( 'consent' ), array( true, 1, '1' ), true ) ) {
+				// The same values any REST boolean accepts. Loose truthiness would read 'no' as consent.
+				$consent = $request->get_param( 'consent' );
+				if ( ! rest_is_boolean( $consent ) || ! rest_sanitize_boolean( $consent ) ) {
 					return new WP_Error( 'gtlm_analytics_consent', __( 'Explicitly opt in before enabling analytics.', 'gt-link-manager' ), array( 'status' => 400 ) );
 				}
 				$result = GTLM_Analytics::enable( $request->get_params() );
@@ -274,7 +276,8 @@ class GTLM_Analytics_Controller {
 		}
 		self::load();
 		require_once __DIR__ . '/class-gtlm-csv.php';
-		$db = new GTLM_Analytics_DB();
+		$campaigns = array_column( GTLM_Analytics::config()['campaigns'] ?? array(), null, 'id' );
+		$db        = new GTLM_Analytics_DB();
 		$db->start_export();
 		try {
 			$link_ids = $db->export_size_allowed( $filters ) ? $db->export_link_ids( $filters ) : null;
@@ -300,11 +303,7 @@ class GTLM_Analytics_Controller {
 					break;
 				}
 				foreach ( $db->export_rows( $filters, $chunk ) as $row ) {
-					$values = array_map(
-						static fn( $value ): string => GTLM_CSV::text( (string) $value ),
-						array( $row['link_id'], $row['name'], $row['day'], wp_timezone_string(), $row['dimension'], $row['value'], $row['clicks'] )
-					);
-					fputcsv( $output, $values, ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
+					fputcsv( $output, self::export_cells( $row, $campaigns ), ',', '"', '' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
 				}
 			}
 			fclose( $output ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
@@ -312,5 +311,20 @@ class GTLM_Analytics_Controller {
 			$db->finish_export();
 		}
 		exit;
+	}
+
+	/**
+	 * One export row as spreadsheet-safe cells. Campaign IDs become their UTM values.
+	 *
+	 * @param array $row       Row from GTLM_Analytics_DB::export_rows().
+	 * @param array $campaigns Configured campaigns keyed by ID.
+	 * @return string[]
+	 */
+	public static function export_cells( array $row, array $campaigns ): array {
+		$value = 'campaign' === $row['dimension'] ? GTLM_Analytics::campaign_label( (string) $row['value'], $campaigns ) : $row['value'];
+		return array_map(
+			static fn( $cell ): string => GTLM_CSV::text( (string) $cell ),
+			array( $row['link_id'], $row['name'], $row['day'], wp_timezone_string(), $row['dimension'], $value, $row['clicks'] )
+		);
 	}
 }

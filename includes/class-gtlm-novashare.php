@@ -96,15 +96,19 @@ class GTLM_Novashare {
 	}
 
 	/**
-	 * Limit link creation to published content on this site.
+	 * Limit link creation to published, publicly viewable content on this site.
 	 *
 	 * Share links can be generated while a public page renders, so this must not
 	 * turn a visitor-controlled URL into an open redirect or a new row per query
 	 * string. Novashare's UTM parameters are the only query args allowed, plus
-	 * the ones plain permalinks use.
+	 * the ones plain permalinks use. UTM values can't be limited, because
+	 * Novashare's own can't be told from any others: if a site's share URLs carry
+	 * the visitor's query string, each new value makes a row.
+	 * gtlm_novashare_should_shorten can refuse those.
 	 */
 	private function is_shareable( string $url, int $post_id ): bool {
-		if ( $post_id <= 0 || 'publish' !== get_post_status( $post_id ) ) {
+		// url_to_postid() answers ?p=N for any post type, public or not.
+		if ( $post_id <= 0 || 'publish' !== get_post_status( $post_id ) || ! is_post_type_viewable( (string) get_post_type( $post_id ) ) ) {
 			return false;
 		}
 

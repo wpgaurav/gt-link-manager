@@ -50,6 +50,15 @@ foreach(['an external URL'=>'https://evil.example/phish','a non-UTM query string
 ns_check('DEFAULT'===$short(['not','a','string'])&&'DEFAULT'===$short(null),'Non-string input returns the default');
 ns_check($rows===$count(),'Refused URLs create no rows',$count());
 
+// Post types: url_to_postid() covers any public type, and ?p= answers for any type at all.
+register_post_type('ns_public',['public'=>true,'rewrite'=>['slug'=>'ns-public']]);register_post_type('ns_hidden',['public'=>false]);$wp_rewrite->flush_rules(false);
+$cpt=wp_insert_post(['post_type'=>'ns_public','post_status'=>'publish','post_title'=>'Public type','post_name'=>'ns-cpt-probe']);$hidden=wp_insert_post(['post_type'=>'ns_hidden','post_status'=>'publish','post_title'=>'Hidden type']);
+$cptUrl=get_permalink($cpt);$gotCpt=$short($cptUrl);ns_check($cpt===url_to_postid($cptUrl)&&$s->link_url($slug($cptUrl))===$gotCpt,'A published item of another public post type gets a link',[$cptUrl,$gotCpt]);
+$rows=$count();$hiddenUrl=home_url('/?p='.$hidden);ns_check($hidden===url_to_postid($hiddenUrl)&&'DEFAULT'===$short($hiddenUrl)&&$rows===$count(),'A non-public post type is refused even though ?p= resolves it',$hiddenUrl);
+
+// What the readme says about UTM values: each new one is a new row.
+$rows=$count();$short($long.'?utm_term=first');$short($long.'?utm_term=second');ns_check($rows+2===$count(),'Each new UTM value makes its own link',$count());
+
 // Developer control.
 add_filter('gtlm_novashare_should_shorten','__return_false');
 ns_check('DEFAULT'===$short($long.'?utm_source=vetoed'),'gtlm_novashare_should_shorten can veto a share');
@@ -100,5 +109,5 @@ GTLM_Integrations_Admin::apply_form(['novashare_short_links'=>'1']);ns_check($s-
 
 // Cleanup.
 $wpdb->query("DELETE FROM {$table} WHERE slug LIKE 'ns-%'");$db->delete_link($hand);$db->delete_category((int)$link['category_id']);$db->flush_cache_group();
-wp_delete_post($post,true);wp_delete_post($draft,true);$wp_rewrite->set_permalink_structure('');$wp_rewrite->flush_rules(false);$s->update($before);$s->set_novashare_enabled(false);delete_option(GTLM_Integrations::OPTION);$s->set_enabled_integrations([]);
+wp_delete_post($post,true);wp_delete_post($draft,true);wp_delete_post($cpt,true);wp_delete_post($hidden,true);$wp_rewrite->set_permalink_structure('');$wp_rewrite->flush_rules(false);$s->update($before);$s->set_novashare_enabled(false);delete_option(GTLM_Integrations::OPTION);$s->set_enabled_integrations([]);
 $out=['passed'=>count(array_filter($checks,fn($c)=>$c['ok'])),'checks'=>$checks,'failed'=>array_values(array_filter($checks,fn($c)=>!$c['ok']))];echo json_encode($out,JSON_PRETTY_PRINT);exit($out['failed']?1:0);
