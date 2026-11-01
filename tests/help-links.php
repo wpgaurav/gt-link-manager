@@ -65,7 +65,9 @@ hl_check(str_contains($integrations,'developers.google.com/analytics')&&str_cont
 // The block editor gets the URL for its popover.
 $editor=(new ReflectionClass(GTLM_Block_Editor::class))->newInstanceWithoutConstructor();gtlm_test_access(new ReflectionProperty(GTLM_Block_Editor::class,'settings'))->setValue($editor,$s);$editor->enqueue_assets();
 $data=(string)wp_scripts()->get_data('gt-link-manager-editor','data');
-hl_check(str_contains($data,'"helpUrl":"'.$url('block_editor').'"'),'The editor receives the inserter docs URL',$data);
+// Older WordPress versions escape the slashes, so compare the decoded value.
+preg_match('/=\s*(\{.*\});/s',$data,$localized);
+hl_check($url('block_editor')===(json_decode($localized[1]??'',true)['helpUrl']??''),'The editor receives the inserter docs URL',$data);
 $bundle=(string)file_get_contents(GTLM_PATH.'blocks/link-inserter/build/index.js');
 hl_check(str_contains($bundle,'helpUrl'),'The committed editor build uses it');
 

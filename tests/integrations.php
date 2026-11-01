@@ -190,7 +190,7 @@ foreach(['Independent Analytics','Koko Analytics','WP Statistics','Burst Statist
 require_once GTLM_PATH.'includes/class-gt-link-admin.php';
 require_once GTLM_PATH.'includes/class-gt-link-import.php';
 require_once GTLM_PATH.'includes/class-gt-link-admin-pages.php';
-require_once ABSPATH.'wp-admin/includes/misc.php';require_once ABSPATH.'wp-admin/includes/class-wp-screen.php';require_once ABSPATH.'wp-admin/includes/screen.php';require_once ABSPATH.'wp-admin/includes/class-wp-privacy-policy-content.php';
+require_once ABSPATH.'wp-admin/includes/plugin.php';require_once ABSPATH.'wp-admin/includes/misc.php';require_once ABSPATH.'wp-admin/includes/class-wp-screen.php';require_once ABSPATH.'wp-admin/includes/screen.php';require_once ABSPATH.'wp-admin/includes/class-wp-privacy-policy-content.php';
 $GLOBALS['current_screen']=WP_Screen::get('dashboard');$GLOBALS['wp_actions']['admin_init']=1;
 $policy=function()use($s){$ref=new ReflectionClass('GTLM_Admin');$admin=$ref->newInstanceWithoutConstructor();$prop=$ref->getProperty('settings');$prop->setAccessible(true);$prop->setValue($admin,$s);$store=new ReflectionProperty('WP_Privacy_Policy_Content','policy_content');$store->setAccessible(true);$store->setValue(null,[]);$admin->register_privacy_content();$found=$store->getValue();return $found?(string)end($found)['policy_text']:'';};
 GTLM_Integrations::save(['share_visitor_data'=>0,'tools'=>[]]);$t=$policy();
