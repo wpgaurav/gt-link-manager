@@ -257,12 +257,13 @@ class GTLM_Analytics_View {
 		echo '</p></noscript>';
 		if ( ! empty( $report['details_unavailable'] ) ) {
 			echo '<p class="description">' . esc_html__( 'Some older clicks have page totals but no retained breakdown details. They are shown as Details unavailable.', 'gt-link-manager' ) . '</p>';}
+		$campaigns = array_column( $config['campaigns'], null, 'id' );
 		foreach ( $tabs as $dimension => $label ) {
 			echo '<div id="gtlm-panel-' . esc_attr( $dimension ) . '" class="gtlm-breakdown-panel" aria-labelledby="gtlm-tab-' . esc_attr( $dimension ) . '" tabindex="0"' . ( $dimension !== $f['dimension'] ? ' hidden' : '' ) . '>';
 			self::table(
 				array( __( 'Value', 'gt-link-manager' ), __( 'Clicks', 'gt-link-manager' ) ),
 				array_map(
-					static function ( $row ) use ( $dimension ) {
+					static function ( $row ) use ( $dimension, $campaigns ) {
 						$value = $row['value'];
 						if ( '' === $value || ( 'campaign' === $dimension && '0' === $value ) ) {
 							$value = 'source' === $dimension ? __( 'Direct / unknown', 'gt-link-manager' ) : __( 'Unknown / unattributed', 'gt-link-manager' );
@@ -271,7 +272,9 @@ class GTLM_Analytics_View {
 						} elseif ( '_other' === $value ) {
 							$value = __( 'Other', 'gt-link-manager' );
 						} elseif ( 'country' === $dimension ) {
-							$value = GTLM_Geo::label( $value );}
+							$value = GTLM_Geo::label( $value );
+						} elseif ( 'campaign' === $dimension ) {
+							$value = GTLM_Analytics::campaign_label( (string) $value, $campaigns );}
 						return array( $value, number_format_i18n( (int) $row['clicks'] ) );
 					},
 					$report['breakdowns'][ $dimension ]

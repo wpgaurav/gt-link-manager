@@ -27,6 +27,44 @@ class GTLM_Analytics {
 		return is_array( $value ) ? $value : array();
 	}
 
+	/**
+	 * What a stored campaign value means, in the UTM values the owner configured.
+	 * Removed campaigns stay in the registry with enabled=false, so their clicks keep a label.
+	 *
+	 * @param string $value     Stored breakdown value.
+	 * @param array  $campaigns Configured campaigns keyed by ID.
+	 */
+	public static function campaign_label( string $value, array $campaigns ): string {
+		if ( '' === $value || '0' === $value ) {
+			return __( 'Unknown / unattributed', 'gt-link-manager' );
+		}
+		// Reserved values such as _other are not campaign IDs.
+		if ( ! ctype_digit( $value ) ) {
+			return $value;
+		}
+		if ( ! isset( $campaigns[ (int) $value ] ) ) {
+			/* translators: %s: Campaign number. */
+			return sprintf( __( 'Campaign %s (UTM values unavailable)', 'gt-link-manager' ), $value );
+		}
+		$campaign = $campaigns[ (int) $value ];
+		$parts    = array();
+		foreach ( array(
+			/* translators: %s: UTM source value. */
+			'utm_source'   => __( 'Source: %s', 'gt-link-manager' ),
+			/* translators: %s: UTM medium value. */
+			'utm_medium'   => __( 'Medium: %s', 'gt-link-manager' ),
+			/* translators: %s: UTM campaign value. */
+			'utm_campaign' => __( 'Campaign: %s', 'gt-link-manager' ),
+		) as $key => $format ) {
+			if ( '' !== ( $campaign[ $key ] ?? '' ) ) {
+				$parts[] = sprintf( $format, $campaign[ $key ] );
+			}
+		}
+		$label = implode( ', ', $parts );
+		/* translators: %s: A campaign's UTM values. */
+		return empty( $campaign['enabled'] ) ? sprintf( __( '%s (removed)', 'gt-link-manager' ), $label ) : $label;
+	}
+
 	public static function storage_warning_bytes( array $config ): int {
 		$mb = (int) ( $config['storage_warning_mb'] ?? self::STORAGE_WARNING_MB );
 		return max( 1, (int) apply_filters( 'gtlm_analytics_storage_warning_bytes', max( 1, $mb ) * MB_IN_BYTES ) );
@@ -307,8 +345,8 @@ class GTLM_Analytics {
 			$config = self::fresh_config();
 			if ( $config ) {
 				// The lease is left as is: one failed run must not drop clicks. If failures
-				// persist, the lease lapses and collection stops, which keeps raw click
-				// records inside their promised retention.
+				// persist, the lease lapses and new writes stop. That only limits growth:
+				// records already stored stay past their retention until a run succeeds.
 				$config['last_error']    = 'maintenance_failed';
 				$config['last_error_at'] = gmdate( 'Y-m-d H:i:s' );
 				self::save( $config );

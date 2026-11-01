@@ -152,7 +152,7 @@ GT Link Manager works with [Novashare](https://novashare.io/), a separate social
 * **Off by default.** Turn it on under **GT Links > Integrations > Social sharing**, then choose **Custom** as the shortener in Novashare.
 * **No code or API key.** GT Link Manager answers Novashare's `novashare_short_link_url` filter on your own site and adds no external request.
 * **One link per shared URL.** Each link is created on first share, uses your link defaults, and goes in a **Novashare** category.
-* **Published content only.** Only published posts and pages on your site are shortened, so a visitor can't create links by changing a URL.
+* **Published content only.** Only published posts, pages and other public post types on your site are shortened, so a link can't be made to point anywhere else.
 
 = Advanced Integrations =
 
@@ -297,7 +297,7 @@ WordPress paths such as `wp-admin`, `wp-json`, `wp-login.php`, and `feed` are bl
 
 Yes. Turn it on under **GT Links > Integrations > Social sharing**. Then, in Novashare, open **Configuration**, go to **Link Shortening**, turn on **Enable Link Shortening** and choose **Custom**. You don't need any code.
 
-Each shared URL gets one link in a **Novashare** category, using your link defaults. Only published posts and pages on your site are shortened, and the only query parameters allowed are UTM tags, so a visitor can't create links by changing a URL. Clicks count like any other link.
+Each shared URL gets one link in a **Novashare** category, using your link defaults. Only published posts, pages and other public post types on your site are shortened, so a link can't be made to point anywhere else. UTM tags are the only query parameters allowed, apart from the IDs plain permalinks use. Each different set of UTM values gets its own link, so with Novashare's UTM tracking on, expect one per network. If custom code adds the visitor's own query string to shared URLs, such as through Novashare's `novashare_permalink` filter, each new UTM value creates another link, and the `gtlm_novashare_should_shorten` filter can refuse those. Clicks count like any other link.
 
 Novashare saves the short link it receives. If you trash or deactivate one of these links, shares that already use it stop working, and GT Link Manager won't bring it back. Short links Novashare saved before you switched stay as they are.
 
@@ -372,6 +372,8 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 * Fixed: Trash retention uses site time, so links aren't purged hours early on sites west of UTC.
 * Fixed: The rewrite rule is removed on deactivation, staged CSV files are deleted on uninstall, and a visitor can no longer cancel the geo self-test.
 * Fixed: Smaller issues with copy buttons on plain HTTP admin screens, referrers containing quotes, the rel filter on older rows, the Diagnostics sample link, the geo preview, and validation errors while editing a link.
+* Fixed: The analytics Campaigns tab and CSV export show a campaign's UTM values instead of a bare number, including campaigns you've since removed. In the CSV, the `value` column of campaign rows changes to match.
+* Fixed: The analytics REST enable and resume routes accept `consent=true`, as documented. Other values, such as `yes`, are still refused.
 * Updated: translation template.
 
 = 1.11.0 =
