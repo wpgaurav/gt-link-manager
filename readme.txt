@@ -8,7 +8,7 @@ Stable tag: 1.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Fast branded redirects with opt-in click analytics, country targeting, CSV migration, a REST API, and block editor link tools.
+Fast branded redirects with opt-in click analytics, country targeting, CSV migration, Novashare short links, a REST API, and block editor link tools.
 
 == Description ==
 
@@ -123,6 +123,15 @@ Use the [WordPress.org support forum](https://wordpress.org/support/plugin/gt-li
 CSV export keeps your links portable, including geo rules and advanced redirect configuration. Uninstall removes data only when you enable that option. There are no Pro tiers, trials, required accounts, telemetry or upsell notices.
 
 GT Link Manager does not perform automatic keyword linking. Country detection depends on a trusted CDN or server header; a header supplied directly by a visitor can be forged. Basic counts measure requests, while Advanced Analytics adds eligible-click reports; neither identifies unique visitors or verifies conversions.
+
+= Novashare Short Links =
+
+GT Link Manager works with [Novashare](https://novashare.io/), a separate social sharing plugin. Novashare's **Custom** link shortener can use your branded links, so a shared post carries `yoursite.com/go/ns-1a2b3c4d` instead of a third-party short URL.
+
+* **Off by default.** Turn on **Short links** under **Settings > Novashare**, then choose **Custom** as the shortener in Novashare.
+* **No code or API key.** GT Link Manager answers Novashare's `novashare_short_link_url` filter on your own site and adds no external request.
+* **One link per shared URL.** Each link is created on first share, uses your link defaults, and goes in a **Novashare** category.
+* **Published content only.** Only published posts and pages on your site are shortened, so a visitor can't create links by changing a URL.
 
 = Analytics & Advanced Integrations =
 
