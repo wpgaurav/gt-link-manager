@@ -65,6 +65,11 @@ function gtlm_bootstrap(): void {
 		require_once GTLM_PATH . 'includes/class-gtlm-novashare.php';
 		GTLM_Novashare::init( $db, $settings );
 	}
+	$integrations = $settings->enabled_integrations();
+	if ( $integrations ) {
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
+		GTLM_Integrations::init( $integrations );
+	}
 	if ( is_admin() ) {
 		require_once GTLM_PATH . 'includes/class-gt-link-import.php';
 		require_once GTLM_PATH . 'includes/class-gt-link-admin-pages.php';

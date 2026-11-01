@@ -52,6 +52,10 @@ All service classes use a static `init()` factory that takes dependencies, const
 | `GTLM_Import` | Two-step CSV import (preview → map columns → run) and filtered CSV export. |
 | `GTLM_List_Table` | Extends `WP_List_Table`. Supports views: All, Active, Inactive, Trash. |
 | `GTLM_Activator` | Creates tables via `dbDelta`. Runs `maybe_upgrade()` to migrate schema on version bump. |
+| `GTLM_Integrations` | Opt-in analytics tool registry, saved config and delivery after the redirect. Loaded only when a tool is enabled. |
+| `GTLM_Integration_Services` | Pure request builders for services with a server-side event API. |
+| `GTLM_Integration_Plugins` | In-process adapters for analytics plugins on the same site. |
+| `GTLM_Integrations_Admin` | The GT Links > Integrations screen and its save handler. |
 
 ### Database tables
 
@@ -111,6 +115,12 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 | `gtlm_trash_purged` | action | Fires after the retention cron purges trashed links |
 | `gtlm_count_click` | filter | Return false to skip counting a click |
 | `gtlm_click_recorded` | action | Fires after a click has been counted |
+| `gtlm_integrations_should_send` | filter | Return false to withhold a click from analytics integrations, for example until consent |
+| `gtlm_integration_event` | filter | Change the click event before any integration receives it |
+| `gtlm_integration_request` | filter | Change or cancel the HTTP request for one service |
+| `gtlm_integration_visitor_ip` | filter | Supply the IP shared when visitor data sharing is on |
+| `gtlm_integration_sent` | action | Fires after a service has been sent a click |
+| `gtlm_integrations_load_bridge` | filter | Stop the browser tag script loading on a page |
 | `gtlm_novashare_should_shorten` | filter | Decide whether a URL shared through Novashare becomes a branded link |
 
 ### Geolocation notes
@@ -138,6 +148,10 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 Opt-in via the `enable_click_tracking` setting, off by default. That default is a privacy commitment, not a UX choice: with it off, the plugin's registered privacy-policy content states that it does not log requests, and that statement has to stay true. `GTLM_Admin::register_privacy_content()` swaps the redirect paragraph based on the setting -- if you change what is recorded, change that text in the same commit.
 
 The write happens in `GTLM_Redirect::record_click()`, called *after* `header( 'Location: ... )`, and calls `fastcgi_finish_request()` first where available so the counter never sits on the visitor's clock. Measured on the synchronous fallback path (no FPM): 9.0ms median vs 9.1ms baseline.
+
+### Analytics integrations
+
+See `docs/integrations.md`. Off by default, with credentials in the non-autoloaded `gtlm_integrations` option and the enabled list in `gtlm_settings`, so a site with nothing on pays no extra query. Delivery happens after `finish_response()`, so a slow service never reaches the visitor. Sharing visitor IPs and countries is a separate opt-in. `GTLM_Admin::register_privacy_content()` describes what is sent: if you change what is sent, change that text and the readme's External services section in the same commit. The plugin adapters lean on other plugins' internals, so rerun `tests/integration-plugins.php` against the real plugins after they update. Don't build `GTLM_Integrations::tools()` during bootstrap: it translates strings, and `plugins_loaded` is too early.
 
 ## Deploying to gauravtiwari.org
 

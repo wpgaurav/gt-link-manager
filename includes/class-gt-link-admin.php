@@ -53,6 +53,13 @@ class GTLM_Admin {
 				GTLM_Analytics_Controller::export();
 			}
 		);
+		add_action(
+			'admin_post_gtlm_integrations_save',
+			static function (): void {
+				require_once GTLM_PATH . 'includes/class-gtlm-integrations-admin.php';
+				GTLM_Integrations_Admin::handle_save();
+			}
+		);
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_new_link' ), 80 );
 		add_filter( 'dashboard_glance_items', array( $this, 'dashboard_glance_items' ) );
 		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
@@ -101,6 +108,7 @@ class GTLM_Admin {
 		add_submenu_page( 'gtlm-links', esc_html__( 'Add New', 'gt-link-manager' ), esc_html__( 'Add New', 'gt-link-manager' ), $capability, 'gtlm-links-edit', array( $this->pages, 'render_edit_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Categories', 'gt-link-manager' ), esc_html__( 'Categories', 'gt-link-manager' ), $capability, 'gtlm-links-categories', array( $this->pages, 'render_categories_page' ) );
 		add_submenu_page( 'gtlm-links', __( 'Analytics', 'gt-link-manager' ), __( 'Analytics', 'gt-link-manager' ), (string) apply_filters( 'gtlm_analytics_capability', 'manage_options' ), 'gtlm-links-analytics', array( $this->pages, 'render_analytics_page' ) );
+		add_submenu_page( 'gtlm-links', esc_html__( 'Integrations', 'gt-link-manager' ), esc_html__( 'Integrations', 'gt-link-manager' ), 'manage_options', 'gtlm-links-integrations', array( $this->pages, 'render_integrations_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Settings', 'gt-link-manager' ), esc_html__( 'Settings', 'gt-link-manager' ), 'manage_options', 'gtlm-links-settings', array( $this->pages, 'render_settings_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Import / Export', 'gt-link-manager' ), esc_html__( 'Import / Export', 'gt-link-manager' ), $capability, 'gtlm-links-import-export', array( $this->pages, 'render_import_export_page' ) );
 	}
@@ -178,7 +186,7 @@ class GTLM_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics', 'gtlm-links-ai-agents' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-integrations', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics', 'gtlm-links-ai-agents' ), true ) ) {
 			return;
 		}
 
@@ -397,6 +405,10 @@ class GTLM_Admin {
 			return;
 		}
 
+		$integrations    = $this->privacy_integrations();
+		$tracking_script = ! empty( $integrations['browser'] );
+		$share_visitor   = ! empty( $integrations['share_visitor_data'] );
+
 		// The redirect paragraph has to describe what the site actually does.
 		// Claiming nothing is logged while the click counter is switched on
 		// would be a false statement in the site's own privacy policy.
@@ -410,18 +422,18 @@ class GTLM_Admin {
 		}
 
 		$content =
-			'<p>' . esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts, set cookies, or add tracking scripts.', 'gt-link-manager' ) . '</p>' .
+			'<p>' . ( $tracking_script ? esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts or set cookies.', 'gt-link-manager' ) : esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts, set cookies, or add tracking scripts.', 'gt-link-manager' ) ) . '</p>' .
 			'<h3>' . esc_html__( 'Redirects', 'gt-link-manager' ) . '</h3>' .
 			$redirect_paragraph .
 			'<h3>' . esc_html__( 'Geolocation targeting', 'gt-link-manager' ) . '</h3>' .
-			'<p>' . esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never reads or processes the visitor\'s IP address, never contacts an external geolocation service, and never stores or transmits the country. The value exists only for the duration of that single request and is used solely to choose which URL to redirect to.', 'gt-link-manager' ) . '</p>' .
+			'<p>' . ( $share_visitor ? esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never contacts an external geolocation service and never stores the country. It uses the value to choose which URL to redirect to, and this site also shares it with the analytics services described below.', 'gt-link-manager' ) : esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never reads or processes the visitor\'s IP address, never contacts an external geolocation service, and never stores or transmits the country. The value exists only for the duration of that single request and is used solely to choose which URL to redirect to.', 'gt-link-manager' ) ) . '</p>' .
 			'<p>' . esc_html__( 'Because the country is derived from data your CDN already collects, the relevant disclosure usually belongs with your CDN provider rather than with this plugin. Check your CDN\'s own privacy documentation.', 'gt-link-manager' ) . '</p>' .
 			'<p>' . esc_html__( 'Note: if you have added click tracking or analytics through the plugin\'s gtlm_before_redirect hook, that code receives the detected country and may store or transmit it. Any such storage is the responsibility of the integration you added, not of this plugin.', 'gt-link-manager' ) . '</p>';
 
 		if ( $this->settings->analytics_initialized() ) {
 			$content  = '<p>' . esc_html__( 'GT Link Manager stores configured links and redirects visitors. Basic lifetime click counts, if enabled, are independent of advanced analytics.', 'gt-link-manager' ) . '</p>';
 			$content .= '<p>' . esc_html__( 'This site has opted in to advanced link analytics. Eligible redirect requests may store a short-lived timestamp, link ID, referring hostname and page URL without credentials, query strings or fragments, coarse device/browser/OS families, an allowlisted campaign ID, redirect type, and optionally a country code supplied by a trusted proxy and whether a country rule matched. After the individual-record period, clicks are kept only as daily totals per link, grouped by these same fields. On a link with very few clicks, a daily total can still describe a single click: its date, referring page, country and device type. Pausing collection retains previously collected reports until their retention period ends or they are deleted.', 'gt-link-manager' ) . '</p>';
-			$content .= '<p>' . esc_html__( 'The plugin does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or referring URL credentials, query strings or fragments, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required.', 'gt-link-manager' ) . '</p>';
+			$content .= '<p>' . esc_html__( 'Advanced link analytics does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or referring URL credentials, query strings or fragments, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required.', 'gt-link-manager' ) . '</p>';
 			$config   = get_option( 'gtlm_analytics', array() );
 			if ( is_array( $config ) && isset( $config['event_days'], $config['summary_days'] ) ) {
 				if ( 0 === (int) $config['summary_days'] ) {
@@ -433,7 +445,66 @@ class GTLM_Admin {
 				}
 			}
 		}
+		$content .= $this->privacy_integrations_section( $integrations );
 		wp_add_privacy_policy_content( __( 'GT Link Manager', 'gt-link-manager' ), $content );
+	}
+
+	/**
+	 * Which enabled analytics tools the privacy text has to name.
+	 *
+	 * @return array{service: array<int, string>, plugin: array<int, string>, browser: array<int, string>, share_visitor_data: bool}
+	 */
+	private function privacy_integrations(): array {
+		$found = array(
+			'service'            => array(),
+			'plugin'             => array(),
+			'browser'            => array(),
+			'share_visitor_data' => false,
+		);
+		$keys  = $this->settings->enabled_integrations();
+		if ( ! $keys ) {
+			return $found;
+		}
+
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
+		$config = GTLM_Integrations::config();
+		foreach ( GTLM_Integrations::tools() as $key => $tool ) {
+			if ( ! in_array( $key, $keys, true ) ) {
+				continue;
+			}
+			$type             = in_array( 'ga4_browser', $keys, true ) && 'ga4' === $key ? 'browser' : (string) $tool['type'];
+			$found[ $type ][] = (string) $tool['label'];
+		}
+		$found['share_visitor_data'] = ! empty( $config['share_visitor_data'] ) && ! empty( $found['service'] );
+
+		return $found;
+	}
+
+	/**
+	 * @param array{service: array<int, string>, plugin: array<int, string>, browser: array<int, string>, share_visitor_data: bool} $integrations Enabled tools.
+	 */
+	private function privacy_integrations_section( array $integrations ): string {
+		if ( ! $integrations['service'] && ! $integrations['plugin'] && ! $integrations['browser'] ) {
+			return '';
+		}
+
+		$content = '<h3>' . esc_html__( 'Analytics integrations', 'gt-link-manager' ) . '</h3>';
+		if ( $integrations['service'] ) {
+			/* translators: %s: comma-separated analytics service names. */
+			$content .= '<p>' . esc_html( sprintf( __( 'When a visitor follows a short link, this site\'s server sends these analytics services a record of the click: %s. The record contains the short link and its destination, the referring page without its query string, and the visitor\'s browser user agent.', 'gt-link-manager' ), implode( ', ', $integrations['service'] ) ) ) . '</p>';
+			$content .= '<p>' . ( $integrations['share_visitor_data'] ? esc_html__( 'This site also shares the visitor\'s IP address and any country detected for the redirect, so those services can report location and count returning visitors.', 'gt-link-manager' ) : esc_html__( 'The visitor\'s IP address and country are not included, and each click is sent with a new random identifier.', 'gt-link-manager' ) ) . '</p>';
+			$content .= '<p>' . esc_html__( 'If Google Analytics is one of these services and the visitor already has its cookies, the click uses the same Google Analytics client identifier so that it joins their existing session.', 'gt-link-manager' ) . '</p>';
+		}
+		if ( $integrations['plugin'] ) {
+			/* translators: %s: comma-separated plugin names. */
+			$content .= '<p>' . esc_html( sprintf( __( 'Short link clicks are also recorded by these analytics plugins on this site, under their own privacy settings: %s.', 'gt-link-manager' ), implode( ', ', $integrations['plugin'] ) ) ) . '</p>';
+		}
+		if ( $integrations['browser'] ) {
+			/* translators: %s: comma-separated analytics tool names. */
+			$content .= '<p>' . esc_html( sprintf( __( 'A small script on this site\'s pages reports clicks on short links to these analytics tools through the tags already on the page: %s. The script itself sets no cookies and stores nothing.', 'gt-link-manager' ), implode( ', ', $integrations['browser'] ) ) ) . '</p>';
+		}
+
+		return $content;
 	}
 
 	/**

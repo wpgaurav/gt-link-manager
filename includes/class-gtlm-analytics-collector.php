@@ -18,24 +18,14 @@ class GTLM_Analytics_Collector {
 		if ( ! (bool) apply_filters( 'gtlm_analytics_should_record', true, $link ) ) {
 			return false;
 		}
-		if ( is_user_logged_in() && current_user_can( (string) apply_filters( 'gtlm_capabilities', 'edit_posts', 'analytics_exclude' ) ) ) {
+		if ( ! self::is_eligible_visit() ) {
 			return false;
-		}
-		foreach ( array( 'HTTP_SEC_PURPOSE', 'HTTP_PURPOSE', 'HTTP_X_PURPOSE' ) as $header ) {
-			$value = self::server_value( $header, 128 );
-			if ( false !== stripos( $value, 'prefetch' ) || false !== stripos( $value, 'prerender' ) || false !== stripos( $value, 'preview' ) ) {
-				return false;
-			}
 		}
 		$config = get_option( 'gtlm_analytics', array() );
 		if ( ! is_array( $config ) || ! in_array( $config['schema'] ?? '', array( '1', '2', '3' ), true ) || 'active' !== ( $config['state'] ?? '' ) || (int) ( $config['lease_until'] ?? 0 ) < time() || empty( $config['generation'] ) || in_array( (int) $link['id'], (array) ( $config['exclude_links'] ?? array() ), true ) ) {
 			return false;
 		}
-		$agent = self::server_value( 'HTTP_USER_AGENT', 512 );
-		// An empty agent (also what an oversized one reads as) is a script, not a browser.
-		if ( '' === $agent || preg_match( '/bot|crawler|spider|slurp|headless|facebookexternalhit|preview|prerender|curl|wget|python-|go-http-client|okhttp|axios|node-fetch|scrapy|libwww|httpclient|java\/|lighthouse|gtmetrix|pingdom|uptime/i', $agent ) ) {
-			return false;
-		}
+		$agent  = self::server_value( 'HTTP_USER_AGENT', 512 );
 		$device = 'unknown';
 		if ( '' !== $agent ) {
 			$device = preg_match( '/ipad|tablet|kindle|silk/i', $agent ) ? 'tablet' : ( preg_match( '/mobi|iphone|ipod|android/i', $agent ) ? 'mobile' : 'desktop' );
@@ -91,6 +81,25 @@ class GTLM_Analytics_Collector {
 			$event['page'] = $referrer['page'];
 		}
 		return ( new GTLM_DB() )->append_analytics_event( $event );
+	}
+
+	/** A real GET from a browser: no HEAD, prefetch, bot or signed-in link manager. */
+	public static function is_eligible_visit(): bool {
+		if ( 'GET' !== self::server_value( 'REQUEST_METHOD', 8 ) ) {
+			return false;
+		}
+		if ( is_user_logged_in() && current_user_can( (string) apply_filters( 'gtlm_capabilities', 'edit_posts', 'analytics_exclude' ) ) ) {
+			return false;
+		}
+		foreach ( array( 'HTTP_SEC_PURPOSE', 'HTTP_PURPOSE', 'HTTP_X_PURPOSE' ) as $header ) {
+			$value = self::server_value( $header, 128 );
+			if ( false !== stripos( $value, 'prefetch' ) || false !== stripos( $value, 'prerender' ) || false !== stripos( $value, 'preview' ) ) {
+				return false;
+			}
+		}
+		$agent = self::server_value( 'HTTP_USER_AGENT', 512 );
+		// An empty agent (also what an oversized one reads as) is a script, not a browser.
+		return '' !== $agent && ! preg_match( '/bot|crawler|spider|slurp|headless|facebookexternalhit|preview|prerender|curl|wget|python-|go-http-client|okhttp|axios|node-fetch|scrapy|libwww|httpclient|java\/|lighthouse|gtmetrix|pingdom|uptime/i', $agent );
 	}
 
 	private static function server_value( string $key, int $limit ): string {

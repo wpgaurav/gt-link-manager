@@ -264,6 +264,11 @@ class GTLM_Admin_Pages {
 		GTLM_Analytics_Controller::render();
 	}
 
+	public function render_integrations_page(): void {
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations-admin.php';
+		GTLM_Integrations_Admin::render();
+	}
+
 	public function render_settings_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You are not allowed to access this page.', 'gt-link-manager' ) );

@@ -229,23 +229,57 @@ class GTLM_Redirect {
 		header( 'X-Redirect-By: GT Link Manager', true );
 		header( 'Location: ' . $target_url, true, $status );
 
-		$advanced = $this->settings->advanced_analytics_enabled();
-		$basic    = $this->settings->click_tracking_enabled();
-		if ( ( $advanced || $basic ) && function_exists( 'fastcgi_finish_request' ) ) {
-			fastcgi_finish_request();
+		$advanced     = $this->settings->advanced_analytics_enabled();
+		$basic        = $this->settings->click_tracking_enabled();
+		$integrations = (bool) $this->settings->enabled_integrations();
+		if ( $advanced || $basic || $integrations ) {
+			$this->finish_response( $integrations );
 		}
 		$this->record_click( $link, $basic );
 		if ( $advanced ) {
 			try {
 				require_once GTLM_PATH . 'includes/class-gtlm-analytics-collector.php';
 				GTLM_Analytics_Collector::collect( $link, $status, $geo );
-			} catch ( Throwable $error ) {
-				// The redirect remains usable. Never log a failed event or request data.
-					exit;
+			} catch ( Throwable $error ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- The redirect remains usable. Never log a failed event or request data.
+			}
+		}
+		if ( $integrations ) {
+			try {
+				require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
+				GTLM_Integrations::dispatch( $link, $target_url, $status, $geo );
+			} catch ( Throwable $error ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- The visitor is already on their way. Never log click data.
 			}
 		}
 
 		exit;
+	}
+
+	/**
+	 * Hand the redirect to the visitor before any bookkeeping starts.
+	 *
+	 * @param bool $slow_work_follows Remote requests follow, so SAPIs with no finish
+	 *                                function have to flush the response by hand.
+	 */
+	private function finish_response( bool $slow_work_follows ): void {
+		if ( function_exists( 'fastcgi_finish_request' ) ) {
+			fastcgi_finish_request();
+			return;
+		}
+		if ( function_exists( 'litespeed_finish_request' ) ) {
+			litespeed_finish_request();
+			return;
+		}
+		if ( ! $slow_work_follows ) {
+			return;
+		}
+
+		ignore_user_abort( true );
+		header( 'Content-Length: 0', true );
+		header( 'Connection: close', true );
+		while ( ob_get_level() > 0 ) {
+			ob_end_flush();
+		}
+		flush();
 	}
 
 	/** Validate a client redirect without resolving DNS or making an HTTP request. */

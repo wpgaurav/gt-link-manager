@@ -130,6 +130,26 @@ class GTLM_Settings {
 	}
 
 	/**
+	 * Analytics tools switched on, from the stored settings only, so a request
+	 * can tell it has nothing to do without reading the integrations option.
+	 *
+	 * @return array<int, string>
+	 */
+	public function enabled_integrations(): array {
+		$stored = get_option( self::OPTION_KEY, array() );
+		$tools  = is_array( $stored ) ? ( $stored['enabled_integrations'] ?? array() ) : array();
+
+		return is_array( $tools ) ? array_values( array_filter( $tools, 'is_string' ) ) : array();
+	}
+
+	/**
+	 * @param array<int, string> $tools Enabled tool keys.
+	 */
+	public function set_enabled_integrations( array $tools ): void {
+		( new GTLM_DB() )->merge_settings( array( 'enabled_integrations' => array_values( $tools ) ) );
+	}
+
+	/**
 	 * Path segment new standard links are shown under; empty in prefix-free mode.
 	 */
 	public function link_base(): string {
