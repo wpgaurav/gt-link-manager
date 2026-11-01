@@ -343,6 +343,9 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 3. **Categories**, manage link categories with parent/child hierarchy
 4. **Settings**, configure prefix, defaults, flush permalinks, and run diagnostics
 5. **Import/Export**, CSV import with column mapping preview and preset support
+6. **Analytics**, recorded clicks over time, top links, and a breakdown by source, country, device, browser, OS, and campaign
+7. **Settings**, link defaults, lifetime click counts, and AI tool setup, with a circled ? that opens the matching documentation
+8. **Country-based redirects**, detection method, a live country check, and what the plugin stores
 
 == Changelog ==
 
