@@ -139,6 +139,9 @@ class GTLM_Import {
 		echo '<div class="gtlm-card">';
 		echo '<h2>' . esc_html__( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Map CSV columns to GT Link fields, then import.', 'gt-link-manager' ) . '</p>';
+		if ( ! GTLM_Settings::can_manage_advanced_links() ) {
+			echo '<div class="notice notice-info inline"><p>' . esc_html__( 'Only administrators can import direct and regex links, so those rows will be skipped.', 'gt-link-manager' ) . '</p></div>';
+		}
 
 		echo '<h3>' . esc_html__( 'Preview (first 5 rows)', 'gt-link-manager' ) . '</h3>';
 		echo '<table class="widefat striped"><thead><tr>';
@@ -383,7 +386,7 @@ class GTLM_Import {
 				$row = array_map( array( 'GTLM_CSV', 'decode' ), $row );
 			}
 			$data = $this->row_to_link_data( $row, $map );
-			if ( '' === $data['name'] || '' === $data['url'] ) {
+			if ( '' === $data['name'] || '' === $data['url'] || ! GTLM_Settings::can_save_link( $data ) ) {
 				++$skipped;
 				continue;
 			}
@@ -398,7 +401,7 @@ class GTLM_Import {
 
 				if ( 'overwrite' === $mode ) {
 					$data = $this->row_to_link_data( $row, $map, $existing );
-					if ( $this->db->update_link( (int) $existing['id'], $data ) ) {
+					if ( GTLM_Settings::can_save_link( $data, $existing ) && $this->db->update_link( (int) $existing['id'], $data ) ) {
 						++$updated;
 					} else {
 						++$skipped;

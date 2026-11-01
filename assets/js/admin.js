@@ -177,7 +177,7 @@
 				.then(function (json) {
 					spinEl.classList.remove('is-active');
 					if (!json || !json.success) {
-						msgEl.textContent = window.gtlmAdmin.i18n.saveFailed;
+						msgEl.textContent = (json && json.data && json.data.message) || window.gtlmAdmin.i18n.saveFailed;
 						msgEl.style.color = '#b32d2e';
 						return;
 					}

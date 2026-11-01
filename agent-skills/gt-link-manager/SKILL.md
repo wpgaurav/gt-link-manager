@@ -58,7 +58,8 @@ A `link` takes these fields:
 - `rel` (a list or a comma-separated string)
 - `noindex`, `is_active`
 - `category_id`, `tags`, `notes`
-- `link_mode` (`standard`, `direct` or `regex`), with `regex_replacement`
+- `link_mode` (`standard`, `direct` or `regex`), with `regex_replacement`. Only an administrator can
+  create or change a direct or regex link
 - `priority`
 - `geo_mode` (`off` or `targeted`) and `geo_rules`: `{"rules": [{"countries": ["IN"], "url": "https://...", "redirect_type": 302}], "fallback": "default"}`
 
@@ -91,7 +92,7 @@ count. Then run `links.update` with only the changed fields, and read the link b
 - Changing more than a few links in one pass.
 
 Creating new links and reading links, categories and analytics need no approval. Permanent
-deletion and analytics settings stay in wp-admin.
+deletion and analytics settings stay in wp-admin, and permanent deletion needs an administrator.
 
 ## Without Site Agent
 

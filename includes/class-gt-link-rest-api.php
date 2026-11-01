@@ -299,6 +299,11 @@ class GTLM_REST_API {
 		return current_user_can( $capability );
 	}
 
+	/** The refusal for a direct or regex link the current user may not change. */
+	private function advanced_links_error(): WP_Error {
+		return new WP_Error( 'gtlm_admin_only', __( 'Only administrators can create or change direct and regex links.', 'gt-link-manager' ), array( 'status' => 403 ) );
+	}
+
 	public function get_links( WP_REST_Request $request ): WP_REST_Response {
 		$search      = (string) $request->get_param( 'search' );
 		$page        = (int) $request->get_param( 'page' );
@@ -406,6 +411,9 @@ class GTLM_REST_API {
 	 */
 	public function create_link( WP_REST_Request $request ) {
 		$data = $this->sanitize_link_payload( $request );
+		if ( ! GTLM_Settings::can_save_link( $data ) ) {
+			return $this->advanced_links_error();
+		}
 		if ( ! GTLM_DB::valid_link_definition( $data ) ) {
 			return new WP_Error( 'gtlm_invalid_pattern', __( 'This WordPress path is reserved, or the regular expression is invalid.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
@@ -444,6 +452,9 @@ class GTLM_REST_API {
 		}
 
 		$data = $this->sanitize_link_payload( $request, $existing );
+		if ( ! GTLM_Settings::can_save_link( $data, $existing ) ) {
+			return $this->advanced_links_error();
+		}
 		if ( ! GTLM_DB::valid_link_definition( $data ) ) {
 			return new WP_Error( 'gtlm_invalid_pattern', __( 'This WordPress path is reserved, or the regular expression is invalid.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
@@ -479,6 +490,15 @@ class GTLM_REST_API {
 
 		if ( $id <= 0 ) {
 			return new WP_Error( 'gtlm_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
+		}
+
+		if ( $force && ! GTLM_Settings::can_delete_links_permanently() ) {
+			return new WP_Error( 'gtlm_admin_only', __( 'Only administrators can permanently delete links.', 'gt-link-manager' ), array( 'status' => 403 ) );
+		}
+
+		$link = $this->db->get_link_by_id( $id );
+		if ( is_array( $link ) && ! GTLM_Settings::can_change_link( $link ) ) {
+			return $this->advanced_links_error();
 		}
 
 		if ( $force ) {
@@ -518,8 +538,12 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
-		if ( ! is_array( $this->db->get_link_by_id( $id ) ) ) {
+		$link = $this->db->get_link_by_id( $id );
+		if ( ! is_array( $link ) ) {
 			return new WP_Error( 'gtlm_not_found', __( 'Link not found.', 'gt-link-manager' ), array( 'status' => 404 ) );
+		}
+		if ( ! GTLM_Settings::can_change_link( $link ) ) {
+			return $this->advanced_links_error();
 		}
 
 		$ok = $this->db->restore_link( $id );
@@ -543,8 +567,12 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
-		if ( ! is_array( $this->db->get_link_by_id( $id ) ) ) {
+		$link = $this->db->get_link_by_id( $id );
+		if ( ! is_array( $link ) ) {
 			return new WP_Error( 'gtlm_not_found', __( 'Link not found.', 'gt-link-manager' ), array( 'status' => 404 ) );
+		}
+		if ( ! GTLM_Settings::can_change_link( $link ) ) {
+			return $this->advanced_links_error();
 		}
 
 		$ok = $this->db->toggle_active( $id, $is_active );
@@ -585,14 +613,21 @@ class GTLM_REST_API {
 			return new WP_Error( 'gtlm_ids_invalid', __( 'No valid link IDs provided.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
-		$moved  = 0;
-		$copied = 0;
-		$failed = 0;
+		$moved      = 0;
+		$copied     = 0;
+		$failed     = 0;
+		$restricted = 0;
 
 		foreach ( $link_ids as $id ) {
 			$link = $this->db->get_link_by_id( $id );
 			if ( ! is_array( $link ) ) {
 				++$failed;
+				continue;
+			}
+
+			if ( ! GTLM_Settings::can_change_link( $link ) ) {
+				++$failed;
+				++$restricted;
 				continue;
 			}
 
@@ -639,6 +674,10 @@ class GTLM_REST_API {
 			}
 		}
 
+		if ( count( $link_ids ) === $restricted ) {
+			return $this->advanced_links_error();
+		}
+
 		return rest_ensure_response(
 			array(
 				'mode'        => $mode,
@@ -646,6 +685,7 @@ class GTLM_REST_API {
 				'moved'       => $moved,
 				'copied'      => $copied,
 				'failed'      => $failed,
+				'restricted'  => $restricted,
 			)
 		);
 	}

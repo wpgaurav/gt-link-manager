@@ -45,7 +45,7 @@ class GTLM_Admin_Pages {
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'All Links', 'gt-link-manager' ) . '</h1>';
 		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add New', 'gt-link-manager' ) . '</a>';
 
-		if ( 'trash' === $view && $this->db->count_links( array( 'trashed' => true ) ) > 0 ) {
+		if ( 'trash' === $view && GTLM_Settings::can_delete_links_permanently() && $this->db->count_links( array( 'trashed' => true ) ) > 0 ) {
 			$empty_url = wp_nonce_url(
 				add_query_arg(
 					array(
@@ -108,12 +108,20 @@ class GTLM_Admin_Pages {
 			'notes'             => '',
 		);
 		$form             = is_array( $link ) ? wp_parse_args( $link, $defaults ) : $defaults;
-		$advanced_enabled = ! empty( $settings['enable_advanced_redirects'] );
+		$advanced_enabled = ! empty( $settings['enable_advanced_redirects'] ) && GTLM_Settings::can_manage_advanced_links();
 		$geo_enabled      = ! empty( $settings['enable_geo_targeting'] );
 
 		echo '<div class="wrap">';
 		echo '<h1>' . esc_html( $link_id > 0 ? __( 'Edit Link', 'gt-link-manager' ) : __( 'Add New Link', 'gt-link-manager' ) ) . '</h1>';
 		$this->render_notice();
+
+		if ( is_array( $link ) && ! GTLM_Settings::can_change_link( $link ) ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Only administrators can change direct and regex links.', 'gt-link-manager' ) . '</p></div>';
+			echo '<p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=gtlm-links' ) ) . '">' . esc_html__( 'Back to All Links', 'gt-link-manager' ) . '</a></p>';
+			echo '</div>';
+			return;
+		}
+
 		echo '<div class="gtlm-card">';
 		echo '<form method="post" action="">';
 		wp_nonce_field( 'gtlm_link_save' );
@@ -315,7 +323,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		$this->render_checkbox_field( 'geo_debug_header', __( 'Troubleshooting', 'gt-link-manager' ), __( 'Show country details in redirect response headers', 'gt-link-manager' ), ! empty( $settings['geo_debug_header'] ) );
 		$this->render_geo_detection_status();
 		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'adjustments', 20 ) . esc_html__( 'Advanced redirects and data cleanup', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
-		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced redirects', 'gt-link-manager' ), __( 'Allow prefix-free paths and regular expressions', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
+		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced redirects', 'gt-link-manager' ), __( 'Allow prefix-free paths and regular expressions. Only administrators can create or change them.', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
 		$this->render_prefix_free_field( ! empty( $settings['prefix_free_links'] ) );
 		$this->render_retention_field( (int) $settings['trash_retention_days'] );
 		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Uninstall cleanup', 'gt-link-manager' ), __( 'Delete all plugin data when the plugin is uninstalled', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
@@ -452,6 +460,9 @@ Set up the appropriate authenticated REST API connection and verify it with read
 			'bulk_none'              => array( 'warning', __( 'No links were selected.', 'gt-link-manager' ) ),
 			'bulk_updated'           => array( 'success', __( 'Links updated.', 'gt-link-manager' ) ),
 			'bulk_category_missing'  => array( 'warning', __( 'Choose a category first. No links were changed.', 'gt-link-manager' ) ),
+			'bulk_admin_only'        => array( 'warning', __( 'Only administrators can change direct and regex links, so those were skipped. Any other selected links were updated.', 'gt-link-manager' ) ),
+			'admin_only_links'       => array( 'warning', __( 'Only administrators can create or change direct and regex links. Nothing was changed.', 'gt-link-manager' ) ),
+			'admin_only_delete'      => array( 'warning', __( 'Only administrators can permanently delete links. Nothing was deleted.', 'gt-link-manager' ) ),
 			'clicks_reset'           => array( 'success', __( 'Click count reset.', 'gt-link-manager' ) ),
 			'clicks_reset_failed'    => array( 'error', __( 'Could not reset the click count.', 'gt-link-manager' ) ),
 		);

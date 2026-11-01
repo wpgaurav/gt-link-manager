@@ -83,7 +83,7 @@ Adding a column means updating **three** places, not one: the `CREATE TABLE` in 
 | `/categories` | GET, POST |
 | `/categories/{id}` | PUT/PATCH, DELETE |
 
-Permission: `edit_posts` capability, filterable via `gtlm_capabilities`.
+Permission: `edit_posts` capability, filterable via `gtlm_capabilities`. Direct and regex links and permanent delete also need `manage_options` (see Conventions).
 
 **Write args must not declare `default`.** `WP_REST_Request` materialises a schema default into the request, so `get_param()` returns it for an omitted field and `sanitize_link_payload()` can no longer distinguish "not supplied" from "explicitly set" — which made every PATCH reset the fields it omitted. Per-field fallbacks belong in `sanitize_link_payload()` (existing row on update, documented default on create).
 
@@ -104,6 +104,7 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 | `gtlm_settings` | filter | Override settings |
 | `gtlm_prefix` | filter | Override URL prefix |
 | `gtlm_capabilities` | filter | Override required capability |
+| `gtlm_restricted_capability` | filter | Override the capability for direct and regex links (`advanced_links`) and permanent delete (`permanent_delete`) |
 | `gtlm_cache_ttl` | filter | Set object cache TTL |
 | `gtlm_geo_country` | filter | Override the detected country (any custom detection method) |
 | `gtlm_geo_sources` | filter | Add/remove `$_SERVER` keys probed for a country |
@@ -176,6 +177,7 @@ Production runs on an xCloud-managed server. **The WordPress root is `/var/www/g
 - Request paths are decoded before they're sanitized (`GTLM_Redirect::request_path()`), for the same reason. `protected_path()` has already refused control characters at any decoding depth.
 - `geo_rules` is kept while `geo_mode` is `off`, so unticking Geolocation pauses a link's rules rather than deleting them.
 - Category `count` is recounted from links outside the Trash (`recount_category()`), never stepped up or down.
+- Direct and regex links can answer at any path, so creating, changing, trashing, restoring, toggling or copying them needs `manage_options`, and so does permanently deleting any link. Check through `GTLM_Settings::can_manage_advanced_links()`, `can_change_link()`, `can_save_link()` and `can_delete_links_permanently()` at every entry point: REST, admin handlers, Quick Edit, undo, bulk actions and CSV import. The agent runs on the REST routes. `GTLM_DB` stays ungated, because cron and Novashare write with no user. This is `gtlm_restricted_capability` rather than a context of `gtlm_capabilities` on purpose: sites answer that filter with one capability for every context, which would hand these out silently.
 - Set `'beta' => true` on a tool's registry entry to show a Beta badge on the Integrations screen. Plausible carries it until Plausible Cloud's handling of server addresses has been measured on a real site.
 - All SQL in `GTLM_DB` — other classes call DB methods, never write SQL directly
 - Version is maintained in two places: plugin header and `GTLM_VERSION` constant in `gt-link-manager.php`

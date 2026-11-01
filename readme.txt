@@ -81,6 +81,7 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_headers`, filter to modify redirect response headers
 * `gtlm_prefix`, filter to override the URL prefix
 * `gtlm_capabilities`, filter to override the required user capability
+* `gtlm_restricted_capability`, filter the capability required for direct links, regex links and permanent deletion
 * `gtlm_cache_ttl`, filter to set object cache TTL for link lookups
 * `gtlm_geo_country`, filter the detected country code (plug in any detection method you like)
 * `gtlm_geo_sources`, filter the list of request variables checked for a country
@@ -224,7 +225,9 @@ The plugin hooks into WordPress `init` at **priority 0**, before template render
 
 = Can I customize which users can manage links? =
 
-Yes. By default, any user with the `edit_posts` capability can manage links. Use the `gtlm_capabilities` filter to change this per context (e.g., require `manage_options` for settings but allow `edit_posts` for link creation).
+Yes. By default, any user with the `edit_posts` capability can manage standard links and move them to the Trash. Use the `gtlm_capabilities` filter to change this per context (e.g., require `manage_options` for settings but allow `edit_posts` for link creation).
+
+Direct links, regex links and permanent deletion need the `manage_options` capability, because those links can answer at any path on the site and deletion can't be undone. `gtlm_capabilities` doesn't change this. To hand them to another role, use the `gtlm_restricted_capability` filter, which passes `advanced_links` or `permanent_delete` as its context.
 
 = Is GT Link Manager really free? =
 
@@ -353,6 +356,7 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 * New: Six developer hooks for integrations, including `gtlm_integrations_should_send` for visitor consent.
 * Improved: On LiteSpeed servers the redirect now reaches the visitor before click counting starts, as it already did on PHP-FPM.
 * Fixed: REST link lists returned an empty `link_mode` for every link, and PHP logged an undefined variable warning. This started in 1.11.0.
+* Changed: Only administrators can now create, change, trash, restore, toggle or copy direct and regex links, or permanently delete any link. This covers the dashboard, REST API, CSV import and AI agents. Contributors, Authors and Editors keep standard links and can still move them to the Trash. The new `gtlm_restricted_capability` filter hands this to another role.
 * Fixed: Links with non-Latin slugs and direct paths with encoded characters now resolve.
 * Fixed: A direct path entered with slashes, such as `/old-page/`, now matches. Links with a custom port, an underscore or an international domain in the destination no longer return a 404.
 * Fixed: Bulk copy and CSV auto-suffix no longer rewrite direct paths as slugs. A regex rule can't take a suffix, so it's now counted as failed or skipped instead of being corrupted.
@@ -585,7 +589,7 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 == Upgrade Notice ==
 
 = 1.12.0 =
-Adds analytics integrations for GA4, Independent Analytics, Plausible (beta), Matomo and 16 other tools, plus optional Novashare short links, and fixes an empty `link_mode` in REST link lists. Every new feature is off by default. No database changes.
+Direct links, regex links and permanent delete now require an administrator, so other roles lose that access (`gtlm_restricted_capability` restores it). Also adds 20 analytics integrations, with Plausible in beta, and Novashare short links, all off by default. No database changes.
 
 = 1.11.0 =
 Adds optional prefix-free links and a Random slug button. Prefix-free mode is off by default, and existing /go/ links keep working when you turn it on. No database changes.

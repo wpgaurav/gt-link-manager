@@ -336,6 +336,10 @@ class GTLM_Admin {
 			wp_send_json_error();
 		}
 
+		if ( ! GTLM_Settings::can_change_link( $link ) ) {
+			wp_send_json_error( array( 'message' => __( 'Only administrators can change direct and regex links.', 'gt-link-manager' ) ), 403 );
+		}
+
 		$updates = array(
 			'url'           => $url,
 			'redirect_type' => $redirect_type,
@@ -768,6 +772,31 @@ class GTLM_Admin {
 	private function run_bulk_action( string $action, array $link_ids ): ?array {
 		$count    = 0;
 		$affected = array();
+		$refused  = false;
+
+		if ( 'bulk_permanent_delete' === $action && ! GTLM_Settings::can_delete_links_permanently() ) {
+			return array(
+				'notice'      => 'admin_only_delete',
+				'count'       => 0,
+				'undo_ids'    => array(),
+				'undo_action' => '',
+			);
+		}
+
+		// The list offers these rows no checkbox, but a stale page or a crafted request can still name them.
+		if ( ! GTLM_Settings::can_manage_advanced_links() ) {
+			$allowed  = array_values(
+				array_filter(
+					$link_ids,
+					function ( int $id ): bool {
+						$link = $this->db->get_link_by_id( $id );
+						return ! is_array( $link ) || GTLM_Settings::can_change_link( $link );
+					}
+				)
+			);
+			$refused  = count( $allowed ) !== count( $link_ids );
+			$link_ids = $allowed;
+		}
 
 		$simple = array(
 			'bulk_trash'            => array(
@@ -819,7 +848,7 @@ class GTLM_Admin {
 			}
 
 			return array(
-				'notice'      => $simple[ $action ]['notice'],
+				'notice'      => $refused ? 'bulk_admin_only' : $simple[ $action ]['notice'],
 				'count'       => $count,
 				'undo_ids'    => $affected,
 				'undo_action' => (string) $simple[ $action ]['undo'],
@@ -876,7 +905,7 @@ class GTLM_Admin {
 		}
 
 		return array(
-			'notice'      => 'bulk_updated',
+			'notice'      => $refused ? 'bulk_admin_only' : 'bulk_updated',
 			'count'       => $count,
 			'undo_ids'    => array(),
 			'undo_action' => '',
@@ -903,6 +932,15 @@ class GTLM_Admin {
 		check_admin_referer( 'gtlm_' . $action . '_' . $link_id );
 
 		$redirect_url = admin_url( 'admin.php?page=gtlm-links' );
+
+		if ( 'permanent_delete' === $action && ! GTLM_Settings::can_delete_links_permanently() ) {
+			$this->redirect_with_notice( $redirect_url, 'admin_only_delete' );
+		}
+
+		$link = $this->db->get_link_by_id( $link_id );
+		if ( is_array( $link ) && ! GTLM_Settings::can_change_link( $link ) ) {
+			$this->redirect_with_notice( $redirect_url, 'admin_only_links' );
+		}
 
 		switch ( $action ) {
 			case 'trash':
@@ -1000,6 +1038,16 @@ class GTLM_Admin {
 
 		$link_id  = absint( $_POST['link_id'] ?? 0 );
 		$edit_url = admin_url( 'admin.php?page=gtlm-links-edit' . ( $link_id > 0 ? '&link_id=' . $link_id : '' ) );
+		$existing = $link_id > 0 ? $this->db->get_link_by_id( $link_id ) : null;
+
+		// The form leaves this field out for anyone who can't use it, which isn't a request to clear it.
+		if ( ! isset( $_POST['regex_replacement'] ) ) {
+			$data['regex_replacement'] = (string) ( $existing['regex_replacement'] ?? '' );
+		}
+
+		if ( ! GTLM_Settings::can_save_link( $data, $existing ) ) {
+			$this->redirect_with_notice( $edit_url, 'admin_only_links' );
+		}
 
 		if ( '' === $data['name'] || '' === $data['url'] ) {
 			$this->redirect_with_notice( $edit_url, 'invalid' );
@@ -1013,11 +1061,8 @@ class GTLM_Admin {
 			$this->redirect_with_notice( $edit_url, 'regex' === $link_mode ? 'invalid_regex' : 'reserved_path' );
 		}
 
-		if ( $link_id > 0 ) {
-			$existing = $this->db->get_link_by_id( $link_id );
-			if ( is_array( $existing ) ) {
-				$data['is_active'] = (int) ( $existing['is_active'] ?? 1 );
-			}
+		if ( is_array( $existing ) ) {
+			$data['is_active'] = (int) ( $existing['is_active'] ?? 1 );
 		}
 
 		$ok = $link_id > 0 ? $this->db->update_link( $link_id, $data ) : ( $this->db->insert_link( $data ) > 0 );
@@ -1424,6 +1469,11 @@ class GTLM_Admin {
 
 		$done = 0;
 		foreach ( $ids as $id ) {
+			$link = $this->db->get_link_by_id( $id );
+			if ( is_array( $link ) && ! GTLM_Settings::can_change_link( $link ) ) {
+				continue;
+			}
+
 			$ok = false;
 			switch ( $action ) {
 				case 'trash':
@@ -1462,6 +1512,10 @@ class GTLM_Admin {
 		}
 
 		check_admin_referer( 'gtlm_empty_trash' );
+
+		if ( ! GTLM_Settings::can_delete_links_permanently() ) {
+			$this->redirect_with_notice( add_query_arg( 'link_status', 'trash', admin_url( 'admin.php?page=gtlm-links' ) ), 'admin_only_delete' );
+		}
 
 		$deleted = $this->db->empty_trash();
 
