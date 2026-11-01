@@ -751,7 +751,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '<p class="description">' . esc_html__( 'Previews your unsaved rules in the browser. No request is made.', 'gt-link-manager' ) . '</p>';
 		echo '</div>';
 
-		echo '<p class="description">' . esc_html( $this->shares_visitor_data() ? __( 'Privacy: the country comes from a header your CDN already sends, and the plugin never stores it. This site shares it with analytics services under GT Links > Integrations.', 'gt-link-manager' ) : __( 'Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored.', 'gt-link-manager' ) ) . '</p>';
+		echo '<p class="description">' . esc_html( $this->geo_rules_privacy_note() ) . '</p>';
 		echo '<p class="description">' . esc_html__( 'A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN.', 'gt-link-manager' ) . '</p>';
 
 		// __INDEX__ is replaced by admin.js when a row is cloned.
@@ -944,7 +944,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '</td></tr>';
 
 		echo '<tr><th scope="row">' . esc_html__( 'Privacy', 'gt-link-manager' ) . '</th><td>';
-		echo '<p class="description">' . esc_html( $this->shares_visitor_data() ? __( 'Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never calls an external geolocation service and never stores the country. This site also shares visitors\' IP addresses and countries with analytics services, under GT Links > Integrations.', 'gt-link-manager' ) : __( 'Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor\'s IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination.', 'gt-link-manager' ) ) . '</p>';
+		echo '<p class="description">' . esc_html( $this->geo_settings_privacy_note() ) . '</p>';
 		echo '<p class="description">' . sprintf(
 			/* translators: %s: link to the Privacy Settings screen */
 			esc_html__( 'Suggested wording for your privacy policy is available under %s.', 'gt-link-manager' ),
@@ -982,6 +982,75 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
 
 		return GTLM_Integrations::shares_visitor_data();
+	}
+
+	/**
+	 * What Advanced Analytics does with the country: 'none' before it is set up,
+	 * then 'off' or 'saved' from Include countries. Paused analytics keeps its
+	 * setting and its reports, so it reads the same as running.
+	 *
+	 * Reads the option directly so these screens don't load the analytics classes.
+	 */
+	private function analytics_country_state(): string {
+		if ( ! $this->settings->analytics_initialized() ) {
+			return 'none';
+		}
+
+		$config = get_option( 'gtlm_analytics', array() );
+
+		return is_array( $config ) && 'none' !== ( $config['country_source'] ?? 'none' ) ? 'saved' : 'off';
+	}
+
+	private function country_storage_note( string $state ): string {
+		if ( 'saved' === $state ) {
+			return __( 'Include countries is on under GT Links > Analytics > Settings, so each recorded click saves the country and whether a country rule matched.', 'gt-link-manager' );
+		}
+
+		if ( 'off' === $state ) {
+			return __( 'Include countries is off under GT Links > Analytics > Settings, so new clicks are recorded without the country.', 'gt-link-manager' );
+		}
+
+		return __( 'The plugin doesn\'t store or log the country.', 'gt-link-manager' );
+	}
+
+	private function geo_rules_privacy_note(): string {
+		$shares = $this->shares_visitor_data();
+		$note   = array(
+			$shares
+				? __( 'Privacy: the country comes from a header your CDN already sends, and no geolocation service is called.', 'gt-link-manager' )
+				: __( 'Privacy: the country comes from a header your CDN already sends. Detecting it reads no IP address and calls no geolocation service.', 'gt-link-manager' ),
+			$this->country_storage_note( $this->analytics_country_state() ),
+		);
+
+		if ( $shares ) {
+			$note[] = __( 'This site shares the country with analytics services under GT Links > Integrations.', 'gt-link-manager' );
+		}
+
+		return implode( ' ', $note );
+	}
+
+	private function geo_settings_privacy_note(): string {
+		$shares = $this->shares_visitor_data();
+		$state  = $this->analytics_country_state();
+		$note   = array(
+			__( 'Country detection reads a two-letter code from a header your CDN already added to the request.', 'gt-link-manager' ),
+			$shares
+				? __( 'It never calls an external geolocation service.', 'gt-link-manager' )
+				: __( 'It never reads the visitor\'s IP address and never calls an external geolocation service.', 'gt-link-manager' ),
+			$this->country_storage_note( $state ),
+		);
+
+		if ( 'none' !== $state ) {
+			$note[] = __( 'Reports keep any countries already saved until they expire or you delete them.', 'gt-link-manager' );
+		} elseif ( ! $shares ) {
+			$note[] = __( 'It exists only for that one request, to pick a destination.', 'gt-link-manager' );
+		}
+
+		if ( $shares ) {
+			$note[] = __( 'This site also shares visitors\' IP addresses and countries with analytics services, under GT Links > Integrations.', 'gt-link-manager' );
+		}
+
+		return implode( ' ', $note );
 	}
 
 	private function links_capability( string $context ): string {

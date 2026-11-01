@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-01T09:45:28+00:00\n"
+"POT-Creation-Date: 2026-11-01T12:43:13+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: gt-link-manager\n"
@@ -891,14 +891,6 @@ msgstr ""
 msgid "Previews your unsaved rules in the browser. No request is made."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:754
-msgid "Privacy: the country comes from a header your CDN already sends, and the plugin never stores it. This site shares it with analytics services under GT Links > Integrations."
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:754
-msgid "Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored."
-msgstr ""
-
 #: includes/class-gt-link-admin-pages.php:755
 msgid "A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN."
 msgstr ""
@@ -1039,14 +1031,6 @@ msgstr ""
 msgid "Privacy"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:947
-msgid "Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never calls an external geolocation service and never stores the country. This site also shares visitors' IP addresses and countries with analytics services, under GT Links > Integrations."
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:947
-msgid "Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor's IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination."
-msgstr ""
-
 #. translators: %s: link to the Privacy Settings screen
 #: includes/class-gt-link-admin-pages.php:950
 #, php-format
@@ -1098,6 +1082,54 @@ msgstr ""
 
 #: includes/class-gt-link-admin-pages.php:972
 msgid "Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1006
+msgid "Include countries is on under GT Links > Analytics > Settings, so each recorded click saves the country and whether a country rule matched."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1010
+msgid "Include countries is off under GT Links > Analytics > Settings, so new clicks are recorded without the country."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1013
+msgid "The plugin doesn't store or log the country."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1020
+msgid "Privacy: the country comes from a header your CDN already sends, and no geolocation service is called."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1021
+msgid "Privacy: the country comes from a header your CDN already sends. Detecting it reads no IP address and calls no geolocation service."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1026
+msgid "This site shares the country with analytics services under GT Links > Integrations."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1036
+msgid "Country detection reads a two-letter code from a header your CDN already added to the request."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1038
+msgid "It never calls an external geolocation service."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1039
+msgid "It never reads the visitor's IP address and never calls an external geolocation service."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1044
+msgid "Reports keep any countries already saved until they expire or you delete them."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1046
+msgid "It exists only for that one request, to pick a destination."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1050
+msgid "This site also shares visitors' IP addresses and countries with analytics services, under GT Links > Integrations."
 msgstr ""
 
 #: includes/class-gt-link-admin.php:73
@@ -1391,6 +1423,9 @@ msgstr ""
 
 #: includes/class-gt-link-admin.php:1362
 #: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:31
+#: blocks/link-inserter/src/index.js:240
+#: blocks/link-inserter/src/index.js:293
 msgid "GT Link"
 msgstr ""
 
@@ -1671,6 +1706,7 @@ msgstr ""
 
 #: includes/class-gt-link-list-table.php:208
 #: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:163
 msgid "No links found."
 msgstr ""
 
@@ -4233,13 +4269,16 @@ msgid "Zimbabwe"
 msgstr ""
 
 #: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:88
 msgid "Could not load links."
 msgstr ""
 
 #: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:127
 msgid "Search GT Links"
 msgstr ""
 
 #: blocks/link-inserter/build/index.js:1
+#: blocks/link-inserter/src/index.js:130
 msgid "Type a link name or slug"
 msgstr ""
