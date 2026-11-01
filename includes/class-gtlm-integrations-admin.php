@@ -23,12 +23,10 @@ class GTLM_Integrations_Admin {
 		check_admin_referer( 'gtlm_integrations_save' );
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Every field is sanitized against the tool registry in sanitize_config().
-		$raw    = isset( $_POST['gtlm_integrations'] ) && is_array( $_POST['gtlm_integrations'] ) ? wp_unslash( $_POST['gtlm_integrations'] ) : array();
-		$result = GTLM_Integrations::sanitize_config( $raw, GTLM_Integrations::config() );
-		GTLM_Integrations::save( $result['config'] );
+		$raw = isset( $_POST['gtlm_integrations'] ) && is_array( $_POST['gtlm_integrations'] ) ? wp_unslash( $_POST['gtlm_integrations'] ) : array();
 
 		$notices = array();
-		foreach ( $result['errors'] as $error ) {
+		foreach ( self::apply_form( $raw ) as $error ) {
 			$notices[] = array(
 				'type' => 'warning',
 				'text' => $error,
@@ -55,6 +53,20 @@ class GTLM_Integrations_Admin {
 		exit;
 	}
 
+	/**
+	 * Save everything the form holds.
+	 *
+	 * @param array<string, mixed> $raw Unslashed form data.
+	 * @return array<int, string> Problems to show the site owner.
+	 */
+	public static function apply_form( array $raw ): array {
+		$result = GTLM_Integrations::sanitize_config( $raw, GTLM_Integrations::config() );
+		GTLM_Integrations::save( $result['config'] );
+		GTLM_Settings::get_instance()->set_novashare_enabled( ! empty( $raw['novashare_short_links'] ) );
+
+		return $result['errors'];
+	}
+
 	public static function render(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to view this page.', 'gt-link-manager' ), 403 );
@@ -65,7 +77,7 @@ class GTLM_Integrations_Admin {
 
 		echo '<div class="wrap gtlm-wrap gtlm-integrations"><h1 class="gtlm-heading-icon">' . gtlm_icon( 'chart-line', 24 ) . esc_html__( 'Integrations', 'gt-link-manager' ) . '</h1>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icon markup is static.
 		self::render_notices();
-		echo '<p class="gtlm-integrations-intro">' . esc_html__( 'Send short link clicks to the analytics tools you already use. Everything here is off until you turn it on. Bots, prefetches and logged-in link managers are never sent.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="gtlm-integrations-intro">' . esc_html__( 'Connect your short links to the tools you already use. Everything here is off until you turn it on. Analytics tools never receive bots, prefetches or logged-in link managers.', 'gt-link-manager' ) . '</p>';
 
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="gtlm_integrations_save" />';
@@ -84,8 +96,28 @@ class GTLM_Integrations_Admin {
 		echo '<section class="gtlm-settings-card"><h2>' . esc_html__( 'Visitor data', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody><tr><th scope="row">' . esc_html__( 'IP address and country', 'gt-link-manager' ) . '</th><td><label><input type="checkbox" name="gtlm_integrations[share_visitor_data]" value="1" ' . checked( ! empty( $config['share_visitor_data'] ), true, false ) . ' /> ' . esc_html__( 'Share each visitor\'s IP address and detected country with analytics services', 'gt-link-manager' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'Off by default. While it is off, services still count every click and receive the browser\'s user agent and the referring page, but they treat each click as a new visitor and cannot report location. Turning this on makes those services process personal data, so check your privacy policy and any consent requirements. WordPress plugins on this site are not affected: they read the request themselves.', 'gt-link-manager' ) . '</p></td></tr></tbody></table></section>';
 
+		self::render_novashare();
+
 		submit_button( __( 'Save integrations', 'gt-link-manager' ) );
 		echo '</form></div>';
+	}
+
+	/**
+	 * Novashare is not an analytics tool: it asks this plugin for short links, so it
+	 * sits apart from the registry and is saved in the main settings option.
+	 */
+	private static function render_novashare(): void {
+		$enabled = GTLM_Settings::get_instance()->novashare_enabled();
+
+		echo '<section class="gtlm-settings-card"><h2>' . esc_html__( 'Social sharing', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Use your branded links when posts are shared through Novashare. Each shared URL gets one link in a Novashare category, using your link defaults.', 'gt-link-manager' ) . '</p>';
+		echo '<details class="gtlm-integration" id="gtlm-integration-novashare"' . ( $enabled ? ' open' : '' ) . '><summary><span class="gtlm-integration-name">Novashare</span>';
+		if ( $enabled ) {
+			echo '<span class="gtlm-integration-status is-on">' . esc_html__( 'On', 'gt-link-manager' ) . '</span>';
+		}
+		echo '</summary><div class="gtlm-integration-body">';
+		echo '<p><label><input type="checkbox" name="gtlm_integrations[novashare_short_links]" value="1" ' . checked( $enabled, true, false ) . ' /> ' . esc_html__( 'Create Novashare short links with GT Link Manager', 'gt-link-manager' ) . '</label></p>';
+		echo '<p>' . esc_html__( 'Then, in Novashare, open Configuration, go to Link Shortening, turn on Enable Link Shortening and choose Custom. Short links Novashare has already saved stay as they are.', 'gt-link-manager' ) . ' <a href="https://novashare.io/docs/link-shortening/#custom" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Read the Novashare guide', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a></p>';
+		echo '</div></details></section>';
 	}
 
 	private static function group_label( string $group ): string {

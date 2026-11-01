@@ -16,8 +16,10 @@ $short=fn($long,$network='facebook')=>apply_filters('novashare_short_link_url','
 ns_check(0===$s->defaults()['novashare_short_links']&&!$s->novashare_enabled(),'The integration is off by default');
 ns_check(!has_filter('novashare_short_link_url'),'Nothing hooks Novashare until the setting is on');
 ns_check('DEFAULT'===$short('https://example.com/'),'With the setting off, the filter returns its default');
-$s->update(array_merge($before,['novashare_short_links'=>1,'default_redirect_type'=>302,'default_rel'=>['nofollow','sponsored'],'default_noindex'=>1,'prefix_free_links'=>0]));
-ns_check($s->novashare_enabled(),'The setting persists through update()');
+$s->update(array_merge($before,['default_redirect_type'=>302,'default_rel'=>['nofollow','sponsored'],'default_noindex'=>1,'prefix_free_links'=>0]));$s->set_novashare_enabled(true);
+ns_check($s->novashare_enabled(),'The setting persists through its setter');
+$s->update(array_merge($s->all(),['novashare_short_links'=>0]));
+ns_check($s->novashare_enabled(),'Saving the main settings form leaves Novashare on');
 
 require_once GTLM_PATH.'includes/class-gtlm-novashare.php';GTLM_Novashare::init($db,$s);
 
@@ -85,11 +87,18 @@ add_action('gtlm_before_redirect',function($l,$u){throw new RuntimeException('re
 $_SERVER['REQUEST_URI']=wp_parse_url($got,PHP_URL_PATH);$_SERVER['SCRIPT_NAME']='/index.php';try{$redirect->maybe_redirect();$res='';}catch(RuntimeException $e){$res=$e->getMessage();}
 ns_check('redirect:'.$long===$res,'The generated link redirects to the shared URL',$res);
 
-// Settings screen.
+// Screens.
+require_once GTLM_PATH.'includes/class-gtlm-integrations-admin.php';
 $_GET=['page'=>'gtlm-links-settings'];$pages=new GTLM_Admin_Pages($db,$s,new GTLM_Import($db,$s));ob_start();$pages->render_settings_page();$html=ob_get_clean();$_GET=[];
-ns_check(str_contains($html,'name="novashare_short_links" value="1"')&&str_contains($html,'novashare.io/docs/link-shortening/#custom')&&str_contains($html,'choose Custom'),'Settings show the control and the Novashare steps',substr($html,0,200));
+ns_check(!str_contains($html,'novashare_short_links')&&!str_contains($html,'Novashare'),'The Settings screen no longer shows Novashare');
+ob_start();GTLM_Integrations_Admin::render();$html=ob_get_clean();
+ns_check(str_contains($html,'name="gtlm_integrations[novashare_short_links]" value="1"')&&str_contains($html,'novashare.io/docs/link-shortening/#custom')&&str_contains($html,'choose Custom'),'The Integrations screen shows the control and the Novashare steps',substr($html,0,200));
+ns_check(1===preg_match('/id="gtlm-integration-novashare" open>.*?is-on/s',$html)&&1===preg_match('/novashare_short_links\]" value="1"\s+checked/',$html),'The Integrations screen shows Novashare as on',substr($html,(int)strpos($html,'gtlm-integration-novashare'),400));
+GTLM_Integrations_Admin::apply_form([]);ns_check(!$s->novashare_enabled(),'Unticking it on the Integrations screen turns Novashare off');
+ob_start();GTLM_Integrations_Admin::render();$html=ob_get_clean();ns_check(0===preg_match('/id="gtlm-integration-novashare" open/',$html),'Novashare reads as off once turned off');
+GTLM_Integrations_Admin::apply_form(['novashare_short_links'=>'1']);ns_check($s->novashare_enabled(),'Ticking it on the Integrations screen turns Novashare on');
 
 // Cleanup.
 $wpdb->query("DELETE FROM {$table} WHERE slug LIKE 'ns-%'");$db->delete_link($hand);$db->delete_category((int)$link['category_id']);$db->flush_cache_group();
-wp_delete_post($post,true);wp_delete_post($draft,true);$wp_rewrite->set_permalink_structure('');$wp_rewrite->flush_rules(false);$s->update($before);
+wp_delete_post($post,true);wp_delete_post($draft,true);$wp_rewrite->set_permalink_structure('');$wp_rewrite->flush_rules(false);$s->update($before);$s->set_novashare_enabled(false);delete_option(GTLM_Integrations::OPTION);$s->set_enabled_integrations([]);
 $out=['passed'=>count(array_filter($checks,fn($c)=>$c['ok'])),'checks'=>$checks,'failed'=>array_values(array_filter($checks,fn($c)=>!$c['ok']))];echo json_encode($out,JSON_PRETTY_PRINT);exit($out['failed']?1:0);

@@ -106,6 +106,10 @@ A site still running a `gtlm_before_redirect` snippet from the old docs will sen
 * Plausible's Events API returns 202 even for a dropped event, and PostHog returns 200 for an invalid one, so a passed test proves the request was accepted, not that it appears in a report.
 * Clicky limits server-side logging to its Pro plans.
 
+## Novashare
+
+The same screen holds Novashare under **Social sharing**. It isn't an analytics tool, because Novashare asks this plugin for a short link rather than receiving clicks, so it stays out of the tool registry and keeps its `novashare_short_links` flag in `gtlm_settings`. `GTLM_Settings::update()` leaves that flag alone, so saving the main settings form can't turn it off.
+
 ## Testing
 
 ```bash

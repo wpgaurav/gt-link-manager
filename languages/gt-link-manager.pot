@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-01T07:55:12+00:00\n"
+"POT-Creation-Date: 2026-11-01T07:59:34+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: gt-link-manager\n"
@@ -48,7 +48,7 @@ msgstr ""
 #: includes/class-gt-link-admin-pages.php:86
 #: includes/class-gt-link-admin-pages.php:190
 #: includes/class-gt-link-admin-pages.php:274
-#: includes/class-gt-link-admin-pages.php:402
+#: includes/class-gt-link-admin-pages.php:400
 msgid "You are not allowed to access this page."
 msgstr ""
 
@@ -181,7 +181,7 @@ msgstr ""
 
 #: includes/class-gt-link-admin-pages.php:218
 #: includes/class-gt-link-admin-pages.php:228
-#: includes/class-gt-link-admin-pages.php:551
+#: includes/class-gt-link-admin-pages.php:549
 #: includes/class-gt-link-import.php:164
 msgid "Slug"
 msgstr ""
@@ -207,7 +207,7 @@ msgid "Count"
 msgstr ""
 
 #: includes/class-gt-link-admin-pages.php:228
-#: includes/class-gt-link-admin-pages.php:700
+#: includes/class-gt-link-admin-pages.php:698
 msgid "Actions"
 msgstr ""
 
@@ -301,12 +301,12 @@ msgstr ""
 #. translators: %s: tool name.
 #: includes/class-gt-link-admin-pages.php:295
 #: includes/class-gt-link-admin-pages.php:296
-#: includes/class-gt-link-admin-pages.php:322
 #: includes/class-gtlm-agent.php:297
 #: includes/class-gtlm-analytics-view.php:95
 #: includes/class-gtlm-analytics-view.php:159
 #: includes/class-gtlm-analytics-view.php:525
-#: includes/class-gtlm-integrations-admin.php:157
+#: includes/class-gtlm-integrations-admin.php:119
+#: includes/class-gtlm-integrations-admin.php:189
 msgid "(opens in a new tab)"
 msgstr ""
 
@@ -381,315 +381,291 @@ msgid "Show country details in redirect response headers"
 msgstr ""
 
 #: includes/class-gt-link-admin-pages.php:320
-msgid "Novashare"
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:320
-msgid "Use your branded links when posts are shared through Novashare. Each shared URL gets one link in a Novashare category, using the link defaults above."
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:321
-msgid "Short links"
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:321
-msgid "Create Novashare short links with GT Link Manager"
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:322
-msgid "Then, in Novashare, open Configuration, go to Link Shortening, turn on Enable Link Shortening and choose Custom. Short links Novashare has already saved stay as they are."
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:322
-msgid "Read the Novashare guide"
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:322
 msgid "Advanced redirects and data cleanup"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:323
-#: includes/class-gt-link-admin-pages.php:355
+#: includes/class-gt-link-admin-pages.php:321
+#: includes/class-gt-link-admin-pages.php:353
 msgid "Advanced redirects"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:323
+#: includes/class-gt-link-admin-pages.php:321
 msgid "Allow prefix-free paths and regular expressions"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:326
+#: includes/class-gt-link-admin-pages.php:324
 msgid "Uninstall cleanup"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:326
+#: includes/class-gt-link-admin-pages.php:324
 msgid "Delete all plugin data when the plugin is uninstalled"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:328
+#: includes/class-gt-link-admin-pages.php:326
 #: includes/class-gtlm-analytics-view.php:96
 msgid "Save settings"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:329
+#: includes/class-gt-link-admin-pages.php:327
 msgid "Tools and diagnostics"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:331
+#: includes/class-gt-link-admin-pages.php:329
 msgid "Tools"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:337
+#: includes/class-gt-link-admin-pages.php:335
 msgid "Flush Permalinks"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:343
+#: includes/class-gt-link-admin-pages.php:341
 msgid "Run Diagnostics"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:350
+#: includes/class-gt-link-admin-pages.php:348
 msgid "Diagnostics"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:352
+#: includes/class-gt-link-admin-pages.php:350
 msgid "Database size (all GT Link Manager tables)"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:352
+#: includes/class-gt-link-admin-pages.php:350
 msgid "Unavailable"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:352
+#: includes/class-gt-link-admin-pages.php:350
 msgid "Estimated table data and indexes, including analytics tables when present."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:354
+#: includes/class-gt-link-admin-pages.php:352
 msgid "Advanced Analytics"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:357
+#: includes/class-gt-link-admin-pages.php:355
 msgid "Enabled"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:357
-#: includes/class-gt-link-admin-pages.php:382
+#: includes/class-gt-link-admin-pages.php:355
+#: includes/class-gt-link-admin-pages.php:380
 msgid "Disabled"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:361
+#: includes/class-gt-link-admin-pages.php:359
 msgid "No diagnostics run yet."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:364
-#: includes/class-gt-link-admin-pages.php:369
-#: includes/class-gt-link-admin-pages.php:370
+#: includes/class-gt-link-admin-pages.php:362
+#: includes/class-gt-link-admin-pages.php:367
+#: includes/class-gt-link-admin-pages.php:368
 msgid "OK"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:364
-#: includes/class-gt-link-admin-pages.php:369
+#: includes/class-gt-link-admin-pages.php:362
+#: includes/class-gt-link-admin-pages.php:367
 msgid "Failed"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:364
+#: includes/class-gt-link-admin-pages.php:362
 msgid "Skipped"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:367
+#: includes/class-gt-link-admin-pages.php:365
 msgid "Checked At"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:368
+#: includes/class-gt-link-admin-pages.php:366
 msgid "Prefix"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:369
+#: includes/class-gt-link-admin-pages.php:367
 msgid "Tables"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:370
+#: includes/class-gt-link-admin-pages.php:368
 msgid "Rewrite Rule"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:370
+#: includes/class-gt-link-admin-pages.php:368
 msgid "Missing"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:371
+#: includes/class-gt-link-admin-pages.php:369
 msgid "Runtime Redirect"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:373
+#: includes/class-gt-link-admin-pages.php:371
 msgid "Details"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:380
-#: includes/class-gt-link-admin-pages.php:682
+#: includes/class-gt-link-admin-pages.php:378
+#: includes/class-gt-link-admin-pages.php:680
 msgid "Geolocation"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:386
+#: includes/class-gt-link-admin-pages.php:384
 msgid "Enabled, but no country header found"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:390
+#: includes/class-gt-link-admin-pages.php:388
 msgid "Country Headers Seen"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:391
+#: includes/class-gt-link-admin-pages.php:389
 msgid "None — your CDN is not forwarding a country header."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:416
+#: includes/class-gt-link-admin-pages.php:414
 msgid "Saved successfully."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:417
+#: includes/class-gt-link-admin-pages.php:415
 msgid "Saved. A post or page already uses this URL, so visitors now get the redirect instead. Change the slug to keep that content reachable."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:418
+#: includes/class-gt-link-admin-pages.php:416
 msgid "Deleted permanently."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:419
+#: includes/class-gt-link-admin-pages.php:417
 msgid "Link moved to trash."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:420
+#: includes/class-gt-link-admin-pages.php:418
 msgid "Link restored from trash."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:421
+#: includes/class-gt-link-admin-pages.php:419
 msgid "Link activated."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:422
+#: includes/class-gt-link-admin-pages.php:420
 msgid "Link deactivated."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:423
+#: includes/class-gt-link-admin-pages.php:421
 msgid "Category saved."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:424
+#: includes/class-gt-link-admin-pages.php:422
 msgid "Category deleted."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:425
+#: includes/class-gt-link-admin-pages.php:423
 msgid "Settings updated."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:426
+#: includes/class-gt-link-admin-pages.php:424
 msgid "Permalinks flushed."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:427
+#: includes/class-gt-link-admin-pages.php:425
 msgid "Diagnostics completed."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:428
+#: includes/class-gt-link-admin-pages.php:426
 msgid "Please enter required fields."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:429
+#: includes/class-gt-link-admin-pages.php:427
 #: includes/class-gt-link-rest-api.php:658
 #: includes/class-gt-link-rest-api.php:680
 msgid "Category name is required."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:430
+#: includes/class-gt-link-admin-pages.php:428
 msgid "Save failed. Please check values."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:431
+#: includes/class-gt-link-admin-pages.php:429
 msgid "Invalid regex pattern. Please check the syntax."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:432
+#: includes/class-gt-link-admin-pages.php:430
 msgid "This path is reserved by WordPress and cannot be used for direct links."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:433
+#: includes/class-gt-link-admin-pages.php:431
 msgid "Delete failed."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:434
+#: includes/class-gt-link-admin-pages.php:432
 msgid "Could not move to trash."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:435
+#: includes/class-gt-link-admin-pages.php:433
 #: includes/class-gt-link-rest-api.php:516
 msgid "Could not restore link."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:436
+#: includes/class-gt-link-admin-pages.php:434
 msgid "Could not activate link."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:437
+#: includes/class-gt-link-admin-pages.php:435
 msgid "Could not deactivate link."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:438
+#: includes/class-gt-link-admin-pages.php:436
 msgid "Category save failed."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:439
+#: includes/class-gt-link-admin-pages.php:437
 msgid "Category delete failed."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:440
+#: includes/class-gt-link-admin-pages.php:438
 msgid "No settings changed."
 msgstr ""
 
 #. translators: 1: imported, 2: updated, 3: skipped
-#: includes/class-gt-link-admin-pages.php:445
+#: includes/class-gt-link-admin-pages.php:443
 #, php-format
 msgid "Import complete. Imported: %1$d, Updated: %2$d, Skipped: %3$d."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:451
+#: includes/class-gt-link-admin-pages.php:449
 msgid "Import failed. Please check the file and try again."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:452
+#: includes/class-gt-link-admin-pages.php:450
 msgid "CSV columns are invalid. Required: name and url (or Destination URL in LinkCentral preset)."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:453
+#: includes/class-gt-link-admin-pages.php:451
 msgid "Preview generated. Review mapping and run import."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:454
+#: includes/class-gt-link-admin-pages.php:452
 msgid "Export started."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:455
+#: includes/class-gt-link-admin-pages.php:453
 msgid "Action undone."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:456
+#: includes/class-gt-link-admin-pages.php:454
 msgid "Could not undo that action."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:457
+#: includes/class-gt-link-admin-pages.php:455
 msgid "No links were selected."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:458
+#: includes/class-gt-link-admin-pages.php:456
 msgid "Links updated."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:459
+#: includes/class-gt-link-admin-pages.php:457
 msgid "Click count reset."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:460
+#: includes/class-gt-link-admin-pages.php:458
 msgid "Could not reset the click count."
 msgstr ""
 
 #. translators: %s: number of links.
-#: includes/class-gt-link-admin-pages.php:472
+#: includes/class-gt-link-admin-pages.php:470
 #, php-format
 msgid "%s link moved to the Trash."
 msgid_plural "%s links moved to the Trash."
@@ -697,7 +673,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of links.
-#: includes/class-gt-link-admin-pages.php:476
+#: includes/class-gt-link-admin-pages.php:474
 #, php-format
 msgid "%s link restored from the Trash."
 msgid_plural "%s links restored from the Trash."
@@ -705,7 +681,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of links.
-#: includes/class-gt-link-admin-pages.php:480
+#: includes/class-gt-link-admin-pages.php:478
 #, php-format
 msgid "%s link permanently deleted."
 msgid_plural "%s links permanently deleted."
@@ -713,7 +689,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of links.
-#: includes/class-gt-link-admin-pages.php:484
+#: includes/class-gt-link-admin-pages.php:482
 #, php-format
 msgid "%s link activated."
 msgid_plural "%s links activated."
@@ -721,7 +697,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of links.
-#: includes/class-gt-link-admin-pages.php:488
+#: includes/class-gt-link-admin-pages.php:486
 #, php-format
 msgid "%s link deactivated."
 msgid_plural "%s links deactivated."
@@ -729,56 +705,56 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of links.
-#: includes/class-gt-link-admin-pages.php:492
+#: includes/class-gt-link-admin-pages.php:490
 #, php-format
 msgid "Trash emptied. %s link deleted."
 msgid_plural "Trash emptied. %s links deleted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-gt-link-admin-pages.php:539
+#: includes/class-gt-link-admin-pages.php:537
 msgid "Undo"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:553
+#: includes/class-gt-link-admin-pages.php:551
 msgid "Random slug"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:562
+#: includes/class-gt-link-admin-pages.php:560
 msgid "Prefix-free links"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:563
+#: includes/class-gt-link-admin-pages.php:561
 msgid "Serve links from the site root, without a prefix"
 msgstr ""
 
 #. translators: 1: example prefix-free URL, 2: example prefixed URL
-#: includes/class-gt-link-admin-pages.php:566
+#: includes/class-gt-link-admin-pages.php:564
 #, php-format
 msgid "Links look like %1$s instead of %2$s. Links already shared with the prefix keep redirecting. A link takes priority over a page or post with the same slug."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:574
+#: includes/class-gt-link-admin-pages.php:572
 msgid "These links share a URL with a published page or post, so visitors are redirected instead of seeing it:"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:574
+#: includes/class-gt-link-admin-pages.php:572
 msgid "and more."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:583
+#: includes/class-gt-link-admin-pages.php:581
 msgid "Empty Trash Automatically"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:585
+#: includes/class-gt-link-admin-pages.php:583
 msgid "days"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:586
+#: includes/class-gt-link-admin-pages.php:584
 msgid "Permanently delete links that have been in the Trash longer than this. Set to 0 to keep trashed links until you delete them yourself."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:602
+#: includes/class-gt-link-admin-pages.php:600
 #: includes/class-gt-link-import.php:101
 #: includes/class-gt-link-import.php:169
 #: includes/class-gt-link-list-table.php:96
@@ -786,308 +762,308 @@ msgstr ""
 msgid "Category"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:602
-#: includes/class-gt-link-admin-pages.php:638
+#: includes/class-gt-link-admin-pages.php:600
+#: includes/class-gt-link-admin-pages.php:636
 msgid "None"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:611
+#: includes/class-gt-link-admin-pages.php:609
 #: includes/class-gt-link-import.php:107
 #: includes/class-gt-link-import.php:166
 msgid "Redirect Type"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:623
+#: includes/class-gt-link-admin-pages.php:621
 msgid "Rel Attributes"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:638
+#: includes/class-gt-link-admin-pages.php:636
 msgid "Parent Category"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:676
+#: includes/class-gt-link-admin-pages.php:674
 msgid "Inherit"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:683
+#: includes/class-gt-link-admin-pages.php:681
 msgid "Send visitors to a different URL based on their country"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:684
+#: includes/class-gt-link-admin-pages.php:682
 msgid "Everyone else keeps using the Destination URL above."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:687
+#: includes/class-gt-link-admin-pages.php:685
 msgid "Country Rules"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:690
+#: includes/class-gt-link-admin-pages.php:688
 msgid "This link uses a 301. Browsers cache a 301 permanently, which pins each visitor to whichever country they were in on their first click — so geo rules stop working for returning visitors. Switch Redirect Type to 302 above."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:693
+#: includes/class-gt-link-admin-pages.php:691
 msgid "Rules are checked from the top down and the first country match wins, so put your most specific rules first. A country listed twice only ever matches its highest rule."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:696
-#: includes/class-gt-link-admin-pages.php:782
+#: includes/class-gt-link-admin-pages.php:694
+#: includes/class-gt-link-admin-pages.php:780
 msgid "Order"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:697
-#: includes/class-gt-link-admin-pages.php:791
+#: includes/class-gt-link-admin-pages.php:695
+#: includes/class-gt-link-admin-pages.php:789
 msgid "When the visitor is in…"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:698
-#: includes/class-gt-link-admin-pages.php:818
+#: includes/class-gt-link-admin-pages.php:696
+#: includes/class-gt-link-admin-pages.php:816
 msgid "Send them to"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:699
-#: includes/class-gt-link-admin-pages.php:820
+#: includes/class-gt-link-admin-pages.php:697
+#: includes/class-gt-link-admin-pages.php:818
 #: includes/class-gt-link-list-table.php:95
 msgid "Status"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:721
+#: includes/class-gt-link-admin-pages.php:719
 msgid "Last"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:722
+#: includes/class-gt-link-admin-pages.php:720
 msgid "Everyone else"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:722
+#: includes/class-gt-link-admin-pages.php:720
 msgid "Including visitors whose country cannot be determined"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:724
+#: includes/class-gt-link-admin-pages.php:722
 msgid "The main Destination URL"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:725
+#: includes/class-gt-link-admin-pages.php:723
 msgid "Nothing — show a 404"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:729
+#: includes/class-gt-link-admin-pages.php:727
 msgid "+ Add Rule"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:735
+#: includes/class-gt-link-admin-pages.php:733
 msgid "Preview"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:736
+#: includes/class-gt-link-admin-pages.php:734
 msgid "A visitor from"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:738
+#: includes/class-gt-link-admin-pages.php:736
 msgid "— pick a country —"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:744
+#: includes/class-gt-link-admin-pages.php:742
 msgid "Previews your unsaved rules in the browser. No request is made."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:747
+#: includes/class-gt-link-admin-pages.php:745
 msgid "Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:748
+#: includes/class-gt-link-admin-pages.php:746
 msgid "A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:787
+#: includes/class-gt-link-admin-pages.php:785
 msgid "Move rule up"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:787
+#: includes/class-gt-link-admin-pages.php:785
 msgid "Move up"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:788
+#: includes/class-gt-link-admin-pages.php:786
 msgid "Move rule down"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:788
+#: includes/class-gt-link-admin-pages.php:786
 msgid "Move down"
 msgstr ""
 
 #. translators: %s: market name, e.g. "US + CA"
-#: includes/class-gt-link-admin-pages.php:796
+#: includes/class-gt-link-admin-pages.php:794
 #, php-format
 msgid "Add %s to this rule"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:800
+#: includes/class-gt-link-admin-pages.php:798
 msgid "Type to filter countries…"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:800
+#: includes/class-gt-link-admin-pages.php:798
 msgid "Filter the country list"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:802
+#: includes/class-gt-link-admin-pages.php:800
 msgid "Countries this rule applies to"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:803
+#: includes/class-gt-link-admin-pages.php:801
 msgid "Groups"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:808
+#: includes/class-gt-link-admin-pages.php:806
 #: includes/class-gtlm-analytics-view.php:245
 msgid "Countries"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:818
+#: includes/class-gt-link-admin-pages.php:816
 msgid "Destination URL for this rule"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:820
+#: includes/class-gt-link-admin-pages.php:818
 msgid "Redirect status code for this rule"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:826
+#: includes/class-gt-link-admin-pages.php:824
 msgid "Remove rule"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:826
+#: includes/class-gt-link-admin-pages.php:824
 #: includes/class-gtlm-analytics-view.php:506
 msgid "Remove"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:839
+#: includes/class-gt-link-admin-pages.php:837
 msgid "US + CA"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:843
+#: includes/class-gt-link-admin-pages.php:841
 msgid "EU"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:847
+#: includes/class-gt-link-admin-pages.php:845
 msgid "UK"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:851
+#: includes/class-gt-link-admin-pages.php:849
 #: includes/class-gtlm-integrations.php:247
 #: includes/data/countries.php:120
 msgid "India"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:855
+#: includes/class-gt-link-admin-pages.php:853
 msgid "AU + NZ"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:870
+#: includes/class-gt-link-admin-pages.php:868
 msgid "Auto-detect (recommended)"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:871
+#: includes/class-gt-link-admin-pages.php:869
 msgid "Cloudflare only"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:872
+#: includes/class-gt-link-admin-pages.php:870
 msgid "Custom header only"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:875
+#: includes/class-gt-link-admin-pages.php:873
 msgid "Detection Method"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:879
+#: includes/class-gt-link-admin-pages.php:877
 msgid "Auto-detect checks Cloudflare first, then CloudFront, Vercel, App Engine, and common web-server GeoIP variables. Choose \"Cloudflare only\" to ignore every other source — the strictest option, because Cloudflare overwrites its own country header at the edge and it cannot be forged by a visitor."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:894
+#: includes/class-gt-link-admin-pages.php:892
 msgid "Detected Now"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:905
+#: includes/class-gt-link-admin-pages.php:903
 msgid "No country detected"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:915
+#: includes/class-gt-link-admin-pages.php:913
 msgid "Expected here — nothing is proxying this site, so no country header exists to read. This is normal on a local, staging, or direct-to-origin install. Geolocation will start resolving once the site is served through a CDN. Use \"Check Detection\" below to confirm the plugin itself works regardless."
 msgstr ""
 
 #. translators: %s: comma-separated proxy names
-#: includes/class-gt-link-admin-pages.php:920
+#: includes/class-gt-link-admin-pages.php:918
 #, php-format
 msgid "%s is in front of this site but did not send a country header. On Cloudflare, turn on IP Geolocation for the zone (Rules → Settings, or Network → IP Geolocation). On another CDN, forward its country header and name it above."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:928
+#: includes/class-gt-link-admin-pages.php:926
 msgid "Check Detection"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:929
+#: includes/class-gt-link-admin-pages.php:927
 msgid "Test a country code:"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:933
+#: includes/class-gt-link-admin-pages.php:931
 msgid "The check reports every country header present on the request right now, so you can confirm your CDN setup. Entering a code additionally validates that it is usable in a rule."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:939
+#: includes/class-gt-link-admin-pages.php:937
 msgid "Privacy"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:940
+#: includes/class-gt-link-admin-pages.php:938
 msgid "Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor's IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination."
 msgstr ""
 
 #. translators: %s: link to the Privacy Settings screen
-#: includes/class-gt-link-admin-pages.php:943
+#: includes/class-gt-link-admin-pages.php:941
 #, php-format
 msgid "Suggested wording for your privacy policy is available under %s."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:944
+#: includes/class-gt-link-admin-pages.php:942
 msgid "Settings → Privacy → Policy Guide"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:946
+#: includes/class-gt-link-admin-pages.php:944
 msgid "If you added click tracking through the gtlm_before_redirect hook, that integration receives the country and may store it — disclose it there."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:954
+#: includes/class-gt-link-admin-pages.php:952
 #: includes/class-gt-link-list-table.php:388
 #: includes/class-gt-link-list-table.php:582
 msgid "Standard"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:954
+#: includes/class-gt-link-admin-pages.php:952
 msgid "Standard (with prefix)"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:955
+#: includes/class-gt-link-admin-pages.php:953
 msgid "Direct (no prefix)"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:956
+#: includes/class-gt-link-admin-pages.php:954
 msgid "Regex (pattern match)"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:959
+#: includes/class-gt-link-admin-pages.php:957
 #: includes/class-gt-link-import.php:174
 msgid "Link Mode"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:963
+#: includes/class-gt-link-admin-pages.php:961
 msgid "URL: yoursite.com/slug"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:963
+#: includes/class-gt-link-admin-pages.php:961
 msgid "URL: yoursite.com/prefix/slug"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:964
+#: includes/class-gt-link-admin-pages.php:962
 msgid "URL: yoursite.com/path — redirects without the prefix."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:965
+#: includes/class-gt-link-admin-pages.php:963
 msgid "Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL."
 msgstr ""
 
@@ -1111,7 +1087,7 @@ msgid "Analytics"
 msgstr ""
 
 #: includes/class-gt-link-admin.php:111
-#: includes/class-gtlm-integrations-admin.php:66
+#: includes/class-gtlm-integrations-admin.php:78
 msgid "Integrations"
 msgstr ""
 
@@ -1370,17 +1346,17 @@ msgstr ""
 msgid "The loopback request returned HTTP %d. If your site blocks server-to-self requests, this check cannot run — it does not mean geolocation is broken."
 msgstr ""
 
-#: includes/class-gt-link-admin.php:1188
+#: includes/class-gt-link-admin.php:1187
 msgid "No link available for runtime redirect test."
 msgstr ""
 
 #. translators: 1: HTTP code, 2: location
-#: includes/class-gt-link-admin.php:1210
+#: includes/class-gt-link-admin.php:1209
 #, php-format
 msgid "Response: %1$d, Location: %2$s"
 msgstr ""
 
-#: includes/class-gt-link-admin.php:1319
+#: includes/class-gt-link-admin.php:1318
 #: blocks/link-inserter/build/index.js:1
 #: blocks/link-inserter/src/index.js:30
 #: blocks/link-inserter/src/index.js:224
@@ -1389,7 +1365,7 @@ msgid "GT Link"
 msgstr ""
 
 #. translators: %s: number of links
-#: includes/class-gt-link-admin.php:1339
+#: includes/class-gt-link-admin.php:1338
 #, php-format
 msgid "%s GT Link"
 msgid_plural "%s GT Links"
@@ -2819,109 +2795,130 @@ msgstr ""
 msgid "You do not have permission to do that."
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:49
+#: includes/class-gtlm-integrations-admin.php:47
 msgid "Integrations saved."
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:60
+#: includes/class-gtlm-integrations-admin.php:72
 msgid "You do not have permission to view this page."
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:68
-msgid "Send short link clicks to the analytics tools you already use. Everything here is off until you turn it on. Bots, prefetches and logged-in link managers are never sent."
-msgstr ""
-
-#: includes/class-gtlm-integrations-admin.php:84
-msgid "Visitor data"
-msgstr ""
-
-#: includes/class-gtlm-integrations-admin.php:84
-msgid "IP address and country"
-msgstr ""
-
-#: includes/class-gtlm-integrations-admin.php:84
-msgid "Share each visitor's IP address and detected country with analytics services"
-msgstr ""
-
-#: includes/class-gtlm-integrations-admin.php:85
-msgid "Off by default. While it is off, services still count every click and receive the browser's user agent and the referring page, but they treat each click as a new visitor and cannot report location. Turning this on makes those services process personal data, so check your privacy policy and any consent requirements. WordPress plugins on this site are not affected: they read the request themselves."
-msgstr ""
-
-#: includes/class-gtlm-integrations-admin.php:87
-msgid "Save integrations"
-msgstr ""
-
-#: includes/class-gtlm-integrations-admin.php:94
-msgid "WordPress analytics plugins"
+#: includes/class-gtlm-integrations-admin.php:80
+msgid "Connect your short links to the tools you already use. Everything here is off until you turn it on. Analytics tools never receive bots, prefetches or logged-in link managers."
 msgstr ""
 
 #: includes/class-gtlm-integrations-admin.php:96
-msgid "Analytics services"
+msgid "Visitor data"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:99
-msgid "Browser tags"
+#: includes/class-gtlm-integrations-admin.php:96
+msgid "IP address and country"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:105
-msgid "Clicks are recorded in the plugin's own reports on this site. Nothing leaves your server."
+#: includes/class-gtlm-integrations-admin.php:96
+msgid "Share each visitor's IP address and detected country with analytics services"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:107
-msgid "Your server sends each click after the visitor has been redirected, so it adds no delay and ad blockers cannot stop it."
+#: includes/class-gtlm-integrations-admin.php:97
+msgid "Off by default. While it is off, services still count every click and receive the browser's user agent and the referring page, but they treat each click as a new visitor and cannot report location. Turning this on makes those services process personal data, so check your privacy policy and any consent requirements. WordPress plugins on this site are not affected: they read the request themselves."
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:110
-msgid "These tools have no server-side API. A small script reports clicks on short links on your own pages, so links opened from email or social posts are not counted, and neither are visitors who block the tool. It recognises links under your link prefix only, not prefix-free links."
+#: includes/class-gtlm-integrations-admin.php:101
+msgid "Save integrations"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:127
+#: includes/class-gtlm-integrations-admin.php:112
+msgid "Social sharing"
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:112
+msgid "Use your branded links when posts are shared through Novashare. Each shared URL gets one link in a Novashare category, using your link defaults."
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:115
+#: includes/class-gtlm-integrations-admin.php:159
 msgid "On"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:129
+#: includes/class-gtlm-integrations-admin.php:118
+msgid "Create Novashare short links with GT Link Manager"
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:119
+msgid "Then, in Novashare, open Configuration, go to Link Shortening, turn on Enable Link Shortening and choose Custom. Short links Novashare has already saved stay as they are."
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:119
+msgid "Read the Novashare guide"
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:126
+msgid "WordPress analytics plugins"
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:128
+msgid "Analytics services"
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:131
+msgid "Browser tags"
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:137
+msgid "Clicks are recorded in the plugin's own reports on this site. Nothing leaves your server."
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:139
+msgid "Your server sends each click after the visitor has been redirected, so it adds no delay and ad blockers cannot stop it."
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:142
+msgid "These tools have no server-side API. A small script reports clicks on short links on your own pages, so links opened from email or social posts are not counted, and neither are visitors who block the tool. It recognises links under your link prefix only, not prefix-free links."
+msgstr ""
+
+#: includes/class-gtlm-integrations-admin.php:161
 msgid "Plugin not active"
 msgstr ""
 
 #. translators: %s: plugin name.
-#: includes/class-gtlm-integrations-admin.php:132
+#: includes/class-gtlm-integrations-admin.php:164
 #, php-format
 msgid "Found in %s"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:134
+#: includes/class-gtlm-integrations-admin.php:166
 msgid "Ready"
 msgstr ""
 
 #. translators: %s: tool name.
-#: includes/class-gtlm-integrations-admin.php:140
+#: includes/class-gtlm-integrations-admin.php:172
 #, php-format
 msgid "Send clicks to %s"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:143
+#: includes/class-gtlm-integrations-admin.php:175
 msgid "Install and activate the plugin, then come back to turn this on."
 msgstr ""
 
 #. translators: %s: tool name.
-#: includes/class-gtlm-integrations-admin.php:157
+#: includes/class-gtlm-integrations-admin.php:189
 #, php-format
 msgid "%s documentation"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:162
+#: includes/class-gtlm-integrations-admin.php:194
 msgid "Save and send test event"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:165
+#: includes/class-gtlm-integrations-admin.php:197
 msgid "Forget this tool's saved settings"
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:192
+#: includes/class-gtlm-integrations-admin.php:224
 msgid "Saved. Leave blank to keep it."
 msgstr ""
 
-#: includes/class-gtlm-integrations-admin.php:192
+#: includes/class-gtlm-integrations-admin.php:224
 msgid "Found in another plugin. Leave blank to use it."
 msgstr ""
 

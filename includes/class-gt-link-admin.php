@@ -1144,7 +1144,6 @@ class GTLM_Admin {
 				'enable_click_tracking'     => ! empty( $_POST['enable_click_tracking'] ) ? 1 : 0,
 				'enable_advanced_redirects' => ! empty( $_POST['enable_advanced_redirects'] ) ? 1 : 0,
 				'prefix_free_links'         => ! empty( $_POST['prefix_free_links'] ) ? 1 : 0,
-				'novashare_short_links'     => ! empty( $_POST['novashare_short_links'] ) ? 1 : 0,
 				'enable_geo_targeting'      => ! empty( $_POST['enable_geo_targeting'] ) ? 1 : 0,
 				'geo_detection_method'      => sanitize_key( (string) wp_unslash( $_POST['geo_detection_method'] ?? 'auto' ) ),
 				'geo_custom_header'         => sanitize_text_field( (string) wp_unslash( $_POST['geo_custom_header'] ?? '' ) ),

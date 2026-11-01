@@ -148,7 +148,7 @@ Server-side delivery counts clicks that ad blockers would hide, including links 
 
 GT Link Manager works with [Novashare](https://novashare.io/), a separate social sharing plugin. Novashare's **Custom** link shortener can use your branded links, so a shared post carries `yoursite.com/go/ns-1a2b3c4d` instead of a third-party short URL.
 
-* **Off by default.** Turn on **Short links** under **Settings > Novashare**, then choose **Custom** as the shortener in Novashare.
+* **Off by default.** Turn it on under **GT Links > Integrations > Social sharing**, then choose **Custom** as the shortener in Novashare.
 * **No code or API key.** GT Link Manager answers Novashare's `novashare_short_link_url` filter on your own site and adds no external request.
 * **One link per shared URL.** Each link is created on first share, uses your link defaults, and goes in a **Novashare** category.
 * **Published content only.** Only published posts and pages on your site are shortened, so a visitor can't create links by changing a URL.
@@ -292,7 +292,7 @@ WordPress paths such as `wp-admin`, `wp-json`, `wp-login.php`, and `feed` are bl
 
 = Does it work with Novashare? =
 
-Yes. Turn on **Short links** under **Settings > Novashare**. Then, in Novashare, open **Configuration**, go to **Link Shortening**, turn on **Enable Link Shortening** and choose **Custom**. You don't need any code.
+Yes. Turn it on under **GT Links > Integrations > Social sharing**. Then, in Novashare, open **Configuration**, go to **Link Shortening**, turn on **Enable Link Shortening** and choose **Custom**. You don't need any code.
 
 Each shared URL gets one link in a **Novashare** category, using your link defaults. Only published posts and pages on your site are shortened, and the only query parameters allowed are UTM tags, so a visitor can't create links by changing a URL. Clicks count like any other link.
 
@@ -344,7 +344,7 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 == Changelog ==
 
 = 1.12.0 =
-* New: Novashare short links. Turn it on under **Settings > Novashare**, choose **Custom** as the link shortener in Novashare, and shared posts use your branded links with no code. Each shared URL gets one link in a Novashare category.
+* New: Novashare short links. Turn it on under **GT Links > Integrations > Social sharing**, choose **Custom** as the link shortener in Novashare, and shared posts use your branded links with no code. Each shared URL gets one link in a Novashare category.
 * New: `gtlm_novashare_should_shorten` filter to decide which shared URLs become branded links.
 * New: Analytics integrations under **GT Links > Integrations**. Send short link clicks to Google Analytics 4, Plausible, Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky from your server, or to Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress on your own site, with no code. Everything is off by default.
 * New: Browser tag support for Google Tag Manager, Fathom Analytics, and Microsoft Clarity, which have no server-side API. GA4 can use this route too if you'd rather not create an API secret.

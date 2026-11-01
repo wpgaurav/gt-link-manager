@@ -130,6 +130,14 @@ class GTLM_Settings {
 	}
 
 	/**
+	 * The Integrations screen owns this flag. update() leaves it alone, so saving
+	 * the main settings form cannot turn Novashare off.
+	 */
+	public function set_novashare_enabled( bool $enabled ): void {
+		( new GTLM_DB() )->merge_settings( array( 'novashare_short_links' => (int) $enabled ) );
+	}
+
+	/**
 	 * Analytics tools switched on, from the stored settings only, so a request
 	 * can tell it has nothing to do without reading the integrations option.
 	 *
@@ -193,7 +201,6 @@ class GTLM_Settings {
 			'enable_click_tracking'     => (int) ! empty( $settings['enable_click_tracking'] ),
 			'enable_advanced_redirects' => (int) ! empty( $settings['enable_advanced_redirects'] ),
 			'prefix_free_links'         => (int) ! empty( $settings['prefix_free_links'] ),
-			'novashare_short_links'     => (int) ! empty( $settings['novashare_short_links'] ),
 			'enable_geo_targeting'      => (int) ! empty( $settings['enable_geo_targeting'] ),
 			'geo_detection_method'      => $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) ),
 			'geo_custom_header'         => $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) ),
