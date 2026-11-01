@@ -137,7 +137,7 @@ class GTLM_Integrations {
 				'label'  => 'Plausible Analytics',
 				'type'   => 'service',
 				'docs'   => 'https://plausible.io/docs/events-api',
-				'help'   => __( 'Each click becomes a Link Click event. Add Link Click as a custom event goal in Plausible to see it.', 'gt-link-manager' ),
+				'help'   => __( 'Each click becomes a Link Click event. Add Link Click as a custom event goal in Plausible to see it. Plausible can drop events from server and hosting addresses, which is the address it sees while IP address and country is off. Send a test event to check.', 'gt-link-manager' ),
 				'fields' => array(
 					'domain'   => array(
 						'label'    => __( 'Site domain in Plausible', 'gt-link-manager' ),
@@ -944,13 +944,19 @@ class GTLM_Integrations {
 			);
 		}
 
-		return self::read_test_response( $key, (int) wp_remote_retrieve_response_code( $response ), (string) wp_remote_retrieve_body( $response ) );
+		return self::read_test_response(
+			$key,
+			(int) wp_remote_retrieve_response_code( $response ),
+			(string) wp_remote_retrieve_body( $response ),
+			! empty( wp_remote_retrieve_header( $response, 'x-plausible-dropped' ) ),
+			(bool) $config['share_visitor_data']
+		);
 	}
 
 	/**
 	 * @return array{ok: bool, message: string}
 	 */
-	private static function read_test_response( string $key, int $code, string $body ): array {
+	private static function read_test_response( string $key, int $code, string $body, bool $dropped, bool $sharing ): array {
 		$json = json_decode( $body, true );
 
 		if ( 'ga4' === $key && 200 === $code && is_array( $json ) ) {
@@ -971,6 +977,16 @@ class GTLM_Integrations {
 		$ok = $code >= 200 && $code < 300;
 		if ( 'mixpanel' === $key && is_array( $json ) && isset( $json['status'] ) && 1 !== (int) $json['status'] ) {
 			$ok = false;
+		}
+
+		// Plausible answers 202 even when it drops an event, and says so only in a header.
+		if ( $ok && $dropped && 'plausible' === $key ) {
+			return array(
+				'ok'      => false,
+				'message' => $sharing
+					? __( 'Plausible accepted the request but dropped the event, so it will not appear in your reports. Check that the site domain is registered in Plausible, that your IP address is not blocked in its site settings, and that any proxy in front of this site passes on the visitor\'s real address.', 'gt-link-manager' )
+					: __( 'Plausible accepted the request but dropped the event, so it will not appear in your reports. With IP address and country off, Plausible sees this server\'s address, and it can drop events from server and hosting addresses. Check that the site domain is registered in Plausible, then turn on IP address and country after checking your privacy policy.', 'gt-link-manager' ),
+			);
 		}
 
 		if ( $ok ) {

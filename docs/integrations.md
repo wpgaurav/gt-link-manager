@@ -47,7 +47,7 @@ Off by default, sharing is the `share_visitor_data` setting.
 | IP address | never read for this | first public address of `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP`, `REMOTE_ADDR` |
 | Country | not sent | sent only when a geo link detected one |
 
-Some services are worse off with sharing off, because they use the sending server's address instead: Plausible and Rybbit attribute clicks to one server-side visitor and location, and Amplitude geolocates the server. PostHog and Mixpanel are told not to geolocate (`$geoip_disable`, `ip=0`). Matomo ignores an IP without a token. All of this is why sharing exists as an option.
+Some services are worse off with sharing off, because they use the sending server's address instead: Plausible Cloud's bot filter can drop the click, Plausible and Rybbit otherwise attribute clicks to one server-side visitor and location, and Amplitude geolocates the server. PostHog and Mixpanel are told not to geolocate (`$geoip_disable`, `ip=0`). Matomo ignores an IP without a token. All of this is why sharing exists as an option.
 
 GA4 reuses the visitor's `_ga` and `_ga_<stream>` cookies when present, in both GS1 and GS2 formats, so the event joins their session. No other cookie is read, apart from Burst's and Koko's own.
 
@@ -103,7 +103,8 @@ A site still running a `gtlm_before_redirect` snippet from the old docs will sen
 
 * Browser tags see clicks on this site's pages only, not links opened from email or social posts, and not visitors who block the tag. They recognize links under the prefix, so prefix-free links are not seen.
 * The test button is real for every service except GA4, which uses Google's validator. Google's validator does not check the API secret.
-* Plausible's Events API returns 202 even for a dropped event, and PostHog returns 200 for an invalid one, so a passed test proves the request was accepted, not that it appears in a report.
+* Plausible's Events API returns 202 even for a dropped event, with `x-plausible-dropped` in the response. The test button reports that as a failure. Real clicks aren't checked, so use `gtlm_integration_sent` to watch for it. The header doesn't give a reason: Plausible's docs and source list a server or hosting address, a domain it doesn't have, an unpaid account and rate limiting, among others. The server address case hasn't been measured on a real Plausible Cloud account.
+* PostHog returns 200 for an invalid event, so a passed test proves the request was accepted, not that it appears in a report.
 * Clicky limits server-side logging to its Pro plans.
 
 ## Novashare
