@@ -272,6 +272,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 
 == Changelog ==
 
+= Unreleased =
+* Fixed: REST link lists returned an empty `link_mode` for every link, and PHP logged an undefined variable warning. This started in 1.11.0.
+
 = 1.11.0 =
 * New: Prefix-free links. Turn it on under **Settings > Advanced redirects and data cleanup** to serve every standard link from the site root, as `yoursite.com/your-slug`. Links already shared with the prefix keep redirecting, so nothing published breaks. The settings screen lists links that share a URL with a published page or post, and saving a link that takes over a post or page URL shows a warning.
 * New: a **Random slug** button next to the Slug field. It fills in a six-character slug without look-alike characters such as 0 and o. Slugs still follow the Link Name until you type or generate one, and clearing the field hands it back to the name.

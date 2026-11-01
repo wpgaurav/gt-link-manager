@@ -348,7 +348,7 @@ class GTLM_REST_API {
 					'rel'               => (string) $row['rel'],
 					'noindex'           => (int) $row['noindex'],
 					'is_active'         => (int) ( $row['is_active'] ?? 1 ),
-					'link_mode'         => $mode,
+					'link_mode'         => (string) ( $row['link_mode'] ?? 'standard' ),
 					'regex_replacement' => (string) ( $row['regex_replacement'] ?? '' ),
 					'priority'          => (int) ( $row['priority'] ?? 10 ),
 					'geo_mode'          => (string) ( $row['geo_mode'] ?? 'off' ),

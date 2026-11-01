@@ -48,6 +48,9 @@ $table=new GTLM_List_Table($db,[],$s->link_base(),'');$branded=gtlm_test_access(
 pf_check(str_contains($cell,'<code>/pf-root-probe</code>')&&str_contains($cell,esc_url(home_url('/pf-root-probe'))),'The links list shows the root path',$cell);
 wp_set_current_user(1);do_action('rest_api_init');$request=new WP_REST_Request('GET','/gt-link-manager/v1/links');$request->set_param('search','pf-root-probe');$response=rest_do_request($request);$urls=array_column((array)$response->get_data(),'url');
 pf_check(in_array(home_url('/pf-root-probe'),$urls,true),'REST, and so the block editor, returns the root URL',$response->get_data());
+pf_check('standard'===(array_column((array)$response->get_data(),'link_mode','id')[$std]??null),'The REST list reports a standard link as standard',$response->get_data());
+$direct=$db->insert_link(['name'=>'Direct probe','slug'=>'pf-docs/direct-probe','url'=>'https://example.com/direct','link_mode'=>'direct']);$request=new WP_REST_Request('GET','/gt-link-manager/v1/links');$request->set_param('search','direct-probe');$response=rest_do_request($request);
+pf_check('direct'===(array_column((array)$response->get_data(),'link_mode','id')[$direct]??null),'The REST list reports a direct link as direct',$response->get_data());
 pf_check(home_url('/pf-root-probe')===(gtlm_agent('links.get',['id'=>$std])['link']['url']??''),'Agents get the root URL');
 
 $pages=new GTLM_Admin_Pages($db,$s,(new ReflectionClass(GTLM_Import::class))->newInstanceWithoutConstructor());
@@ -56,5 +59,5 @@ pf_check(str_contains($html,'name="prefix_free_links" value="1"')&&str_contains(
 $_GET=['page'=>'gtlm-links-edit'];ob_start();$pages->render_edit_page();$form=ob_get_clean();$_GET=[];
 pf_check(str_contains($form,'id="gtlm-random-slug"')&&str_contains($form,'name="slug" id="slug"'),'The link form has a Random slug button beside the slug',substr($form,0,200));
 
-$s->update($before);wp_delete_post($page,true);foreach([$std,$off] as $id){$db->delete_link($id);}
+$s->update($before);wp_delete_post($page,true);foreach([$std,$off,$direct] as $id){$db->delete_link($id);}
 $out=['passed'=>count(array_filter($checks,fn($c)=>$c['ok'])),'checks'=>$checks,'failed'=>array_values(array_filter($checks,fn($c)=>!$c['ok']))];echo json_encode($out,JSON_PRETTY_PRINT);exit($out['failed']?1:0);
