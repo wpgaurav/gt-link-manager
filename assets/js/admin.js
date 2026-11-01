@@ -177,7 +177,7 @@
 				.then(function (json) {
 					spinEl.classList.remove('is-active');
 					if (!json || !json.success) {
-						msgEl.textContent = window.gtlmAdmin.i18n.saveFailed;
+						msgEl.textContent = (json && json.data && json.data.message) || window.gtlmAdmin.i18n.saveFailed;
 						msgEl.style.color = '#b32d2e';
 						return;
 					}
@@ -327,7 +327,10 @@
 			if (!copyUrl) {
 				return;
 			}
-			window.navigator.clipboard.writeText(copyUrl).then(function () {
+			copyToClipboard(copyUrl).then(function (ok) {
+				if (!ok) {
+					return;
+				}
 				copyLink.textContent = window.gtlmAdmin.i18n.copied;
 				window.setTimeout(function () {
 					copyLink.textContent = window.gtlmAdmin.i18n.copyUrl;
@@ -526,7 +529,10 @@
 			}
 			// Only the label changes, so the icon stays in place.
 			var copyLabel = copyBtn.querySelector('.gtlm-button-label') || copyBtn;
-			window.navigator.clipboard.writeText(text).then(function () {
+			copyToClipboard(text).then(function (ok) {
+				if (!ok) {
+					return;
+				}
 				copyLabel.textContent = window.gtlmAdmin.i18n.copied;
 				window.setTimeout(function () {
 					copyLabel.textContent = window.gtlmAdmin.i18n.copyUrl;
@@ -711,11 +717,12 @@
 				var hit =
 					codes.indexOf(code) !== -1 ||
 					(codes.indexOf('EU') !== -1 && (window.gtlmAdmin.euCountries || []).indexOf(code) !== -1);
-				if (hit) {
-					var url = row.querySelector('.gtlm-geo-url');
+				// The server discards a rule with no URL and keeps looking.
+				var url = row.querySelector('.gtlm-geo-url');
+				if (hit && url && url.value.trim()) {
 					winner = {
 						index: Number(row.getAttribute('data-index')) + 1,
-						url: url ? url.value.trim() : ''
+						url: url.value.trim()
 					};
 					return true;
 				}

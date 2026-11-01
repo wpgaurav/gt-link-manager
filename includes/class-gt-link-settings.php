@@ -41,6 +41,7 @@ class GTLM_Settings {
 			'enable_click_tracking'     => 0,
 			'enable_advanced_redirects' => 0,
 			'prefix_free_links'         => 0,
+			'novashare_short_links'     => 0,
 			'enable_geo_targeting'      => 0,
 			'geo_detection_method'      => 'auto',
 			'geo_custom_header'         => '',
@@ -80,6 +81,7 @@ class GTLM_Settings {
 		$settings['enable_click_tracking']     = (int) ! empty( $settings['enable_click_tracking'] );
 		$settings['enable_advanced_redirects'] = (int) ! empty( $settings['enable_advanced_redirects'] );
 		$settings['prefix_free_links']         = (int) ! empty( $settings['prefix_free_links'] );
+		$settings['novashare_short_links']     = (int) ! empty( $settings['novashare_short_links'] );
 		$settings['enable_geo_targeting']      = (int) ! empty( $settings['enable_geo_targeting'] );
 		$settings['geo_detection_method']      = $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) );
 		$settings['geo_custom_header']         = $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) );
@@ -118,6 +120,93 @@ class GTLM_Settings {
 	 */
 	public function prefix_free(): bool {
 		return ! empty( $this->all()['prefix_free_links'] );
+	}
+
+	/**
+	 * Whether Novashare's Custom shortener should receive branded links.
+	 */
+	public function novashare_enabled(): bool {
+		return ! empty( $this->all()['novashare_short_links'] );
+	}
+
+	/**
+	 * The Integrations screen owns this flag. update() leaves it alone, so saving
+	 * the main settings form cannot turn Novashare off.
+	 */
+	public function set_novashare_enabled( bool $enabled ): void {
+		( new GTLM_DB() )->merge_settings( array( 'novashare_short_links' => (int) $enabled ) );
+	}
+
+	/**
+	 * Analytics tools switched on, from the stored settings only, so a request
+	 * can tell it has nothing to do without reading the integrations option.
+	 *
+	 * @return array<int, string>
+	 */
+	public function enabled_integrations(): array {
+		$stored = get_option( self::OPTION_KEY, array() );
+		$tools  = is_array( $stored ) ? ( $stored['enabled_integrations'] ?? array() ) : array();
+
+		return is_array( $tools ) ? array_values( array_filter( $tools, 'is_string' ) ) : array();
+	}
+
+	/**
+	 * @param array<int, string> $tools Enabled tool keys.
+	 */
+	public function set_enabled_integrations( array $tools ): void {
+		( new GTLM_DB() )->merge_settings( array( 'enabled_integrations' => array_values( $tools ) ) );
+	}
+
+	/**
+	 * Whether the current user may create or change direct and regex links, which
+	 * can answer at any path on the site.
+	 */
+	public static function can_manage_advanced_links(): bool {
+		return current_user_can( self::restricted_capability( 'advanced_links' ) );
+	}
+
+	/**
+	 * Whether the current user may remove links for good. Moving a standard link
+	 * to the Trash needs only the general link capability.
+	 */
+	public static function can_delete_links_permanently(): bool {
+		return current_user_can( self::restricted_capability( 'permanent_delete' ) );
+	}
+
+	/**
+	 * Whether the current user may change this stored link at all.
+	 *
+	 * @param array<string, mixed> $link Stored link.
+	 */
+	public static function can_change_link( array $link ): bool {
+		return 'standard' === ( $link['link_mode'] ?? 'standard' ) || self::can_manage_advanced_links();
+	}
+
+	/**
+	 * Whether the current user may save this definition, over $existing on an update.
+	 * Saving a direct or regex row as standard counts as changing it, so a refused
+	 * save can't quietly convert the row.
+	 *
+	 * @param array<string, mixed>      $data     Link to save.
+	 * @param array<string, mixed>|null $existing Stored link being replaced.
+	 */
+	public static function can_save_link( array $data, ?array $existing = null ): bool {
+		if ( self::can_manage_advanced_links() ) {
+			return true;
+		}
+
+		return 'standard' === ( $data['link_mode'] ?? 'standard' )
+			&& 'standard' === ( $existing['link_mode'] ?? 'standard' )
+			&& (string) ( $data['regex_replacement'] ?? '' ) === (string) ( $existing['regex_replacement'] ?? '' );
+	}
+
+	/**
+	 * A filter of its own rather than a context of gtlm_capabilities: sites often answer
+	 * that filter with one capability for every context, which would hand these out
+	 * without anyone deciding to.
+	 */
+	private static function restricted_capability( string $context ): string {
+		return (string) apply_filters( 'gtlm_restricted_capability', 'manage_options', $context );
 	}
 
 	/**

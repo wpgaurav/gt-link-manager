@@ -252,7 +252,10 @@ class GTLM_Geo {
 	}
 
 	/**
-	 * Validate and consume a probe token. Always consumes, valid or not.
+	 * Validate and consume a probe token.
+	 *
+	 * The route is public, so a wrong guess leaves the stored token alone: otherwise
+	 * any visitor could cancel an administrator's check.
 	 */
 	public static function consume_probe_token( string $token ): bool {
 		if ( '' === $token ) {
@@ -260,17 +263,17 @@ class GTLM_Geo {
 		}
 
 		$stored = get_option( self::PROBE_OPTION );
-		delete_option( self::PROBE_OPTION );
-
 		if ( ! is_array( $stored ) || empty( $stored['hash'] ) ) {
 			return false;
 		}
 
-		if ( (int) ( $stored['expires'] ?? 0 ) < time() ) {
-			return false;
+		$expired = (int) ( $stored['expires'] ?? 0 ) < time();
+		$valid   = ! $expired && hash_equals( (string) $stored['hash'], wp_hash( $token ) );
+		if ( $valid || $expired ) {
+			delete_option( self::PROBE_OPTION );
 		}
 
-		return hash_equals( (string) $stored['hash'], wp_hash( $token ) );
+		return $valid;
 	}
 
 	/**

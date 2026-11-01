@@ -131,10 +131,12 @@ class GTLM_List_Table extends WP_List_Table {
 	 */
 	protected function get_bulk_actions(): array {
 		if ( 'trash' === $this->view ) {
-			return array(
-				'bulk_restore'          => esc_html__( 'Restore', 'gt-link-manager' ),
-				'bulk_permanent_delete' => esc_html__( 'Delete Permanently', 'gt-link-manager' ),
-			);
+			$actions = array( 'bulk_restore' => esc_html__( 'Restore', 'gt-link-manager' ) );
+			if ( GTLM_Settings::can_delete_links_permanently() ) {
+				$actions['bulk_permanent_delete'] = esc_html__( 'Delete Permanently', 'gt-link-manager' );
+			}
+
+			return $actions;
 		}
 
 		return array(
@@ -211,6 +213,11 @@ class GTLM_List_Table extends WP_List_Table {
 	 * @param array<string, mixed> $item Item.
 	 */
 	protected function column_cb( $item ): string {
+		// Every bulk action would refuse this row, so there's nothing to select.
+		if ( ! GTLM_Settings::can_change_link( $item ) ) {
+			return '';
+		}
+
 		$id = (int) $item['id'];
 
 		return sprintf(
@@ -240,6 +247,8 @@ class GTLM_List_Table extends WP_List_Table {
 
 		$mode        = (string) ( $item['link_mode'] ?? 'standard' );
 		$branded_url = GTLM_Settings::build_link_url( $this->prefix, (string) $item['slug'], $mode );
+		$can_change  = GTLM_Settings::can_change_link( $item );
+		$admin_only  = '<span class="gtlm-admin-only">' . esc_html__( 'Administrators only', 'gt-link-manager' ) . '</span>';
 
 		if ( 'trash' === $this->view ) {
 			$restore_url = wp_nonce_url(
@@ -266,10 +275,10 @@ class GTLM_List_Table extends WP_List_Table {
 				'gtlm_permanent_delete_' . (int) $item['id']
 			);
 
-			$actions = array(
-				'restore' => '<a href="' . esc_url( $restore_url ) . '">' . esc_html__( 'Restore', 'gt-link-manager' ) . '</a>',
-				'delete'  => '<a href="' . esc_url( $delete_url ) . '" class="submitdelete">' . esc_html__( 'Delete Permanently', 'gt-link-manager' ) . '</a>',
-			);
+			$actions = $can_change ? array( 'restore' => '<a href="' . esc_url( $restore_url ) . '">' . esc_html__( 'Restore', 'gt-link-manager' ) . '</a>' ) : array( 'admin_only' => $admin_only );
+			if ( $can_change && GTLM_Settings::can_delete_links_permanently() ) {
+				$actions['delete'] = '<a href="' . esc_url( $delete_url ) . '" class="submitdelete">' . esc_html__( 'Delete Permanently', 'gt-link-manager' ) . '</a>';
+			}
 
 			return '<strong>' . esc_html( (string) $item['name'] ) . '</strong>' . $this->row_actions( $actions );
 		}
@@ -301,7 +310,7 @@ class GTLM_List_Table extends WP_List_Table {
 			'gtlm_' . $toggle_action . '_' . (int) $item['id']
 		);
 
-		$actions = array(
+		$actions = ! $can_change ? array( 'admin_only' => $admin_only ) : array(
 			'edit'       => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'gt-link-manager' ) . '</a>',
 			'quick_edit' => '<a href="#" class="gtlm-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '" data-slug="' . esc_attr( (string) $item['slug'] ) . '" data-link-mode="' . esc_attr( $mode ) . '" data-rel="' . esc_attr( (string) $item['rel'] ) . '" data-category-id="' . (int) ( $item['category_id'] ?? 0 ) . '" data-is-active="' . (int) $item['is_active'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
 			'toggle'     => '<a href="' . esc_url( $toggle_url ) . '">' . $toggle_label . '</a>',
@@ -314,7 +323,7 @@ class GTLM_List_Table extends WP_List_Table {
 		}
 
 		// Only offer a reset when there is a non-zero count to reset.
-		if ( GTLM_Settings::get_instance()->click_tracking_enabled() && (int) ( $item['total_clicks'] ?? 0 ) > 0 ) {
+		if ( $can_change && GTLM_Settings::get_instance()->click_tracking_enabled() && (int) ( $item['total_clicks'] ?? 0 ) > 0 ) {
 			$reset_url = wp_nonce_url(
 				add_query_arg(
 					array(
@@ -340,7 +349,9 @@ class GTLM_List_Table extends WP_List_Table {
 			);
 			$actions['analytics'] = '<a href="' . esc_url( $analytics_url ) . '">' . esc_html__( 'Analytics', 'gt-link-manager' ) . '</a>';
 		}
-		return '<strong><a href="' . esc_url( $edit_url ) . '">' . esc_html( (string) $item['name'] ) . '</a></strong>' . $this->row_actions( $actions );
+		$name = $can_change ? '<a href="' . esc_url( $edit_url ) . '">' . esc_html( (string) $item['name'] ) . '</a>' : esc_html( (string) $item['name'] );
+
+		return '<strong>' . $name . '</strong>' . $this->row_actions( $actions );
 	}
 
 	/**
@@ -532,7 +543,7 @@ class GTLM_List_Table extends WP_List_Table {
 		$category      = isset( $_GET['category_id'] ) ? absint( $_GET['category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$redirect_type = isset( $_GET['redirect_type'] ) ? absint( $_GET['redirect_type'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$rel           = isset( $_GET['rel'] ) ? sanitize_key( (string) wp_unslash( $_GET['rel'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$bulk_category = isset( $_REQUEST['bulk_category_id'] ) ? absint( $_REQUEST['bulk_category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$bulk_category = isset( $_REQUEST['bulk_category_id'] ) ? (int) $_REQUEST['bulk_category_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		$current_m = isset( $_GET['m'] ) ? absint( $_GET['m'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$months    = $this->db->get_link_months();
@@ -591,6 +602,7 @@ class GTLM_List_Table extends WP_List_Table {
 		echo '<label class="screen-reader-text" for="gtlm-bulk-category">' . esc_html__( 'Category for bulk action', 'gt-link-manager' ) . '</label>';
 		echo '<select name="bulk_category_id" id="gtlm-bulk-category">';
 		echo '<option value="0">' . esc_html__( 'Category for bulk action', 'gt-link-manager' ) . '</option>';
+		echo '<option value="-1" ' . selected( $bulk_category, -1, false ) . '>' . esc_html__( 'No category', 'gt-link-manager' ) . '</option>';
 		foreach ( $this->categories as $cat ) {
 			echo '<option value="' . (int) $cat['id'] . '" ' . selected( $bulk_category, (int) $cat['id'], false ) . '>' . esc_html( (string) $cat['name'] ) . '</option>';
 		}

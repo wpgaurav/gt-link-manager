@@ -244,10 +244,12 @@ final class GTLM_Agent {
 
 	/** Show what an agent can do with links and how to connect one, before sending anyone elsewhere. */
 	public static function page(): void {
+		require_once __DIR__ . '/icons.php';
+
 		$agent    = self::site_agent();
 		$settings = self::site_agent_settings();
 		$ready    = 'ready' === $agent['state'] && ! empty( $settings['enabled'] ) && ! empty( $settings['php'] );
-		echo '<div class="wrap gtlm-ai-agents"><h1>' . esc_html__( 'AI agents', 'gt-link-manager' ) . '</h1>';
+		echo '<div class="wrap gtlm-ai-agents"><h1>' . esc_html__( 'AI agents', 'gt-link-manager' ) . gtlm_help_link( 'ai_agents', __( 'AI agents', 'gt-link-manager' ) ) . '</h1>';
 		echo '<p class="gtlm-ai-lead">' . esc_html__( 'Manage your links by asking an AI agent such as Claude, ChatGPT or Cursor. The agent works on this site through Site Agent, a free plugin, with the same checks as the dashboard.', 'gt-link-manager' ) . '</p>';
 
 		if ( $ready ) {

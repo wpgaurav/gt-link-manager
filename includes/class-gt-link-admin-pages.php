@@ -42,10 +42,10 @@ class GTLM_Admin_Pages {
 		$table->prepare_items();
 
 		echo '<div class="wrap">';
-		echo '<h1 class="wp-heading-inline">' . esc_html__( 'All Links', 'gt-link-manager' ) . '</h1>';
+		echo '<h1 class="wp-heading-inline">' . esc_html__( 'All Links', 'gt-link-manager' ) . gtlm_help_link( 'trash' === $view ? 'trash' : 'links', __( 'All Links', 'gt-link-manager' ) ) . '</h1>';
 		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add New', 'gt-link-manager' ) . '</a>';
 
-		if ( 'trash' === $view && $this->db->count_links( array( 'trashed' => true ) ) > 0 ) {
+		if ( 'trash' === $view && GTLM_Settings::can_delete_links_permanently() && $this->db->count_links( array( 'trashed' => true ) ) > 0 ) {
 			$empty_url = wp_nonce_url(
 				add_query_arg(
 					array(
@@ -108,12 +108,21 @@ class GTLM_Admin_Pages {
 			'notes'             => '',
 		);
 		$form             = is_array( $link ) ? wp_parse_args( $link, $defaults ) : $defaults;
-		$advanced_enabled = ! empty( $settings['enable_advanced_redirects'] );
+		$advanced_enabled = ! empty( $settings['enable_advanced_redirects'] ) && GTLM_Settings::can_manage_advanced_links();
 		$geo_enabled      = ! empty( $settings['enable_geo_targeting'] );
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html( $link_id > 0 ? __( 'Edit Link', 'gt-link-manager' ) : __( 'Add New Link', 'gt-link-manager' ) ) . '</h1>';
+		$heading = $link_id > 0 ? __( 'Edit Link', 'gt-link-manager' ) : __( 'Add New Link', 'gt-link-manager' );
+		echo '<h1>' . esc_html( $heading ) . gtlm_help_link( $link_id > 0 ? 'link_edit' : 'link_new', $heading ) . '</h1>';
 		$this->render_notice();
+
+		if ( is_array( $link ) && ! GTLM_Settings::can_change_link( $link ) ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Only administrators can change direct and regex links.', 'gt-link-manager' ) . '</p></div>';
+			echo '<p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=gtlm-links' ) ) . '">' . esc_html__( 'Back to All Links', 'gt-link-manager' ) . '</a></p>';
+			echo '</div>';
+			return;
+		}
+
 		echo '<div class="gtlm-card">';
 		echo '<form method="post" action="">';
 		wp_nonce_field( 'gtlm_link_save' );
@@ -142,7 +151,7 @@ class GTLM_Admin_Pages {
 
 		if ( $advanced_enabled ) {
 			echo '<tr class="gtlm-field-regex-replacement" style="' . ( 'regex' !== $form['link_mode'] ? 'display:none;' : '' ) . '">';
-			echo '<th scope="row"><label for="regex_replacement">' . esc_html__( 'Regex Replacement', 'gt-link-manager' ) . '</label></th>';
+			echo '<th scope="row"><label for="regex_replacement">' . esc_html__( 'Regex Replacement', 'gt-link-manager' ) . '</label>' . gtlm_help_link( 'regex', __( 'Regex Replacement', 'gt-link-manager' ) ) . '</th>';
 			echo '<td><input name="regex_replacement" id="regex_replacement" type="text" class="regular-text" value="' . esc_attr( (string) $form['regex_replacement'] ) . '" />';
 			echo '<p class="description">' . esc_html__( 'Use $1, $2 for capture groups. If empty, capture groups are substituted in the Destination URL.', 'gt-link-manager' ) . '</p></td></tr>';
 
@@ -150,9 +159,6 @@ class GTLM_Admin_Pages {
 			echo '<th scope="row"><label for="priority">' . esc_html__( 'Priority', 'gt-link-manager' ) . '</label></th>';
 			echo '<td><input name="priority" id="priority" type="number" class="small-text" value="' . (int) $form['priority'] . '" min="0" step="1" />';
 			echo '<p class="description">' . esc_html__( 'Lower numbers are matched first.', 'gt-link-manager' ) . '</p></td></tr>';
-
-			echo '<tr class="gtlm-field-conflict-warning" style="display:none;">';
-			echo '<th scope="row"></th><td><div class="notice notice-warning inline"><p id="gtlm-conflict-message"></p></div></td></tr>';
 		}
 
 		echo '<tr><th scope="row">' . esc_html__( 'Branded URL Preview', 'gt-link-manager' ) . '</th><td>';
@@ -161,7 +167,7 @@ class GTLM_Admin_Pages {
 
 		$this->render_redirect_type_field( (int) $form['redirect_type'] );
 		$this->render_rel_field( (string) $form['rel'] );
-		$this->render_checkbox_field( 'noindex', __( 'Noindex', 'gt-link-manager' ), __( 'Prevent indexing this redirect', 'gt-link-manager' ), ! empty( $form['noindex'] ) );
+		$this->render_checkbox_field( 'noindex', __( 'Noindex', 'gt-link-manager' ), __( 'Prevent indexing this redirect', 'gt-link-manager' ), ! empty( $form['noindex'] ), 'noindex' );
 		$this->render_category_field( $categories, (int) $form['category_id'] );
 
 		if ( $geo_enabled ) {
@@ -204,7 +210,7 @@ class GTLM_Admin_Pages {
 			)
 		);
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'Link Categories', 'gt-link-manager' ) . '</h1>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'Link Categories', 'gt-link-manager' ) . gtlm_help_link( 'categories', __( 'Link Categories', 'gt-link-manager' ) ) . '</h1>';
 		$this->render_notice();
 
 		echo '<div class="gtlm-card">';
@@ -264,6 +270,11 @@ class GTLM_Admin_Pages {
 		GTLM_Analytics_Controller::render();
 	}
 
+	public function render_integrations_page(): void {
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations-admin.php';
+		GTLM_Integrations_Admin::render();
+	}
+
 	public function render_settings_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You are not allowed to access this page.', 'gt-link-manager' ) );
@@ -272,19 +283,19 @@ class GTLM_Admin_Pages {
 		$settings    = $this->settings->all();
 		$diagnostics = get_option( 'gtlm_diagnostics', array() );
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'GT Links settings', 'gt-link-manager' ) . '</h1><div class="gtlm-main-settings"><p>' . esc_html__( 'Choose defaults for new links. Existing links keep their own settings.', 'gt-link-manager' ) . '</p>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'GT Links settings', 'gt-link-manager' ) . gtlm_help_link( 'settings', __( 'GT Links settings', 'gt-link-manager' ) ) . '</h1><div class="gtlm-main-settings"><p>' . esc_html__( 'Choose defaults for new links. Existing links keep their own settings.', 'gt-link-manager' ) . '</p>';
 		$this->render_notice();
 		echo '<form method="post">';
 		wp_nonce_field( 'gtlm_settings_save' );
 		echo '<input type="hidden" name="gtlm_settings_action" value="save_settings"><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'link', 20 ) . esc_html__( 'Link defaults', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
-		$this->render_text_field( 'base_prefix', __( 'Link prefix', 'gt-link-manager' ), (string) $settings['base_prefix'], true );
+		$this->render_text_field( 'base_prefix', __( 'Link prefix', 'gt-link-manager' ), (string) $settings['base_prefix'], true, 'text', 'link_prefix' );
 		$this->render_redirect_type_field( (int) $settings['default_redirect_type'], 'default_redirect_type', __( 'Redirect type', 'gt-link-manager' ) );
 		$this->render_rel_field( implode( ',', (array) $settings['default_rel'] ), 'default_rel[]', __( 'Link attributes', 'gt-link-manager' ) );
-		$this->render_checkbox_field( 'default_noindex', __( 'Search engines', 'gt-link-manager' ), __( 'Keep new short links out of search results', 'gt-link-manager' ), ! empty( $settings['default_noindex'] ) );
-		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'click', 20 ) . esc_html__( 'Basic click counts', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
+		$this->render_checkbox_field( 'default_noindex', __( 'Search engines', 'gt-link-manager' ), __( 'Keep new short links out of search results', 'gt-link-manager' ), ! empty( $settings['default_noindex'] ), 'noindex' );
+		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'click', 20 ) . esc_html__( 'Basic click counts', 'gt-link-manager' ) . gtlm_help_link( 'click_counts', __( 'Basic click counts', 'gt-link-manager' ) ) . '</h2><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_click_tracking', __( 'Lifetime totals', 'gt-link-manager' ), __( 'Keep a running click total next to each link', 'gt-link-manager' ), ! empty( $settings['enable_click_tracking'] ) );
 		echo '</tbody></table><p>' . esc_html__( 'For date trends, sources and devices, use the separate analytics feature.', 'gt-link-manager' ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=gtlm-links-analytics&view=settings' ) ) . '">' . esc_html__( 'Open analytics settings', 'gt-link-manager' ) . '</a></p></section>';
-		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'api', 20 ) . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><div class="gtlm-site-agent-note"><p><strong>' . esc_html__( 'Easiest with Site Agent.', 'gt-link-manager' ) . '</strong> ' . sprintf(
+		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'api', 20 ) . esc_html__( 'AI tools and REST API', 'gt-link-manager' ) . gtlm_help_link( 'rest_api', __( 'AI tools and REST API', 'gt-link-manager' ) ) . '</h2><p>' . esc_html__( 'Create and manage links from AI tools and scripts through the WordPress REST API.', 'gt-link-manager' ) . '</p><div class="gtlm-site-agent-note"><p><strong>' . esc_html__( 'Easiest with Site Agent.', 'gt-link-manager' ) . '</strong> ' . sprintf(
 			/* translators: %s: linked "Site Agent" plugin name */
 			esc_html__( '%s is a free plugin that connects AI agents such as Claude, ChatGPT and Cursor to this site with an OAuth sign-in. Connected agents get the GT Link Manager skill automatically, with no Application Password or setup prompt.', 'gt-link-manager' ),
 			'<a href="' . esc_url( GTLM_Agent::SITE_AGENT_URL ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Site Agent', 'gt-link-manager' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>'
@@ -306,22 +317,22 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		);
 		echo '<p><label for="gtlm-ai-prompt"><strong>' . esc_html__( 'Copy this setup prompt into your AI tool', 'gt-link-manager' ) . '</strong></label></p><textarea id="gtlm-ai-prompt" class="large-text" rows="10" readonly>' . esc_textarea( $prompt ) . '</textarea><p class="gtlm-ai-prompt-actions"><button type="button" class="button" id="gtlm-copy-ai-prompt" data-copied="' . esc_attr__( 'Prompt copied.', 'gt-link-manager' ) . '" data-failed="' . esc_attr__( 'Copy failed. Select the prompt and copy it manually.', 'gt-link-manager' ) . '">' . esc_html__( 'Copy setup prompt', 'gt-link-manager' ) . '</button><span id="gtlm-ai-prompt-status" role="status" aria-live="polite"></span></p></section>';
 
-		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'world', 20 ) . esc_html__( 'Country-based redirects', 'gt-link-manager' ) . '</h2><p>' . esc_html__( 'Send visitors to different destinations using the country rules on each link.', 'gt-link-manager' ) . '</p><table class="form-table" role="presentation"><tbody>';
+		echo '<section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'world', 20 ) . esc_html__( 'Country-based redirects', 'gt-link-manager' ) . gtlm_help_link( 'geo_settings', __( 'Country-based redirects', 'gt-link-manager' ) ) . '</h2><p>' . esc_html__( 'Send visitors to different destinations using the country rules on each link.', 'gt-link-manager' ) . '</p><table class="form-table" role="presentation"><tbody>';
 		$this->render_checkbox_field( 'enable_geo_targeting', __( 'Country routing', 'gt-link-manager' ), __( 'Allow links to use country rules', 'gt-link-manager' ), ! empty( $settings['enable_geo_targeting'] ) );
 		$this->render_geo_method_field( (string) $settings['geo_detection_method'] );
 		$this->render_text_field( 'geo_custom_header', __( 'Custom header (optional)', 'gt-link-manager' ), (string) $settings['geo_custom_header'], false );
-		$this->render_checkbox_field( 'geo_debug_header', __( 'Troubleshooting', 'gt-link-manager' ), __( 'Show country details in redirect response headers', 'gt-link-manager' ), ! empty( $settings['geo_debug_header'] ) );
+		$this->render_checkbox_field( 'geo_debug_header', __( 'Troubleshooting', 'gt-link-manager' ), __( 'Show country details in redirect response headers', 'gt-link-manager' ), ! empty( $settings['geo_debug_header'] ), 'geo_debug' );
 		$this->render_geo_detection_status();
 		echo '</tbody></table></section><section class="gtlm-settings-card"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'adjustments', 20 ) . esc_html__( 'Advanced redirects and data cleanup', 'gt-link-manager' ) . '</h2><table class="form-table" role="presentation"><tbody>';
-		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced redirects', 'gt-link-manager' ), __( 'Allow prefix-free paths and regular expressions', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ) );
+		$this->render_checkbox_field( 'enable_advanced_redirects', __( 'Advanced redirects', 'gt-link-manager' ), __( 'Allow prefix-free paths and regular expressions. Only administrators can create or change them.', 'gt-link-manager' ), ! empty( $settings['enable_advanced_redirects'] ), 'advanced_redirects' );
 		$this->render_prefix_free_field( ! empty( $settings['prefix_free_links'] ) );
 		$this->render_retention_field( (int) $settings['trash_retention_days'] );
-		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Uninstall cleanup', 'gt-link-manager' ), __( 'Delete all plugin data when the plugin is uninstalled', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ) );
+		$this->render_checkbox_field( 'delete_data_on_uninstall', __( 'Uninstall cleanup', 'gt-link-manager' ), __( 'Delete all plugin data when the plugin is uninstalled', 'gt-link-manager' ), ! empty( $settings['delete_data_on_uninstall'] ), 'uninstall' );
 		echo '</tbody></table></section>';
 		submit_button( __( 'Save settings', 'gt-link-manager' ) );
 		echo '</form><section class="gtlm-settings-group"><h2 class="gtlm-heading-icon">' . gtlm_icon( 'tool', 20 ) . esc_html__( 'Tools and diagnostics', 'gt-link-manager' ) . '</h2>';
 		echo '<div class="gtlm-card gtlm-settings-card">';
-		echo '<h2>' . esc_html__( 'Tools', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Tools', 'gt-link-manager' ) . gtlm_help_link( 'tools', __( 'Tools', 'gt-link-manager' ) ) . '</h2>';
 		echo '<div class="gtlm-settings-actions">';
 
 		echo '<form method="post" action="" style="display:inline-block;">';
@@ -340,7 +351,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '</div>';
 
 		echo '<div class="gtlm-card gtlm-settings-card">';
-		echo '<h2>' . esc_html__( 'Diagnostics', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Diagnostics', 'gt-link-manager' ) . gtlm_help_link( 'diagnostics', __( 'Diagnostics', 'gt-link-manager' ) ) . '</h2>';
 		$bytes = $this->db->storage_bytes();
 		echo '<table class="gtlm-diagnostics-table gtlm-diagnostics-current"><tbody><tr><th scope="row">' . esc_html__( 'Database size (all GT Link Manager tables)', 'gt-link-manager' ) . '</th><td>' . esc_html( null === $bytes ? __( 'Unavailable', 'gt-link-manager' ) : size_format( $bytes, 2 ) ) . '<p class="description">' . esc_html__( 'Estimated table data and indexes, including analytics tables when present.', 'gt-link-manager' ) . '</p></td></tr>';
 		foreach ( array(
@@ -449,6 +460,10 @@ Set up the appropriate authenticated REST API connection and verify it with read
 			'undo_failed'            => array( 'error', __( 'Could not undo that action.', 'gt-link-manager' ) ),
 			'bulk_none'              => array( 'warning', __( 'No links were selected.', 'gt-link-manager' ) ),
 			'bulk_updated'           => array( 'success', __( 'Links updated.', 'gt-link-manager' ) ),
+			'bulk_category_missing'  => array( 'warning', __( 'Choose a category first. No links were changed.', 'gt-link-manager' ) ),
+			'bulk_admin_only'        => array( 'warning', __( 'Only administrators can change direct and regex links, so those were skipped. Any other selected links were updated.', 'gt-link-manager' ) ),
+			'admin_only_links'       => array( 'warning', __( 'Only administrators can create or change direct and regex links. Nothing was changed.', 'gt-link-manager' ) ),
+			'admin_only_delete'      => array( 'warning', __( 'Only administrators can permanently delete links. Nothing was deleted.', 'gt-link-manager' ) ),
 			'clicks_reset'           => array( 'success', __( 'Click count reset.', 'gt-link-manager' ) ),
 			'clicks_reset_failed'    => array( 'error', __( 'Could not reset the click count.', 'gt-link-manager' ) ),
 		);
@@ -532,8 +547,8 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo ' <a href="' . esc_url( $url ) . '" class="gtlm-undo">' . esc_html__( 'Undo', 'gt-link-manager' ) . '</a>';
 	}
 
-	private function render_text_field( string $name, string $label, string $value, bool $required = false, string $type = 'text' ): void {
-		echo '<tr><th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th><td><input name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '" type="' . esc_attr( $type ) . '" class="' . ( 'url' === $type ? 'large-text' : 'regular-text' ) . '" value="' . esc_attr( $value ) . '" ' . ( $required ? 'required' : '' ) . ' /></td></tr>';
+	private function render_text_field( string $name, string $label, string $value, bool $required = false, string $type = 'text', string $help = '' ): void {
+		echo '<tr><th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label>' . gtlm_help_link( $help, $label ) . '</th><td><input name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '" type="' . esc_attr( $type ) . '" class="' . ( 'url' === $type ? 'large-text' : 'regular-text' ) . '" value="' . esc_attr( $value ) . '" ' . ( $required ? 'required' : '' ) . ' /></td></tr>';
 	}
 
 	/**
@@ -573,7 +588,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 	 * Trash retention control.
 	 */
 	private function render_retention_field( int $value ): void {
-		echo '<tr><th scope="row"><label for="trash_retention_days">' . esc_html__( 'Empty Trash Automatically', 'gt-link-manager' ) . '</label></th><td>';
+		echo '<tr><th scope="row"><label for="trash_retention_days">' . esc_html__( 'Empty Trash Automatically', 'gt-link-manager' ) . '</label>' . gtlm_help_link( 'trash_retention', __( 'Empty Trash Automatically', 'gt-link-manager' ) ) . '</th><td>';
 		echo '<input name="trash_retention_days" id="trash_retention_days" type="number" min="0" max="365" step="1" class="small-text" value="' . esc_attr( (string) $value ) . '" aria-describedby="trash_retention_days-description" /> ';
 		echo '<span>' . esc_html__( 'days', 'gt-link-manager' ) . '</span>';
 		echo '<p class="description" id="trash_retention_days-description">' . esc_html__( 'Permanently delete links that have been in the Trash longer than this. Set to 0 to keep trashed links until you delete them yourself.', 'gt-link-manager' ) . '</p>';
@@ -584,15 +599,15 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '<tr><th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th><td><textarea name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '" rows="4" class="large-text">' . esc_textarea( $value ) . '</textarea></td></tr>';
 	}
 
-	private function render_checkbox_field( string $name, string $label, string $description, bool $checked ): void {
-		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td><label><input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html( $description ) . '</label></td></tr>';
+	private function render_checkbox_field( string $name, string $label, string $description, bool $checked, string $help = '' ): void {
+		echo '<tr><th scope="row">' . esc_html( $label ) . gtlm_help_link( $help, $label ) . '</th><td><label><input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( $checked, true, false ) . ' /> ' . esc_html( $description ) . '</label></td></tr>';
 	}
 
 	/**
 	 * @param array<int, array<string, mixed>> $categories
 	 */
 	private function render_category_field( array $categories, int $selected_id ): void {
-		echo '<tr><th scope="row"><label for="category_id">' . esc_html__( 'Category', 'gt-link-manager' ) . '</label></th><td><select name="category_id" id="category_id"><option value="0">' . esc_html__( 'None', 'gt-link-manager' ) . '</option>';
+		echo '<tr><th scope="row"><label for="category_id">' . esc_html__( 'Category', 'gt-link-manager' ) . '</label>' . gtlm_help_link( 'link_category', __( 'Category', 'gt-link-manager' ) ) . '</th><td><select name="category_id" id="category_id"><option value="0">' . esc_html__( 'None', 'gt-link-manager' ) . '</option>';
 		foreach ( $categories as $category ) {
 			echo '<option value="' . (int) $category['id'] . '" ' . selected( $selected_id, (int) $category['id'], false ) . '>' . esc_html( (string) $category['name'] ) . '</option>';
 		}
@@ -604,7 +619,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 			$label = __( 'Redirect Type', 'gt-link-manager' );
 		}
 
-		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>';
+		echo '<tr><th scope="row">' . esc_html( $label ) . gtlm_help_link( 'redirect_type', $label ) . '</th><td>';
 		foreach ( array( 301, 302, 307 ) as $type ) {
 			echo '<label style="margin-right:12px;"><input type="radio" name="' . esc_attr( $name ) . '" value="' . (int) $type . '" ' . checked( $current, $type, false ) . ' /> ' . (int) $type . '</label>';
 		}
@@ -617,7 +632,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		}
 
 		$selected = array_filter( array_map( 'sanitize_key', explode( ',', strtolower( $rel_csv ) ) ) );
-		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>';
+		echo '<tr><th scope="row">' . esc_html( $label ) . gtlm_help_link( 'rel', $label ) . '</th><td>';
 		foreach ( array( 'nofollow', 'sponsored', 'ugc' ) as $value ) {
 			echo '<label style="margin-right:12px;"><input type="checkbox" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" ' . checked( in_array( $value, $selected, true ), true, false ) . ' /> ' . esc_html( $value ) . '</label>';
 		}
@@ -672,7 +687,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 			301 => '301',
 		);
 
-		echo '<tr><th scope="row">' . esc_html__( 'Geolocation', 'gt-link-manager' ) . '</th><td>';
+		echo '<tr><th scope="row">' . esc_html__( 'Geolocation', 'gt-link-manager' ) . gtlm_help_link( 'geo_rules', __( 'Geolocation', 'gt-link-manager' ) ) . '</th><td>';
 		echo '<label><input type="checkbox" name="geo_mode" value="targeted" id="gtlm-geo-toggle" ' . checked( $is_on, true, false ) . ' /> <strong>' . esc_html__( 'Send visitors to a different URL based on their country', 'gt-link-manager' ) . '</strong></label>';
 		echo '<p class="description">' . esc_html__( 'Everyone else keeps using the Destination URL above.', 'gt-link-manager' ) . '</p>';
 		echo '</td></tr>';
@@ -737,7 +752,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '<p class="description">' . esc_html__( 'Previews your unsaved rules in the browser. No request is made.', 'gt-link-manager' ) . '</p>';
 		echo '</div>';
 
-		echo '<p class="description">' . esc_html__( 'Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description">' . esc_html( $this->geo_rules_privacy_note() ) . '</p>';
 		echo '<p class="description">' . esc_html__( 'A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN.', 'gt-link-manager' ) . '</p>';
 
 		// __INDEX__ is replaced by admin.js when a row is cloned.
@@ -865,7 +880,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 			'custom'     => __( 'Custom header only', 'gt-link-manager' ),
 		);
 
-		echo '<tr><th scope="row">' . esc_html__( 'Detection Method', 'gt-link-manager' ) . '</th><td>';
+		echo '<tr><th scope="row">' . esc_html__( 'Detection Method', 'gt-link-manager' ) . gtlm_help_link( 'geo_detection', __( 'Detection Method', 'gt-link-manager' ) ) . '</th><td>';
 		foreach ( $methods as $value => $label ) {
 			echo '<label style="margin-right:12px;"><input type="radio" name="geo_detection_method" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . ' /> ' . esc_html( $label ) . '</label>';
 		}
@@ -930,7 +945,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '</td></tr>';
 
 		echo '<tr><th scope="row">' . esc_html__( 'Privacy', 'gt-link-manager' ) . '</th><td>';
-		echo '<p class="description">' . esc_html__( 'Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor\'s IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination.', 'gt-link-manager' ) . '</p>';
+		echo '<p class="description">' . esc_html( $this->geo_settings_privacy_note() ) . '</p>';
 		echo '<p class="description">' . sprintf(
 			/* translators: %s: link to the Privacy Settings screen */
 			esc_html__( 'Suggested wording for your privacy policy is available under %s.', 'gt-link-manager' ),
@@ -949,7 +964,7 @@ Set up the appropriate authenticated REST API connection and verify it with read
 			'regex'    => __( 'Regex (pattern match)', 'gt-link-manager' ),
 		);
 
-		echo '<tr><th scope="row">' . esc_html__( 'Link Mode', 'gt-link-manager' ) . '</th><td>';
+		echo '<tr><th scope="row">' . esc_html__( 'Link Mode', 'gt-link-manager' ) . gtlm_help_link( 'link_mode', __( 'Link Mode', 'gt-link-manager' ) ) . '</th><td>';
 		foreach ( $modes as $value => $label ) {
 			echo '<label style="margin-right:12px;"><input type="radio" name="link_mode" value="' . esc_attr( $value ) . '" ' . checked( $current, $value, false ) . ' class="gtlm-link-mode-radio" /> ' . esc_html( $label ) . '</label>';
 		}
@@ -957,6 +972,86 @@ Set up the appropriate authenticated REST API connection and verify it with read
 		echo '<p class="description gtlm-mode-hint" data-mode="direct" style="display:none;">' . esc_html__( 'URL: yoursite.com/path — redirects without the prefix.', 'gt-link-manager' ) . '</p>';
 		echo '<p class="description gtlm-mode-hint" data-mode="regex" style="display:none;">' . esc_html__( 'Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL.', 'gt-link-manager' ) . '</p>';
 		echo '</td></tr>';
+	}
+
+	/** Whether this site's copy may still promise that IP addresses and countries stay here. */
+	private function shares_visitor_data(): bool {
+		if ( ! $this->settings->enabled_integrations() ) {
+			return false;
+		}
+
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
+
+		return GTLM_Integrations::shares_visitor_data();
+	}
+
+	/**
+	 * What Advanced Analytics does with the country: 'none' before it is set up,
+	 * then 'off' or 'saved' from Include countries. Paused analytics keeps its
+	 * setting and its reports, so it reads the same as running.
+	 *
+	 * Reads the option directly so these screens don't load the analytics classes.
+	 */
+	private function analytics_country_state(): string {
+		if ( ! $this->settings->analytics_initialized() ) {
+			return 'none';
+		}
+
+		$config = get_option( 'gtlm_analytics', array() );
+
+		return is_array( $config ) && 'none' !== ( $config['country_source'] ?? 'none' ) ? 'saved' : 'off';
+	}
+
+	private function country_storage_note( string $state ): string {
+		if ( 'saved' === $state ) {
+			return __( 'Include countries is on under GT Links > Analytics > Settings, so each recorded click saves the country and whether a country rule matched.', 'gt-link-manager' );
+		}
+
+		if ( 'off' === $state ) {
+			return __( 'Include countries is off under GT Links > Analytics > Settings, so new clicks are recorded without the country.', 'gt-link-manager' );
+		}
+
+		return __( 'The plugin doesn\'t store or log the country.', 'gt-link-manager' );
+	}
+
+	private function geo_rules_privacy_note(): string {
+		$shares = $this->shares_visitor_data();
+		$note   = array(
+			$shares
+				? __( 'Privacy: the country comes from a header your CDN already sends, and no geolocation service is called.', 'gt-link-manager' )
+				: __( 'Privacy: the country comes from a header your CDN already sends. Detecting it reads no IP address and calls no geolocation service.', 'gt-link-manager' ),
+			$this->country_storage_note( $this->analytics_country_state() ),
+		);
+
+		if ( $shares ) {
+			$note[] = __( 'This site shares the country with analytics services under GT Links > Integrations.', 'gt-link-manager' );
+		}
+
+		return implode( ' ', $note );
+	}
+
+	private function geo_settings_privacy_note(): string {
+		$shares = $this->shares_visitor_data();
+		$state  = $this->analytics_country_state();
+		$note   = array(
+			__( 'Country detection reads a two-letter code from a header your CDN already added to the request.', 'gt-link-manager' ),
+			$shares
+				? __( 'It never calls an external geolocation service.', 'gt-link-manager' )
+				: __( 'It never reads the visitor\'s IP address and never calls an external geolocation service.', 'gt-link-manager' ),
+			$this->country_storage_note( $state ),
+		);
+
+		if ( 'none' !== $state ) {
+			$note[] = __( 'Reports keep any countries already saved until they expire or you delete them.', 'gt-link-manager' );
+		} elseif ( ! $shares ) {
+			$note[] = __( 'It exists only for that one request, to pick a destination.', 'gt-link-manager' );
+		}
+
+		if ( $shares ) {
+			$note[] = __( 'This site also shares visitors\' IP addresses and countries with analytics services, under GT Links > Integrations.', 'gt-link-manager' );
+		}
+
+		return implode( ' ', $note );
 	}
 
 	private function links_capability( string $context ): string {

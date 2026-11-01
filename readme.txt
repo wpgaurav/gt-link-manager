@@ -4,11 +4,11 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.11.0
+Stable tag: 1.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Fast branded redirects with opt-in click analytics, country targeting, CSV migration, a REST API, and block editor link tools.
+Branded redirects with click analytics, GA4 and analytics plugin integrations, Novashare short links, country targeting, and block editor tools.
 
 == Description ==
 
@@ -60,10 +60,11 @@ GT Link Manager stores links in **custom database tables**, not custom post type
 * **CSV import and export.** Import links from CSV with column mapping preview, or export filtered links; includes **LinkCentral** and **Pretty Links** compatible presets. Manual column mapping also supports compatible CSV exports from **ThirstyAffiliates, ClickWhale, Lasso, BetterLinks, GeniusLink**, and others. Map the name and destination URL fields, review the preview, and choose how to handle duplicates.
 * **Block editor integration.** Search and insert managed links into rich text and the core Button block without leaving the editor
 * **Branded URL preview.** See the full branded URL as you type, with one-click copy
+* **Novashare short links.** Use your own branded links when posts are shared through [Novashare](https://novashare.io/), with no code or API key
 * **Prefix-free and regex redirects.** Route ordinary paths without `/go/`, or use regular expressions and capture groups for more complex rules. Protected WordPress endpoints cannot be claimed by redirect rules.
 * **Geolocation targeting.** Send visitors from different countries to different destinations on a per-link basis (e.g. India to amazon.in, the US to amazon.com). The country comes from a header your CDN already sends, whether that is Cloudflare, CloudFront, Vercel, App Engine, or an nginx/Apache GeoIP module, so there is **no GeoIP database to install and no external lookup**. Links without country rules skip country detection.
 * **Independent lifetime counts.** Optional running totals remain separate from Advanced Analytics. When analytics is enabled, click a count in All Links to open that link's report.
-* **Click tracking integrations.** For per-visit analytics, hook `gtlm_before_redirect` and send events to GA4, Plausible, Fathom, Matomo, or Simple Analytics
+* **Analytics integrations.** Send short link clicks to Google Analytics 4, Independent Analytics, Plausible (beta), Matomo and 16 other tools from one settings screen, with no code
 * **AI and REST API workflows.** Create, update, categorize, trash and restore links through authenticated endpoints. The settings page links directly to the AI-tools guide.
 * **Safer CSV handling.** Preview and map columns before import. Temporary files stay outside public uploads, and spreadsheet-style formulas are neutralized on export.
 * **Data cleanup controls.** Restore trashed links, configure trash retention, and choose whether uninstall removes plugin data.
@@ -73,13 +74,14 @@ GT Link Manager stores links in **custom database tables**, not custom post type
 
 GT Link Manager provides a comprehensive set of hooks for customization:
 
-* `gtlm_before_redirect`, action fired before redirect (use for click tracking or logging)
+* `gtlm_before_redirect`, action fired before the redirect is sent, for custom logging. The visitor is waiting, so keep it fast, and use click counts, Advanced Analytics or Integrations for click tracking
 * `gtlm_redirect_url`, filter to modify the destination URL
 * `gtlm_redirect_code`, filter to modify the HTTP status code
 * `gtlm_rel_attributes`, filter to modify rel attribute values
 * `gtlm_headers`, filter to modify redirect response headers
 * `gtlm_prefix`, filter to override the URL prefix
 * `gtlm_capabilities`, filter to override the required user capability
+* `gtlm_restricted_capability`, filter the capability required for direct links, regex links and permanent deletion
 * `gtlm_cache_ttl`, filter to set object cache TTL for link lookups
 * `gtlm_geo_country`, filter the detected country code (plug in any detection method you like)
 * `gtlm_geo_sources`, filter the list of request variables checked for a country
@@ -91,8 +93,15 @@ GT Link Manager provides a comprehensive set of hooks for customization:
 * `gtlm_trash_purged`, action fired after trashed links are automatically purged, with the count and retention window
 * `gtlm_count_click`, filter to skip counting a particular click (exclude logged-in editors, add bot filtering)
 * `gtlm_click_recorded`, action fired after a click has been counted
+* `gtlm_integrations_should_send`, filter to decide whether a click reaches analytics integrations (use it for visitor consent)
+* `gtlm_integration_event`, filter the click event before any integration receives it
+* `gtlm_integration_request`, filter or cancel the HTTP request for one analytics service
+* `gtlm_integration_visitor_ip`, filter the IP address shared when visitor data sharing is on
+* `gtlm_integration_sent`, action fired after an analytics service has been sent a click
+* `gtlm_integrations_load_bridge`, filter whether the browser tag script loads on a page
 * `gtlm_analytics_should_record`, filter to suppress an advanced analytics event
 * `gtlm_analytics_capability`, filter the capability required to view analytics reports
+* `gtlm_novashare_should_shorten`, filter whether a URL shared through Novashare becomes a branded link
 
 = Independent Click Counting =
 
@@ -122,11 +131,33 @@ CSV export keeps your links portable, including geo rules and advanced redirect 
 
 GT Link Manager does not perform automatic keyword linking. Country detection depends on a trusted CDN or server header; a header supplied directly by a visitor can be forged. Basic counts measure requests, while Advanced Analytics adds eligible-click reports; neither identifies unique visitors or verifies conversions.
 
-= Analytics & Advanced Integrations =
+= Analytics Integrations =
 
-The **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** includes step-by-step integration guides for:
+Send short link clicks to the analytics tool you already use. Open **GT Links > Integrations** and turn on the ones you want. There's no code to write, and everything is off until you turn it on.
 
-* **Analytics.** Google Analytics 4 (GA4), Plausible Analytics, Fathom Analytics, Matomo, and Simple Analytics
+* **WordPress plugins, recorded on your own site.** Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat Analytics, Statify, and Matomo for WordPress.
+* **Services, sent from your server.** Google Analytics 4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky. Plausible is in beta because Plausible Cloud can drop clicks sent from a server address unless you share visitor data.
+* **Browser tags, for tools with no server API.** Google Tag Manager, Fathom Analytics, and Microsoft Clarity. GA4 can also send through your existing tag if you'd rather not create an API secret.
+* **Your existing setup is detected.** MonsterInsights, ExactMetrics, Analytify, Site Kit, GA Google Analytics, Plausible Analytics, Connect Matomo, Clicky, and GTM4WP settings are picked up when you leave a field blank.
+* **No delay for visitors.** Your server sends the event after the redirect has gone out, so a slow or broken analytics service can't hold anyone up.
+* **Bots stay out.** HEAD requests, prefetches, recognized bots, and logged-in link managers are not sent.
+* **IP addresses stay home by default.** Services get the short link, its destination, the referring page, and the browser's user agent. Sharing the visitor's IP address and country is a separate setting, and it's off until you turn it on.
+
+Server-side delivery counts clicks that ad blockers would hide, including links opened from email and social posts. Browser tags can only see clicks on your own pages.
+
+= Novashare Short Links =
+
+GT Link Manager works with [Novashare](https://novashare.io/), a separate social sharing plugin. Novashare's **Custom** link shortener can use your branded links, so a shared post carries `yoursite.com/go/ns-1a2b3c4d` instead of a third-party short URL.
+
+* **Off by default.** Turn it on under **GT Links > Integrations > Social sharing**, then choose **Custom** as the shortener in Novashare.
+* **No code or API key.** GT Link Manager answers Novashare's `novashare_short_link_url` filter on your own site and adds no external request.
+* **One link per shared URL.** Each link is created on first share, uses your link defaults, and goes in a **Novashare** category.
+* **Published content only.** Only published posts, pages and other public post types on your site are shortened, so a link can't be made to point anywhere else.
+
+= Advanced Integrations =
+
+For custom work beyond the built-in integrations, the **[Developer Reference](https://gauravtiwari.org/course/gt-link-manager-training/developer-reference-1771422601/)** includes step-by-step integration guides for:
+
 * **Tracking.** Custom click logging to a database table, dashboard widget, and UTM parameter passthrough
 * **Automation.** Webhook notifications for Zapier, Make, and n8n
 * **Advanced redirects.** Role-based redirects (route by user role) and geo-based redirects (route by location)
@@ -164,7 +195,21 @@ Yes. GT Link Manager is built for **speed and simplicity**. It uses custom datab
 
 Yes. **Basic click counts** keep independent lifetime totals. **Advanced Analytics** adds date trends, referring posts and websites, page-to-link reports, countries, devices, browsers and campaigns. Both are opt-in and can be enabled separately.
 
-Advanced Analytics adds no visitor script or cookie. It counts eligible redirect requests rather than unique visitors. You can also use `gtlm_before_redirect` for external analytics integrations.
+Advanced Analytics adds no visitor script or cookie. It counts eligible redirect requests rather than unique visitors.
+
+= Does it work with Google Analytics, Independent Analytics, or my analytics plugin? =
+
+Yes. Open **GT Links > Integrations** and turn on your tool. GA4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky get each click from your server. Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress record it in their own reports. Google Tag Manager, Fathom, and Microsoft Clarity have no server API, so a small script reports clicks on your own pages.
+
+Jetpack Stats and Cloudflare Web Analytics aren't supported because neither documents a way to record custom events. Clicks also count as page views in Independent Analytics and Koko Analytics, because a page view is what their free versions can record.
+
+= Will analytics integrations slow down my redirects? =
+
+No. The redirect goes out first and the analytics work happens afterwards. Each service gets a two-second limit, so a service that's down costs a little server time and nothing for the visitor.
+
+= Do I need consent to use analytics integrations? =
+
+That depends on your tools and where your visitors are. GT Link Manager's suggested privacy policy text updates to name the tools you've turned on. To require consent, return false from the `gtlm_integrations_should_send` filter until your consent tool says yes. Browser tags follow whatever consent setup already controls those tags.
 
 = Can I keep reports forever? =
 
@@ -180,7 +225,9 @@ The plugin hooks into WordPress `init` at **priority 0**, before template render
 
 = Can I customize which users can manage links? =
 
-Yes. By default, any user with the `edit_posts` capability can manage links. Use the `gtlm_capabilities` filter to change this per context (e.g., require `manage_options` for settings but allow `edit_posts` for link creation).
+Yes. By default, any user with the `edit_posts` capability can manage standard links and move them to the Trash. Use the `gtlm_capabilities` filter to change this per context (e.g., require `manage_options` for settings but allow `edit_posts` for link creation).
+
+Direct links, regex links and permanent deletion need the `manage_options` capability, because those links can answer at any path on the site and deletion can't be undone. `gtlm_capabilities` doesn't change this. To hand them to another role, use the `gtlm_restricted_capability` filter, which passes `advanced_links` or `permanent_delete` as its context.
 
 = Is GT Link Manager really free? =
 
@@ -246,6 +293,14 @@ To drop it for a single link instead, turn on **Advanced Redirects** and use dir
 
 WordPress paths such as `wp-admin`, `wp-json`, `wp-login.php`, and `feed` are blocked as slugs, because claiming one of those would break the site rather than shorten a link.
 
+= Does it work with Novashare? =
+
+Yes. Turn it on under **GT Links > Integrations > Social sharing**. Then, in Novashare, open **Configuration**, go to **Link Shortening**, turn on **Enable Link Shortening** and choose **Custom**. You don't need any code.
+
+Each shared URL gets one link in a **Novashare** category, using your link defaults. Only published posts, pages and other public post types on your site are shortened, so a link can't be made to point anywhere else. UTM tags are the only query parameters allowed, apart from the IDs plain permalinks use. Each different set of UTM values gets its own link, so with Novashare's UTM tracking on, expect one per network. If custom code adds the visitor's own query string to shared URLs, such as through Novashare's `novashare_permalink` filter, each new UTM value creates another link, and the `gtlm_novashare_should_shorten` filter can refuse those. Clicks count like any other link.
+
+Novashare saves the short link it receives. If you trash or deactivate one of these links, shares that already use it stop working, and GT Link Manager won't bring it back. Short links Novashare saved before you switched stay as they are.
+
 = My geo rule is not matching. What should I check? =
 
 Country detection reads a header your CDN or server adds to the request, so the first question is whether anything is adding one. Open **GT Links > Settings** and use **Check Detection**. It lists every country header present on the current request with its raw value, and runs a loopback test so you can confirm detection works even on a local install with no CDN in front of it.
@@ -262,6 +317,25 @@ Basic click counting stores a running total independently. Advanced analytics ca
 
 Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Otherwise links and retained reports stay in place. Deactivation pauses advanced collection and preserves data; reactivation does not silently resume collection.
 
+== External services ==
+
+GT Link Manager contacts no external service by default. It only contacts a service below if you turn it on under **GT Links > Integrations** and enter your own account details. Each service is contacted from your server after a visitor follows a short link, or when you click **Save and send test event**.
+
+Every service receives the short link's address, name and slug, its destination URL and domain, its category name, the redirect status, the referring page without its query string, and the visitor's browser user agent. A random identifier is sent with each click. The visitor's IP address, the country detected for the redirect, and an identifier that stays the same for a visitor for one day are only sent if you turn on **IP address and country** on the same screen.
+
+* **Google Analytics 4 (Google).** Measures traffic. Data goes to `www.google-analytics.com` or `region1.google-analytics.com`. The visitor's existing Google Analytics client and session identifiers are included when they have those cookies. [Terms](https://policies.google.com/terms), [Privacy Policy](https://policies.google.com/privacy).
+* **Plausible Analytics (beta).** Measures traffic. Data goes to `plausible.io` or the self-hosted address you enter. [Terms](https://plausible.io/terms), [Privacy Policy](https://plausible.io/privacy).
+* **Matomo.** Measures traffic. Data goes to the Matomo address you enter. [Terms](https://matomo.org/website-terms/), [Privacy Policy](https://matomo.org/privacy-policy/).
+* **Umami.** Measures traffic. Data goes to `gateway.umami.is` or the self-hosted address you enter. [Terms](https://umami.is/terms), [Privacy Policy](https://umami.is/privacy).
+* **Simple Analytics.** Measures traffic. Data goes to `queue.simpleanalyticscdn.com`. [Terms](https://www.simpleanalytics.com/general-terms-and-conditions), [Privacy Policy](https://www.simpleanalytics.com/privacy-policy).
+* **PostHog.** Product analytics. Data goes to `us.i.posthog.com`, `eu.i.posthog.com`, or the self-hosted address you enter. [Terms](https://posthog.com/terms), [Privacy Policy](https://posthog.com/privacy).
+* **Mixpanel.** Product analytics. Data goes to `api.mixpanel.com`, `api-eu.mixpanel.com`, or `api-in.mixpanel.com`. [Terms](https://mixpanel.com/legal/terms-of-use/), [Privacy Policy](https://mixpanel.com/legal/privacy-policy/).
+* **Amplitude.** Product analytics. Data goes to `api2.amplitude.com` or `api.eu.amplitude.com`. [Terms](https://amplitude.com/terms), [Privacy Policy](https://amplitude.com/privacy).
+* **Rybbit.** Measures traffic. Data goes to `app.rybbit.io` or the self-hosted address you enter. [Terms](https://rybbit.com/terms-and-conditions), [Privacy Policy](https://rybbit.com/privacy).
+* **Clicky.** Measures traffic. Data goes to `in.getclicky.com`. [Terms](https://clicky.com/terms), [Privacy Policy](https://clicky.com/terms/privacy).
+
+The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and GA4 in browser mode) make no request of their own. The plugin's script calls the tag that's already on your page, and that tag sends the short link's slug and address under its own terms.
+
 == Screenshots ==
 
 1. **All Links**, admin list with search, filters, status views, and bulk actions
@@ -269,8 +343,42 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 3. **Categories**, manage link categories with parent/child hierarchy
 4. **Settings**, configure prefix, defaults, flush permalinks, and run diagnostics
 5. **Import/Export**, CSV import with column mapping preview and preset support
+6. **Analytics**, recorded clicks over time, top links, and a breakdown by source, country, device, browser, OS, and campaign
+7. **Settings**, link defaults, lifetime click counts, and AI tool setup, with a circled ? that opens the matching documentation
+8. **Country-based redirects**, detection method, a live country check, and what the plugin stores
 
 == Changelog ==
+
+= 1.12.0 =
+* New: Help links. A circled **?** next to screens and settings opens the matching documentation page in a new tab.
+* New: Novashare short links. Turn it on under **GT Links > Integrations > Social sharing**, choose **Custom** as the link shortener in Novashare, and shared posts use your branded links with no code. Each shared URL gets one link in a Novashare category.
+* New: `gtlm_novashare_should_shorten` filter to decide which shared URLs become branded links.
+* New: Analytics integrations under **GT Links > Integrations**. Send short link clicks to Google Analytics 4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky from your server, or to Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress on your own site, with no code. Everything is off by default.
+* New: Browser tag support for Google Tag Manager, Fathom Analytics, and Microsoft Clarity, which have no server-side API. GA4 can use this route too if you'd rather not create an API secret.
+* New: Settings detection for MonsterInsights, ExactMetrics, Analytify, Site Kit, GA Google Analytics, Plausible Analytics, Connect Matomo, Clicky, and GTM4WP. Leave a field blank to use what they already hold.
+* New: A setting for sharing visitor IP addresses and countries with analytics services, off by default. The suggested privacy policy text updates to name the tools you've turned on and what they receive.
+* New: Six developer hooks for integrations, including `gtlm_integrations_should_send` for visitor consent.
+* Improved: On LiteSpeed servers the redirect now reaches the visitor before click counting starts, as it already did on PHP-FPM.
+* Fixed: REST link lists returned an empty `link_mode` for every link, and PHP logged an undefined variable warning. This started in 1.11.0.
+* Changed: Only administrators can now create, change, trash, restore, toggle or copy direct and regex links, or permanently delete any link. This covers the dashboard, REST API, CSV import and AI agents. Contributors, Authors and Editors keep standard links and can still move them to the Trash. The new `gtlm_restricted_capability` filter hands this to another role.
+* Fixed: Links with non-Latin slugs and direct paths with encoded characters now resolve.
+* Fixed: A direct path entered with slashes, such as `/old-page/`, now matches. Links with a custom port, an underscore or an international domain in the destination no longer return a 404.
+* Fixed: Bulk copy and CSV auto-suffix no longer rewrite direct paths as slugs. A regex rule can't take a suffix, so it's now counted as failed or skipped instead of being corrupted.
+* Fixed: Regex patterns and replacements keep `<`, `>` and `%xx` when saved, and `$10` in a replacement no longer reads as `$1` followed by `0`.
+* Fixed: Editing a direct or regex link on a site with an object cache now clears its cached copy.
+* Fixed: Turning off geolocation on a link now pauses its rules instead of deleting them.
+* Fixed: A partial REST update to a category no longer clears the fields it left out, and a REST update can no longer blank a link's slug.
+* Fixed: Restoring or toggling a link through REST returns the same shape as every other link response, and a 404 for a missing link.
+* Fixed: The privacy text on the link editor and Settings screens now says so when this site shares visitor data with an analytics service.
+* Fixed: The editor's link inserter only offers active links with a usable address, and inserts the link name when no text is selected.
+* Fixed: Bulk **Set category** with nothing chosen no longer clears categories. A new **No category** option does that on purpose.
+* Fixed: Category counts no longer include trashed links. Stored counts are corrected on upgrade.
+* Fixed: Trash retention uses site time, so links aren't purged hours early on sites west of UTC.
+* Fixed: The rewrite rule is removed on deactivation, staged CSV files are deleted on uninstall, and a visitor can no longer cancel the geo self-test.
+* Fixed: Smaller issues with copy buttons on plain HTTP admin screens, referrers containing quotes, the rel filter on older rows, the Diagnostics sample link, the geo preview, and validation errors while editing a link.
+* Fixed: The analytics Campaigns tab and CSV export show a campaign's UTM values instead of a bare number, including campaigns you've since removed. In the CSV, the `value` column of campaign rows changes to match.
+* Fixed: The analytics REST enable and resume routes accept `consent=true`, as documented. Other values, such as `yes`, are still refused.
+* Updated: translation template.
 
 = 1.11.0 =
 * New: Prefix-free links. Turn it on under **Settings > Advanced redirects and data cleanup** to serve every standard link from the site root, as `yoursite.com/your-slug`. Links already shared with the prefix keep redirecting, so nothing published breaks. The settings screen lists links that share a URL with a published page or post, and saving a link that takes over a post or page URL shows a warning.
@@ -485,6 +593,9 @@ Uninstalling removes data only when **Delete Data on Uninstall** is enabled. Oth
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.12.0 =
+Direct links, regex links and permanent delete now require an administrator, so other roles lose that access (`gtlm_restricted_capability` restores it). Also adds 20 analytics integrations (Plausible in beta) and Novashare short links, all off by default. Category counts are corrected on upgrade.
 
 = 1.11.0 =
 Adds optional prefix-free links and a Random slug button. Prefix-free mode is off by default, and existing /go/ links keep working when you turn it on. No database changes.

@@ -170,6 +170,51 @@ class GTLM_DB {
 		return '' !== $pattern && strlen( $pattern ) <= 255 && false !== @preg_match( '#' . $pattern . '#', '' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
+	/**
+	 * A slug as stored: a sanitized slug, a path with no outer slashes, or a regex pattern.
+	 *
+	 * The redirect compares direct paths with their slashes trimmed, so a slug saved
+	 * as /old-page/ would otherwise never match.
+	 */
+	public static function clean_slug( string $slug, string $mode ): string {
+		if ( 'direct' === $mode ) {
+			return trim( sanitize_text_field( $slug ), '/' );
+		}
+
+		return 'regex' === $mode ? self::clean_pattern( $slug ) : sanitize_title( $slug );
+	}
+
+	/**
+	 * A regex pattern or replacement, kept intact.
+	 *
+	 * sanitize_text_field() would strip <name> from (?<name>...) and %20 from an encoded
+	 * path. These values are always compared or escaped on output, never printed raw.
+	 */
+	public static function clean_pattern( string $value ): string {
+		return trim( (string) preg_replace( '/[\x00-\x1f\x7f]/', '', wp_check_invalid_utf8( $value ) ) );
+	}
+
+	/**
+	 * The first free slug based on $slug, or '' for a regex rule: adding a suffix
+	 * to a pattern changes what it matches, so a copy needs a pattern of its own.
+	 */
+	public function unique_slug( string $slug, string $mode = 'standard' ): string {
+		if ( 'regex' === $mode ) {
+			return '';
+		}
+
+		$base      = self::clean_slug( $slug, $mode );
+		$base      = '' !== $base ? $base : 'link';
+		$candidate = $base;
+		$suffix    = 2;
+		while ( null !== $this->get_link_by_exact_slug( $candidate ) ) {
+			$candidate = $base . '-' . $suffix;
+			++$suffix;
+		}
+
+		return $candidate;
+	}
+
 	/** Exact lookup for write/import uniqueness; never apply standard-slug normalization here. */
 	public function get_link_by_exact_slug( string $slug ): ?array {
 		global $wpdb;
@@ -201,7 +246,7 @@ class GTLM_DB {
 		$link_id = (int) $wpdb->insert_id;
 
 		if ( $link_id > 0 ) {
-			$this->maybe_increment_category_count( (int) $insert['category_id'] );
+			$this->recount_category( (int) $insert['category_id'] );
 			$this->delete_slug_cache( (string) $insert['slug'], (string) ( $insert['link_mode'] ?? 'standard' ) );
 			do_action( 'gtlm_after_save', $link_id, $insert );
 		}
@@ -247,8 +292,8 @@ class GTLM_DB {
 		$old_cat = (int) ( $existing['category_id'] ?? 0 );
 		$new_cat = (int) ( $update['category_id'] ?? 0 );
 		if ( $old_cat !== $new_cat ) {
-			$this->maybe_decrement_category_count( $old_cat );
-			$this->maybe_increment_category_count( $new_cat );
+			$this->recount_category( $old_cat );
+			$this->recount_category( $new_cat );
 		}
 
 		$this->delete_slug_cache( (string) $existing['slug'], (string) ( $existing['link_mode'] ?? 'standard' ) );
@@ -286,6 +331,7 @@ class GTLM_DB {
 		}
 
 		$this->delete_slug_cache( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
+		$this->recount_category( (int) ( $link['category_id'] ?? 0 ) );
 		return true;
 	}
 
@@ -316,6 +362,7 @@ class GTLM_DB {
 		$link = $this->get_link_by_id( $id );
 		if ( is_array( $link ) ) {
 			$this->delete_slug_cache( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
+			$this->recount_category( (int) ( $link['category_id'] ?? 0 ) );
 		}
 
 		return true;
@@ -343,7 +390,7 @@ class GTLM_DB {
 		}
 
 		$this->delete_slug_cache( (string) $link['slug'], (string) ( $link['link_mode'] ?? 'standard' ) );
-		$this->maybe_decrement_category_count( (int) ( $link['category_id'] ?? 0 ) );
+		$this->recount_category( (int) ( $link['category_id'] ?? 0 ) );
 		do_action( 'gtlm_after_delete', $id, $link );
 
 		return true;
@@ -514,8 +561,9 @@ class GTLM_DB {
 		}
 
 		global $wpdb;
-		$table  = self::links_table();
-		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
+		$table = self::links_table();
+		// trashed_at holds site time, from current_time( 'mysql' ).
+		$cutoff = wp_date( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$ids = $wpdb->get_col(
@@ -591,63 +639,18 @@ class GTLM_DB {
 			return;
 		}
 
-		if ( 'standard' === $link_mode ) {
-			$sanitized = $this->sanitize_slug( $slug );
-			if ( '' !== $sanitized ) {
-				wp_cache_delete( $this->cache_key_for_slug( $sanitized ), self::CACHE_GROUP );
-			}
-		} elseif ( 'direct' === $link_mode ) {
+		// The prefixed route looks up every mode by slug, so a direct or regex row is
+		// also cached under its slug key and has to leave that key too.
+		$sanitized = $this->sanitize_slug( $slug );
+		if ( '' !== $sanitized ) {
+			wp_cache_delete( $this->cache_key_for_slug( $sanitized ), self::CACHE_GROUP );
+		}
+
+		if ( 'direct' === $link_mode ) {
 			wp_cache_delete( 'direct:' . sanitize_text_field( $slug ), self::CACHE_GROUP );
 		} elseif ( 'regex' === $link_mode ) {
 			wp_cache_delete( 'regex_rules', self::CACHE_GROUP );
 		}
-	}
-
-	/**
-	 * Lightweight search for editor inserter.
-	 * Excludes trashed and inactive links.
-	 *
-	 * @return array<int, array<string, mixed>>
-	 */
-	public function search_links( string $search = '', int $limit = 20 ): array {
-		global $wpdb;
-
-		$table = self::links_table();
-		$limit = max( 1, min( 100, $limit ) );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$sql  = "SELECT id, name, slug, rel FROM {$table} WHERE trashed_at IS NULL AND is_active = 1 AND (link_mode = 'standard' OR link_mode IS NULL)";
-		$args = array();
-
-		$search = sanitize_text_field( $search );
-		if ( '' !== $search ) {
-			$like   = '%' . $wpdb->esc_like( $search ) . '%';
-			$sql   .= ' AND (name LIKE %s OR slug LIKE %s)';
-			$args[] = $like;
-			$args[] = $like;
-		}
-
-		$sql   .= ' ORDER BY name ASC LIMIT %d';
-		$args[] = $limit;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$sql = $wpdb->prepare( $sql, $args );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
-
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		return array_map(
-			static function ( array $row ): array {
-				return array(
-					'id'   => (int) $row['id'],
-					'name' => sanitize_text_field( (string) $row['name'] ),
-					'slug' => sanitize_title( (string) $row['slug'] ),
-					'rel'  => sanitize_text_field( (string) $row['rel'] ),
-				);
-			},
-			$rows
-		);
 	}
 
 	/**
@@ -807,7 +810,8 @@ class GTLM_DB {
 		if ( ! empty( $filters['rel'] ) ) {
 			$rel_value = sanitize_key( (string) $filters['rel'] );
 			if ( in_array( $rel_value, array( 'nofollow', 'sponsored', 'ugc' ), true ) ) {
-				$sql     .= ' AND FIND_IN_SET(%s, rel)';
+				// Older rows can hold "nofollow, sponsored" with a space.
+				$sql     .= " AND FIND_IN_SET(%s, REPLACE(rel, ' ', ''))";
 				$params[] = $rel_value;
 			}
 		}
@@ -1049,7 +1053,7 @@ class GTLM_DB {
 		$row['is_active']         = (int) ( $row['is_active'] ?? 1 );
 		$row['category_id']       = isset( $row['category_id'] ) ? (int) $row['category_id'] : 0;
 		$row['link_mode']         = $this->sanitize_link_mode( (string) ( $row['link_mode'] ?? 'standard' ) );
-		$row['regex_replacement'] = sanitize_text_field( (string) ( $row['regex_replacement'] ?? '' ) );
+		$row['regex_replacement'] = self::clean_pattern( (string) ( $row['regex_replacement'] ?? '' ) );
 		$row['priority']          = (int) ( $row['priority'] ?? 10 );
 		$row['geo_mode']          = $this->sanitize_geo_mode( (string) ( $row['geo_mode'] ?? 'off' ) );
 		$row['rel']               = $this->sanitize_rel_string( (string) $row['rel'] );
@@ -1063,12 +1067,7 @@ class GTLM_DB {
 		// decodes lazily, so links with geo_mode 'off' never pay for it.
 		$row['geo_rules'] = isset( $row['geo_rules'] ) ? (string) $row['geo_rules'] : '';
 
-		// Only sanitize_title for standard links; direct/regex slugs need special characters preserved.
-		if ( 'standard' === $row['link_mode'] ) {
-			$row['slug'] = $this->sanitize_slug( (string) $row['slug'] );
-		} else {
-			$row['slug'] = sanitize_text_field( (string) $row['slug'] );
-		}
+		$row['slug'] = self::clean_slug( (string) $row['slug'], $row['link_mode'] );
 
 		return $row;
 	}
@@ -1082,12 +1081,7 @@ class GTLM_DB {
 		$link_mode = $this->sanitize_link_mode( (string) ( $data['link_mode'] ?? 'standard' ) );
 		$geo_mode  = $this->sanitize_geo_mode( (string) ( $data['geo_mode'] ?? 'off' ) );
 
-		// Standard links use sanitize_title; direct/regex links preserve special characters.
-		if ( 'standard' === $link_mode ) {
-			$slug = $this->sanitize_slug( (string) ( $data['slug'] ?? '' ) );
-		} else {
-			$slug = sanitize_text_field( (string) ( $data['slug'] ?? '' ) );
-		}
+		$slug = self::clean_slug( (string) ( $data['slug'] ?? '' ), $link_mode );
 
 		return array(
 			'name'              => sanitize_text_field( (string) ( $data['name'] ?? '' ) ),
@@ -1098,10 +1092,11 @@ class GTLM_DB {
 			'noindex'           => ! empty( $data['noindex'] ) ? 1 : 0,
 			'is_active'         => isset( $data['is_active'] ) ? ( ! empty( $data['is_active'] ) ? 1 : 0 ) : 1,
 			'link_mode'         => $link_mode,
-			'regex_replacement' => sanitize_text_field( (string) ( $data['regex_replacement'] ?? '' ) ),
+			'regex_replacement' => self::clean_pattern( (string) ( $data['regex_replacement'] ?? '' ) ),
 			'priority'          => max( 0, (int) ( $data['priority'] ?? 10 ) ),
 			'geo_mode'          => $geo_mode,
-			'geo_rules'         => 'off' === $geo_mode ? '' : GTLM_Geo::encode_rules( $data['geo_rules'] ?? '' ),
+			// Kept while geo_mode is off: unticking the box pauses rules, it doesn't delete them.
+			'geo_rules'         => GTLM_Geo::encode_rules( $data['geo_rules'] ?? '' ),
 			'category_id'       => absint( $data['category_id'] ?? 0 ),
 			'tags'              => sanitize_text_field( (string) ( $data['tags'] ?? '' ) ),
 			'notes'             => sanitize_textarea_field( (string) ( $data['notes'] ?? '' ) ),
@@ -1255,7 +1250,8 @@ class GTLM_DB {
 		return 'slug:' . $slug;
 	}
 
-	private function maybe_increment_category_count( int $category_id ): void {
+	/** A category's count is its links outside the Trash. Recounted, not stepped, so it can't drift. */
+	private function recount_category( int $category_id ): void {
 		if ( $category_id <= 0 ) {
 			return;
 		}
@@ -1263,31 +1259,25 @@ class GTLM_DB {
 		global $wpdb;
 
 		$table = self::categories_table();
+		$links = self::links_table();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->query(
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"UPDATE {$table} SET count = count + 1 WHERE id = %d",
+				"UPDATE {$table} SET count = ( SELECT COUNT(*) FROM {$links} WHERE category_id = %d AND trashed_at IS NULL ) WHERE id = %d",
+				$category_id,
 				$category_id
 			)
 		);
 	}
 
-	private function maybe_decrement_category_count( int $category_id ): void {
-		if ( $category_id <= 0 ) {
-			return;
-		}
-
+	/** Correct every stored category count once, for sites that counted trashed links. */
+	public function recount_categories(): void {
 		global $wpdb;
 
 		$table = self::categories_table();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$wpdb->query(
-			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"UPDATE {$table} SET count = GREATEST(count - 1, 0) WHERE id = %d",
-				$category_id
-			)
-		);
+		$links = self::links_table();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$wpdb->query( "UPDATE {$table} c SET c.count = ( SELECT COUNT(*) FROM {$links} l WHERE l.category_id = c.id AND l.trashed_at IS NULL )" );
 	}
 }

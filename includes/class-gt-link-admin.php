@@ -53,6 +53,13 @@ class GTLM_Admin {
 				GTLM_Analytics_Controller::export();
 			}
 		);
+		add_action(
+			'admin_post_gtlm_integrations_save',
+			static function (): void {
+				require_once GTLM_PATH . 'includes/class-gtlm-integrations-admin.php';
+				GTLM_Integrations_Admin::handle_save();
+			}
+		);
 		add_action( 'admin_bar_menu', array( $this, 'admin_bar_new_link' ), 80 );
 		add_filter( 'dashboard_glance_items', array( $this, 'dashboard_glance_items' ) );
 		add_filter( 'default_hidden_columns', array( $this, 'default_hidden_columns' ), 10, 2 );
@@ -101,6 +108,7 @@ class GTLM_Admin {
 		add_submenu_page( 'gtlm-links', esc_html__( 'Add New', 'gt-link-manager' ), esc_html__( 'Add New', 'gt-link-manager' ), $capability, 'gtlm-links-edit', array( $this->pages, 'render_edit_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Categories', 'gt-link-manager' ), esc_html__( 'Categories', 'gt-link-manager' ), $capability, 'gtlm-links-categories', array( $this->pages, 'render_categories_page' ) );
 		add_submenu_page( 'gtlm-links', __( 'Analytics', 'gt-link-manager' ), __( 'Analytics', 'gt-link-manager' ), (string) apply_filters( 'gtlm_analytics_capability', 'manage_options' ), 'gtlm-links-analytics', array( $this->pages, 'render_analytics_page' ) );
+		add_submenu_page( 'gtlm-links', esc_html__( 'Integrations', 'gt-link-manager' ), esc_html__( 'Integrations', 'gt-link-manager' ), 'manage_options', 'gtlm-links-integrations', array( $this->pages, 'render_integrations_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Settings', 'gt-link-manager' ), esc_html__( 'Settings', 'gt-link-manager' ), 'manage_options', 'gtlm-links-settings', array( $this->pages, 'render_settings_page' ) );
 		add_submenu_page( 'gtlm-links', esc_html__( 'Import / Export', 'gt-link-manager' ), esc_html__( 'Import / Export', 'gt-link-manager' ), $capability, 'gtlm-links-import-export', array( $this->pages, 'render_import_export_page' ) );
 	}
@@ -178,7 +186,7 @@ class GTLM_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics', 'gtlm-links-ai-agents' ), true ) ) {
+		if ( ! in_array( $page, array( 'gtlm-links', 'gtlm-links-edit', 'gtlm-links-categories', 'gtlm-links-integrations', 'gtlm-links-settings', 'gtlm-links-import-export', 'gtlm-links-analytics', 'gtlm-links-ai-agents' ), true ) ) {
 			return;
 		}
 
@@ -328,6 +336,10 @@ class GTLM_Admin {
 			wp_send_json_error();
 		}
 
+		if ( ! GTLM_Settings::can_change_link( $link ) ) {
+			wp_send_json_error( array( 'message' => __( 'Only administrators can change direct and regex links.', 'gt-link-manager' ) ), 403 );
+		}
+
 		$updates = array(
 			'url'           => $url,
 			'redirect_type' => $redirect_type,
@@ -397,6 +409,10 @@ class GTLM_Admin {
 			return;
 		}
 
+		$integrations    = $this->privacy_integrations();
+		$tracking_script = ! empty( $integrations['browser'] );
+		$share_visitor   = ! empty( $integrations['share_visitor_data'] );
+
 		// The redirect paragraph has to describe what the site actually does.
 		// Claiming nothing is logged while the click counter is switched on
 		// would be a false statement in the site's own privacy policy.
@@ -410,18 +426,18 @@ class GTLM_Admin {
 		}
 
 		$content =
-			'<p>' . esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts, set cookies, or add tracking scripts.', 'gt-link-manager' ) . '</p>' .
+			'<p>' . ( $tracking_script ? esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts or set cookies.', 'gt-link-manager' ) : esc_html__( 'GT Link Manager stores the short links you create. It does not create user accounts, set cookies, or add tracking scripts.', 'gt-link-manager' ) ) . '</p>' .
 			'<h3>' . esc_html__( 'Redirects', 'gt-link-manager' ) . '</h3>' .
 			$redirect_paragraph .
 			'<h3>' . esc_html__( 'Geolocation targeting', 'gt-link-manager' ) . '</h3>' .
-			'<p>' . esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never reads or processes the visitor\'s IP address, never contacts an external geolocation service, and never stores or transmits the country. The value exists only for the duration of that single request and is used solely to choose which URL to redirect to.', 'gt-link-manager' ) . '</p>' .
+			'<p>' . ( $share_visitor ? esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never contacts an external geolocation service and never stores the country. It uses the value to choose which URL to redirect to, and this site also shares it with the analytics services described below.', 'gt-link-manager' ) : esc_html__( 'If geolocation targeting is enabled, the plugin reads a two-letter country code from a request header that your CDN or web server has already added to the request — for example Cloudflare\'s CF-IPCountry header. The plugin never reads or processes the visitor\'s IP address, never contacts an external geolocation service, and never stores or transmits the country. The value exists only for the duration of that single request and is used solely to choose which URL to redirect to.', 'gt-link-manager' ) ) . '</p>' .
 			'<p>' . esc_html__( 'Because the country is derived from data your CDN already collects, the relevant disclosure usually belongs with your CDN provider rather than with this plugin. Check your CDN\'s own privacy documentation.', 'gt-link-manager' ) . '</p>' .
 			'<p>' . esc_html__( 'Note: if you have added click tracking or analytics through the plugin\'s gtlm_before_redirect hook, that code receives the detected country and may store or transmit it. Any such storage is the responsibility of the integration you added, not of this plugin.', 'gt-link-manager' ) . '</p>';
 
 		if ( $this->settings->analytics_initialized() ) {
 			$content  = '<p>' . esc_html__( 'GT Link Manager stores configured links and redirects visitors. Basic lifetime click counts, if enabled, are independent of advanced analytics.', 'gt-link-manager' ) . '</p>';
 			$content .= '<p>' . esc_html__( 'This site has opted in to advanced link analytics. Eligible redirect requests may store a short-lived timestamp, link ID, referring hostname and page URL without credentials, query strings or fragments, coarse device/browser/OS families, an allowlisted campaign ID, redirect type, and optionally a country code supplied by a trusted proxy and whether a country rule matched. After the individual-record period, clicks are kept only as daily totals per link, grouped by these same fields. On a link with very few clicks, a daily total can still describe a single click: its date, referring page, country and device type. Pausing collection retains previously collected reports until their retention period ends or they are deleted.', 'gt-link-manager' ) . '</p>';
-			$content .= '<p>' . esc_html__( 'The plugin does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or referring URL credentials, query strings or fragments, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required.', 'gt-link-manager' ) . '</p>';
+			$content .= '<p>' . esc_html__( 'Advanced link analytics does not set analytics cookies, inject visitor tracking scripts, store IP addresses or IP hashes, retain raw user agents or referring URL credentials, query strings or fragments, or identify unique visitors. It does not contact an external analytics or geolocation service. Browser referrer restrictions may leave the source unknown. Site integrations can further suppress collection, including when visitor consent is required.', 'gt-link-manager' ) . '</p>';
 			$config   = get_option( 'gtlm_analytics', array() );
 			if ( is_array( $config ) && isset( $config['event_days'], $config['summary_days'] ) ) {
 				if ( 0 === (int) $config['summary_days'] ) {
@@ -433,7 +449,65 @@ class GTLM_Admin {
 				}
 			}
 		}
+		$content .= $this->privacy_integrations_section( $integrations );
 		wp_add_privacy_policy_content( __( 'GT Link Manager', 'gt-link-manager' ), $content );
+	}
+
+	/**
+	 * Which enabled analytics tools the privacy text has to name.
+	 *
+	 * @return array{service: array<int, string>, plugin: array<int, string>, browser: array<int, string>, share_visitor_data: bool}
+	 */
+	private function privacy_integrations(): array {
+		$found = array(
+			'service'            => array(),
+			'plugin'             => array(),
+			'browser'            => array(),
+			'share_visitor_data' => false,
+		);
+		$keys  = $this->settings->enabled_integrations();
+		if ( ! $keys ) {
+			return $found;
+		}
+
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
+		foreach ( GTLM_Integrations::tools() as $key => $tool ) {
+			if ( ! in_array( $key, $keys, true ) ) {
+				continue;
+			}
+			$type             = in_array( 'ga4_browser', $keys, true ) && 'ga4' === $key ? 'browser' : (string) $tool['type'];
+			$found[ $type ][] = (string) $tool['label'];
+		}
+		$found['share_visitor_data'] = GTLM_Integrations::shares_visitor_data();
+
+		return $found;
+	}
+
+	/**
+	 * @param array{service: array<int, string>, plugin: array<int, string>, browser: array<int, string>, share_visitor_data: bool} $integrations Enabled tools.
+	 */
+	private function privacy_integrations_section( array $integrations ): string {
+		if ( ! $integrations['service'] && ! $integrations['plugin'] && ! $integrations['browser'] ) {
+			return '';
+		}
+
+		$content = '<h3>' . esc_html__( 'Analytics integrations', 'gt-link-manager' ) . '</h3>';
+		if ( $integrations['service'] ) {
+			/* translators: %s: comma-separated analytics service names. */
+			$content .= '<p>' . esc_html( sprintf( __( 'When a visitor follows a short link, this site\'s server sends these analytics services a record of the click: %s. The record contains the short link and its destination, the referring page without its query string, and the visitor\'s browser user agent.', 'gt-link-manager' ), implode( ', ', $integrations['service'] ) ) ) . '</p>';
+			$content .= '<p>' . ( $integrations['share_visitor_data'] ? esc_html__( 'This site also shares the visitor\'s IP address and any country detected for the redirect, so those services can report location and count returning visitors.', 'gt-link-manager' ) : esc_html__( 'The visitor\'s IP address and country are not included, and each click is sent with a new random identifier.', 'gt-link-manager' ) ) . '</p>';
+			$content .= '<p>' . esc_html__( 'If Google Analytics is one of these services and the visitor already has its cookies, the click uses the same Google Analytics client identifier so that it joins their existing session.', 'gt-link-manager' ) . '</p>';
+		}
+		if ( $integrations['plugin'] ) {
+			/* translators: %s: comma-separated plugin names. */
+			$content .= '<p>' . esc_html( sprintf( __( 'Short link clicks are also recorded by these analytics plugins on this site, under their own privacy settings: %s.', 'gt-link-manager' ), implode( ', ', $integrations['plugin'] ) ) ) . '</p>';
+		}
+		if ( $integrations['browser'] ) {
+			/* translators: %s: comma-separated analytics tool names. */
+			$content .= '<p>' . esc_html( sprintf( __( 'A small script on this site\'s pages reports clicks on short links to these analytics tools through the tags already on the page: %s. The script itself sets no cookies and stores nothing.', 'gt-link-manager' ), implode( ', ', $integrations['browser'] ) ) ) . '</p>';
+		}
+
+		return $content;
 	}
 
 	/**
@@ -698,6 +772,31 @@ class GTLM_Admin {
 	private function run_bulk_action( string $action, array $link_ids ): ?array {
 		$count    = 0;
 		$affected = array();
+		$refused  = false;
+
+		if ( 'bulk_permanent_delete' === $action && ! GTLM_Settings::can_delete_links_permanently() ) {
+			return array(
+				'notice'      => 'admin_only_delete',
+				'count'       => 0,
+				'undo_ids'    => array(),
+				'undo_action' => '',
+			);
+		}
+
+		// The list offers these rows no checkbox, but a stale page or a crafted request can still name them.
+		if ( ! GTLM_Settings::can_manage_advanced_links() ) {
+			$allowed  = array_values(
+				array_filter(
+					$link_ids,
+					function ( int $id ): bool {
+						$link = $this->db->get_link_by_id( $id );
+						return ! is_array( $link ) || GTLM_Settings::can_change_link( $link );
+					}
+				)
+			);
+			$refused  = count( $allowed ) !== count( $link_ids );
+			$link_ids = $allowed;
+		}
 
 		$simple = array(
 			'bulk_trash'            => array(
@@ -749,10 +848,22 @@ class GTLM_Admin {
 			}
 
 			return array(
-				'notice'      => $simple[ $action ]['notice'],
+				'notice'      => $refused ? 'bulk_admin_only' : $simple[ $action ]['notice'],
 				'count'       => $count,
 				'undo_ids'    => $affected,
 				'undo_action' => (string) $simple[ $action ]['undo'],
+			);
+		}
+
+		// Leaving the picker on its placeholder must not strip every selected link's category.
+		$picked      = isset( $_REQUEST['bulk_category_id'] ) ? (int) $_REQUEST['bulk_category_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$category_id = max( 0, $picked );
+		if ( 'bulk_set_category' === $action && 0 === $picked ) {
+			return array(
+				'notice'      => 'bulk_category_missing',
+				'count'       => 0,
+				'undo_ids'    => array(),
+				'undo_action' => '',
 			);
 		}
 
@@ -784,7 +895,6 @@ class GTLM_Admin {
 			}
 
 			if ( 'bulk_set_category' === $action ) {
-				$category_id = isset( $_REQUEST['bulk_category_id'] ) ? absint( $_REQUEST['bulk_category_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				if ( $this->db->update_link( $id, array_merge( $link, array( 'category_id' => $category_id ) ) ) ) {
 					++$count;
 				}
@@ -795,7 +905,7 @@ class GTLM_Admin {
 		}
 
 		return array(
-			'notice'      => 'bulk_updated',
+			'notice'      => $refused ? 'bulk_admin_only' : 'bulk_updated',
 			'count'       => $count,
 			'undo_ids'    => array(),
 			'undo_action' => '',
@@ -822,6 +932,15 @@ class GTLM_Admin {
 		check_admin_referer( 'gtlm_' . $action . '_' . $link_id );
 
 		$redirect_url = admin_url( 'admin.php?page=gtlm-links' );
+
+		if ( 'permanent_delete' === $action && ! GTLM_Settings::can_delete_links_permanently() ) {
+			$this->redirect_with_notice( $redirect_url, 'admin_only_delete' );
+		}
+
+		$link = $this->db->get_link_by_id( $link_id );
+		if ( is_array( $link ) && ! GTLM_Settings::can_change_link( $link ) ) {
+			$this->redirect_with_notice( $redirect_url, 'admin_only_links' );
+		}
 
 		switch ( $action ) {
 			case 'trash':
@@ -895,12 +1014,8 @@ class GTLM_Admin {
 			$link_mode = 'standard';
 		}
 
-		// Standard slugs use sanitize_title; direct/regex slugs preserve special characters.
-		if ( 'standard' === $link_mode ) {
-			$slug = sanitize_title( (string) wp_unslash( $_POST['slug'] ?? '' ) );
-		} else {
-			$slug = sanitize_text_field( (string) wp_unslash( $_POST['slug'] ?? '' ) );
-		}
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized for its link mode by clean_slug().
+		$slug = GTLM_DB::clean_slug( (string) wp_unslash( $_POST['slug'] ?? '' ), $link_mode );
 
 		$data = array(
 			'name'              => sanitize_text_field( (string) wp_unslash( $_POST['name'] ?? '' ) ),
@@ -911,7 +1026,8 @@ class GTLM_Admin {
 			'rel'               => $this->sanitize_rel_from_post( wp_unslash( $_POST['rel'] ?? array() ) ),
 			'noindex'           => ! empty( $_POST['noindex'] ) ? 1 : 0,
 			'link_mode'         => $link_mode,
-			'regex_replacement' => sanitize_text_field( (string) wp_unslash( $_POST['regex_replacement'] ?? '' ) ),
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by clean_pattern().
+			'regex_replacement' => GTLM_DB::clean_pattern( (string) wp_unslash( $_POST['regex_replacement'] ?? '' ) ),
 			'priority'          => max( 0, absint( $_POST['priority'] ?? 10 ) ),
 			'geo_mode'          => 'targeted' === sanitize_key( (string) wp_unslash( $_POST['geo_mode'] ?? 'off' ) ) ? 'targeted' : 'off',
 			'geo_rules'         => $this->geo_rules_from_post(),
@@ -920,44 +1036,33 @@ class GTLM_Admin {
 			'notes'             => sanitize_textarea_field( (string) wp_unslash( $_POST['notes'] ?? '' ) ),
 		);
 
+		$link_id  = absint( $_POST['link_id'] ?? 0 );
+		$edit_url = admin_url( 'admin.php?page=gtlm-links-edit' . ( $link_id > 0 ? '&link_id=' . $link_id : '' ) );
+		$existing = $link_id > 0 ? $this->db->get_link_by_id( $link_id ) : null;
+
+		// The form leaves this field out for anyone who can't use it, which isn't a request to clear it.
+		if ( ! isset( $_POST['regex_replacement'] ) ) {
+			$data['regex_replacement'] = (string) ( $existing['regex_replacement'] ?? '' );
+		}
+
+		if ( ! GTLM_Settings::can_save_link( $data, $existing ) ) {
+			$this->redirect_with_notice( $edit_url, 'admin_only_links' );
+		}
+
 		if ( '' === $data['name'] || '' === $data['url'] ) {
-			$this->redirect_with_notice( admin_url( 'admin.php?page=gtlm-links-edit' ), 'invalid' );
+			$this->redirect_with_notice( $edit_url, 'invalid' );
 		}
 
 		if ( '' === $data['slug'] ) {
 			$data['slug'] = sanitize_title( $data['name'] );
 		}
 
-		// Validate regex pattern.
-		if ( 'regex' === $link_mode && '' !== $data['slug'] ) {
-			// Reject overly complex patterns that could cause ReDoS.
-			if ( mb_strlen( $data['slug'] ) > 500 || false === preg_match( '#' . $data['slug'] . '#', 'test' ) ) {
-				$this->redirect_with_notice(
-					admin_url( 'admin.php?page=gtlm-links-edit' . ( absint( $_POST['link_id'] ?? 0 ) > 0 ? '&link_id=' . absint( $_POST['link_id'] ) : '' ) ),
-					'invalid_regex'
-				);
-			}
+		if ( ! GTLM_DB::valid_link_definition( $data ) ) {
+			$this->redirect_with_notice( $edit_url, 'regex' === $link_mode ? 'invalid_regex' : 'reserved_path' );
 		}
 
-		// Block reserved WordPress paths for direct links.
-		if ( 'direct' === $link_mode && '' !== $data['slug'] ) {
-			$reserved      = array( 'wp-admin', 'wp-content', 'wp-includes', 'wp-login.php', 'wp-cron.php', 'wp-json', 'xmlrpc.php', 'feed', 'comments' );
-			$first_segment = explode( '/', trim( $data['slug'], '/' ) )[0];
-			if ( in_array( strtolower( $first_segment ), $reserved, true ) ) {
-				$this->redirect_with_notice(
-					admin_url( 'admin.php?page=gtlm-links-edit' . ( absint( $_POST['link_id'] ?? 0 ) > 0 ? '&link_id=' . absint( $_POST['link_id'] ) : '' ) ),
-					'reserved_path'
-				);
-			}
-		}
-
-		$link_id = absint( $_POST['link_id'] ?? 0 );
-
-		if ( $link_id > 0 ) {
-			$existing = $this->db->get_link_by_id( $link_id );
-			if ( is_array( $existing ) ) {
-				$data['is_active'] = (int) ( $existing['is_active'] ?? 1 );
-			}
+		if ( is_array( $existing ) ) {
+			$data['is_active'] = (int) ( $existing['is_active'] ?? 1 );
 		}
 
 		$ok = $link_id > 0 ? $this->db->update_link( $link_id, $data ) : ( $this->db->insert_link( $data ) > 0 );
@@ -1111,7 +1216,17 @@ class GTLM_Admin {
 		$cats_exist = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_cats ) ) === $table_cats;
 		$tables_ok  = $links_exist && $cats_exist;
 
-		$sample           = $this->db->list_links( array(), 1, 1, 'id', 'DESC' );
+		// Only a live standard link can answer on the prefixed route.
+		$sample           = $this->db->list_links(
+			array(
+				'status'    => 'active',
+				'link_mode' => 'standard',
+			),
+			1,
+			1,
+			'id',
+			'DESC'
+		);
 		$loopback_ok      = null;
 		$loopback_message = __( 'No link available for runtime redirect test.', 'gt-link-manager' );
 
@@ -1354,6 +1469,11 @@ class GTLM_Admin {
 
 		$done = 0;
 		foreach ( $ids as $id ) {
+			$link = $this->db->get_link_by_id( $id );
+			if ( is_array( $link ) && ! GTLM_Settings::can_change_link( $link ) ) {
+				continue;
+			}
+
 			$ok = false;
 			switch ( $action ) {
 				case 'trash':
@@ -1392,6 +1512,10 @@ class GTLM_Admin {
 		}
 
 		check_admin_referer( 'gtlm_empty_trash' );
+
+		if ( ! GTLM_Settings::can_delete_links_permanently() ) {
+			$this->redirect_with_notice( add_query_arg( 'link_status', 'trash', admin_url( 'admin.php?page=gtlm-links' ) ), 'admin_only_delete' );
+		}
 
 		$deleted = $this->db->empty_trash();
 

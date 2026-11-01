@@ -44,6 +44,7 @@ All service classes use a static `init()` factory that takes dependencies, const
 | `GTLM_DB` | Data access layer. Core link SQL lives here; the optional GTLM_Analytics_DB subclass owns analytics schema, aggregation and reporting. Object cache per-slug with `gtlm_links` cache group. |
 | `GTLM_Redirect` | Early redirect on `init` priority 0. Parses REQUEST_URI, looks up slug, sends Location header + exit. |
 | `GTLM_Geo` | Country detection and geo rule resolution. Header-based only — reads `$_SERVER` keys the CDN/web server already set (no DB file, no HTTP call). Memoizes detection and its settings-derived config per request. Owns rule validation (`normalize_rules`/`encode_rules`/`decode_rules`) shared by REST, admin, and CSV. |
+| `GTLM_Novashare` | Optional. Answers Novashare's `novashare_short_link_url` filter with a branded link, creating it on first share. Loaded only when the setting is on. |
 | `GTLM_Settings` | Singleton. Reads/writes `gtlm_settings` option. Exposes `prefix()`. |
 | `GTLM_Admin` | Admin menu pages, form handlers, AJAX quick edit. Renders all admin UI inline (no template files). |
 | `GTLM_REST_API` | REST endpoints under `gt-link-manager/v1`. CRUD for links and categories. |
@@ -51,6 +52,10 @@ All service classes use a static `init()` factory that takes dependencies, const
 | `GTLM_Import` | Two-step CSV import (preview → map columns → run) and filtered CSV export. |
 | `GTLM_List_Table` | Extends `WP_List_Table`. Supports views: All, Active, Inactive, Trash. |
 | `GTLM_Activator` | Creates tables via `dbDelta`. Runs `maybe_upgrade()` to migrate schema on version bump. |
+| `GTLM_Integrations` | Opt-in analytics tool registry, saved config and delivery after the redirect. Loaded only when a tool is enabled. |
+| `GTLM_Integration_Services` | Pure request builders for services with a server-side event API. |
+| `GTLM_Integration_Plugins` | In-process adapters for analytics plugins on the same site. |
+| `GTLM_Integrations_Admin` | The GT Links > Integrations screen and its save handler. |
 
 ### Database tables
 
@@ -78,7 +83,7 @@ Adding a column means updating **three** places, not one: the `CREATE TABLE` in 
 | `/categories` | GET, POST |
 | `/categories/{id}` | PUT/PATCH, DELETE |
 
-Permission: `edit_posts` capability, filterable via `gtlm_capabilities`.
+Permission: `edit_posts` capability, filterable via `gtlm_capabilities`. Direct and regex links and permanent delete also need `manage_options` (see Conventions).
 
 **Write args must not declare `default`.** `WP_REST_Request` materialises a schema default into the request, so `get_param()` returns it for an omitted field and `sanitize_link_payload()` can no longer distinguish "not supplied" from "explicitly set" — which made every PATCH reset the fields it omitted. Per-field fallbacks belong in `sanitize_link_payload()` (existing row on update, documented default on create).
 
@@ -99,6 +104,7 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 | `gtlm_settings` | filter | Override settings |
 | `gtlm_prefix` | filter | Override URL prefix |
 | `gtlm_capabilities` | filter | Override required capability |
+| `gtlm_restricted_capability` | filter | Override the capability for direct and regex links (`advanced_links`) and permanent delete (`permanent_delete`) |
 | `gtlm_cache_ttl` | filter | Set object cache TTL |
 | `gtlm_geo_country` | filter | Override the detected country (any custom detection method) |
 | `gtlm_geo_sources` | filter | Add/remove `$_SERVER` keys probed for a country |
@@ -110,6 +116,13 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 | `gtlm_trash_purged` | action | Fires after the retention cron purges trashed links |
 | `gtlm_count_click` | filter | Return false to skip counting a click |
 | `gtlm_click_recorded` | action | Fires after a click has been counted |
+| `gtlm_integrations_should_send` | filter | Return false to withhold a click from analytics integrations, for example until consent |
+| `gtlm_integration_event` | filter | Change the click event before any integration receives it |
+| `gtlm_integration_request` | filter | Change or cancel the HTTP request for one service |
+| `gtlm_integration_visitor_ip` | filter | Supply the IP shared when visitor data sharing is on |
+| `gtlm_integration_sent` | action | Fires after a service has been sent a click |
+| `gtlm_integrations_load_bridge` | filter | Stop the browser tag script loading on a page |
+| `gtlm_novashare_should_shorten` | filter | Decide whether a URL shared through Novashare becomes a branded link |
 
 ### Geolocation notes
 
@@ -124,11 +137,23 @@ The link inserter registers a RichText format type (`gt-link-manager/link-insert
 - The prefixed route still resolves in this mode, so links already published as `/{prefix}/{slug}` keep working. Diagnostics still tests that route.
 - Root lookups only run for single-segment, slug-shaped paths, and only a live standard link claims one. A miss falls through to WordPress with no 404, because the path may be a real page. A matching link beats a page or post with the same slug; `GTLM_DB::root_slug_conflicts()` feeds the settings warning and the save handler warns via `url_to_postid()`.
 
+### Novashare
+
+- The control is on the Integrations screen, and `GTLM_Integrations_Admin::apply_form()` saves it through `set_novashare_enabled()`. `GTLM_Settings::update()` deliberately leaves the flag alone, or saving the main settings form would turn Novashare off.
+- `novashare_short_links` (off by default) loads `GTLM_Novashare`, which hooks Novashare's documented `novashare_short_link_url` filter. The site owner must still choose **Custom** as the shortener in Novashare. Built from the docs at https://novashare.io/docs/link-shortening/#custom, so it deliberately relies on nothing else in Novashare (no constants, options or meta keys).
+- The filter can run while a public page renders, so link creation is a write reachable by anonymous visitors. `is_shareable()` limits it to published, publicly viewable content on this site with no query args beyond `utm_*`, `p` and `page_id`. Loosening this creates an open redirect or a new row per query string. UTM values aren't limited, so a share URL carrying the visitor's query string would make a row per value. Novashare's docs imply `$long_url` is the permalink plus the owner's UTM settings, but its source hasn't been checked, and its `novashare_permalink` filter lets site code add the request's query string. `gtlm_novashare_should_shorten` is the deliberate override; the `http`/`https` check runs before it and cannot be overridden.
+- Slugs are `ns-` plus a hash of the URL, so the UNIQUE index is what guarantees one link per URL across networks and concurrent first shares. A lost insert race re-reads the winning row. A slug held by another destination moves to a longer hash.
+- Trashed or paused links return Novashare's default and are never revived: that state is the owner's decision.
+
 ### Click counting
 
 Opt-in via the `enable_click_tracking` setting, off by default. That default is a privacy commitment, not a UX choice: with it off, the plugin's registered privacy-policy content states that it does not log requests, and that statement has to stay true. `GTLM_Admin::register_privacy_content()` swaps the redirect paragraph based on the setting -- if you change what is recorded, change that text in the same commit.
 
 The write happens in `GTLM_Redirect::record_click()`, called *after* `header( 'Location: ... )`, and calls `fastcgi_finish_request()` first where available so the counter never sits on the visitor's clock. Measured on the synchronous fallback path (no FPM): 9.0ms median vs 9.1ms baseline.
+
+### Analytics integrations
+
+See `docs/integrations.md`. Off by default, with credentials in the non-autoloaded `gtlm_integrations` option and the enabled list in `gtlm_settings`, so a site with nothing on pays no extra query. Delivery happens after `finish_response()`, so a slow service never reaches the visitor. Sharing visitor IPs and countries is a separate opt-in. `GTLM_Admin::register_privacy_content()` describes what is sent: if you change what is sent, change that text and the readme's External services section in the same commit. The plugin adapters lean on other plugins' internals, so rerun `tests/integration-plugins.php` against the real plugins after they update. Don't build `GTLM_Integrations::tools()` during bootstrap: it translates strings, and `plugins_loaded` is too early.
 
 ## Deploying to gauravtiwari.org
 
@@ -148,6 +173,12 @@ Production runs on an xCloud-managed server. **The WordPress root is `/var/www/g
 - The links table is wrapped in `.gtlm-table-scroll` and carries a `gtlm-links-table` class. Core ships list tables as `widefat fixed` (`table-layout: fixed`), where per-cell `min-width` is ignored and leftover width is divided until narrow columns collapse to a few pixels and wrap one character per line. This table overrides to `table-layout: auto` with a per-column floor and a table `min-width`, so it scrolls sideways instead. The wrapper needs `clear: both` (core's search box is floated) and `contain: paint` (without it the clipped table still widens the whole admin page).
 - Admin CSS defers to the WordPress admin surface: no page-background override, no restyled core inputs or buttons. Accents use `var(--wp-admin-theme-color, #2271b1)` so custom admin colour schemes keep working, and surfaces use core's palette (`#f0f0f1`, `#c3c4c7`, `#1d2327`, `#50575e`).
 - Soft delete: `trashed_at` column (NULL = not trashed). Hard delete requires explicit action.
+- Slugs go through `GTLM_DB::clean_slug( $slug, $mode )` and regex replacements through `GTLM_DB::clean_pattern()` at every entry point. `sanitize_text_field()` deletes `%xx` and strips `<...>`, which corrupts regex and encoded paths. New copies get their slug from `GTLM_DB::unique_slug()`, which returns `''` for a regex rule because a suffix would change what it matches.
+- Request paths are decoded before they're sanitized (`GTLM_Redirect::request_path()`), for the same reason. `protected_path()` has already refused control characters at any decoding depth.
+- `geo_rules` is kept while `geo_mode` is `off`, so unticking Geolocation pauses a link's rules rather than deleting them.
+- Category `count` is recounted from links outside the Trash (`recount_category()`), never stepped up or down.
+- Direct and regex links can answer at any path, so creating, changing, trashing, restoring, toggling or copying them needs `manage_options`, and so does permanently deleting any link. Check through `GTLM_Settings::can_manage_advanced_links()`, `can_change_link()`, `can_save_link()` and `can_delete_links_permanently()` at every entry point: REST, admin handlers, Quick Edit, undo, bulk actions and CSV import. The agent runs on the REST routes. `GTLM_DB` stays ungated, because cron and Novashare write with no user. This is `gtlm_restricted_capability` rather than a context of `gtlm_capabilities` on purpose: sites answer that filter with one capability for every context, which would hand these out silently.
+- Set `'beta' => true` on a tool's registry entry to show a Beta badge on the Integrations screen. Plausible carries it until Plausible Cloud's handling of server addresses has been measured on a real site.
 - All SQL in `GTLM_DB` — other classes call DB methods, never write SQL directly
 - Version is maintained in two places: plugin header and `GTLM_VERSION` constant in `gt-link-manager.php`
 - DB migrations run automatically on admin load when `gtlm_db_version` option < plugin version. Activation records the version itself, so a fresh install does not re-run `dbDelta` on first admin load.
@@ -157,6 +188,7 @@ Production runs on an xCloud-managed server. **The WordPress root is `/var/www/g
 - Unresolved links under the configured prefix must return a real 404. The rewrite rule claims the whole prefix namespace, so falling through renders the front page at HTTP 200 -- a soft 404 across every dead link. Only prefix matches 404; direct and regex mode inspect arbitrary paths that may be real pages.
 - `rel` input accepts commas, whitespace, or arrays. The plugin emits space-separated rel, so a comma-only parser silently drops values it produced itself.
 - Code prefix is `gtlm` (4+ chars) per wp.org plugin directory requirements
+- Help links go through `gtlm_help_link( $topic, $label )`, a circled ? opening the docs in a new tab. Every docs path lives in `gtlm_help_topics()` in `includes/icons.php`, so a moved page is a one-line fix, and a topic with no entry renders nothing. Add a topic only for a page that explains the control. `GTLM_TEST_LIVE_DOCS=1` makes `tests/help-links.php` request every page and anchor, and `integrations` will fail it until the Analytics Integrations page is published.
 
 ### Advanced analytics (1.9.0 candidate)
 

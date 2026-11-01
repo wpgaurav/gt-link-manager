@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/class-gtlm-csv.php';
 require_once __DIR__ . '/class-gtlm-import-file.php';
+require_once __DIR__ . '/icons.php';
 
 class GTLM_Import {
 	private GTLM_DB $db;
@@ -71,7 +72,7 @@ class GTLM_Import {
 		$preview = $this->get_preview_state();
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Import / Export', 'gt-link-manager' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Import / Export', 'gt-link-manager' ) . gtlm_help_link( 'import_export', __( 'Import / Export', 'gt-link-manager' ) ) . '</h1>';
 
 		$this->render_export_form();
 
@@ -91,7 +92,7 @@ class GTLM_Import {
 		$categories = $this->db->get_categories();
 
 		echo '<div class="gtlm-card">';
-		echo '<h2>' . esc_html__( 'Export', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Export', 'gt-link-manager' ) . gtlm_help_link( 'export', __( 'Export', 'gt-link-manager' ) ) . '</h2>';
 		echo '<form method="post" action="">';
 		wp_nonce_field( 'gtlm_import_export' );
 		echo '<input type="hidden" name="gtlm_import_export_action" value="export_csv" />';
@@ -114,7 +115,7 @@ class GTLM_Import {
 
 	private function render_import_upload_form(): void {
 		echo '<div class="gtlm-card">';
-		echo '<h2>' . esc_html__( 'Import (Step 1: Upload & Preview)', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Import (Step 1: Upload & Preview)', 'gt-link-manager' ) . gtlm_help_link( 'import_upload', __( 'Import (Step 1: Upload & Preview)', 'gt-link-manager' ) ) . '</h2>';
 		echo '<form method="post" action="" enctype="multipart/form-data" id="gtlm-import-form">';
 		wp_nonce_field( 'gtlm_import_export' );
 		echo '<input type="hidden" name="gtlm_import_export_action" value="preview_csv" />';
@@ -137,8 +138,11 @@ class GTLM_Import {
 		$preset = isset( $preview['preset'] ) ? sanitize_key( (string) $preview['preset'] ) : 'generic';
 
 		echo '<div class="gtlm-card">';
-		echo '<h2>' . esc_html__( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) . gtlm_help_link( 'import_map', __( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) ) . '</h2>';
 		echo '<p>' . esc_html__( 'Map CSV columns to GT Link fields, then import.', 'gt-link-manager' ) . '</p>';
+		if ( ! GTLM_Settings::can_manage_advanced_links() ) {
+			echo '<div class="notice notice-info inline"><p>' . esc_html__( 'Only administrators can import direct and regex links, so those rows will be skipped.', 'gt-link-manager' ) . '</p></div>';
+		}
 
 		echo '<h3>' . esc_html__( 'Preview (first 5 rows)', 'gt-link-manager' ) . '</h3>';
 		echo '<table class="widefat striped"><thead><tr>';
@@ -383,7 +387,7 @@ class GTLM_Import {
 				$row = array_map( array( 'GTLM_CSV', 'decode' ), $row );
 			}
 			$data = $this->row_to_link_data( $row, $map );
-			if ( '' === $data['name'] || '' === $data['url'] ) {
+			if ( '' === $data['name'] || '' === $data['url'] || ! GTLM_Settings::can_save_link( $data ) ) {
 				++$skipped;
 				continue;
 			}
@@ -398,7 +402,7 @@ class GTLM_Import {
 
 				if ( 'overwrite' === $mode ) {
 					$data = $this->row_to_link_data( $row, $map, $existing );
-					if ( $this->db->update_link( (int) $existing['id'], $data ) ) {
+					if ( GTLM_Settings::can_save_link( $data, $existing ) && $this->db->update_link( (int) $existing['id'], $data ) ) {
 						++$updated;
 					} else {
 						++$skipped;
@@ -406,7 +410,11 @@ class GTLM_Import {
 					continue;
 				}
 
-				$data['slug'] = $this->next_available_slug( (string) $data['slug'] );
+				$data['slug'] = $this->db->unique_slug( (string) $data['slug'], (string) $data['link_mode'] );
+				if ( '' === $data['slug'] ) {
+					++$skipped;
+					continue;
+				}
 			}
 
 			$link_id = $this->db->insert_link( $data );
@@ -501,7 +509,7 @@ class GTLM_Import {
 		$name      = sanitize_text_field( $get( 'name' ) );
 		$url       = esc_url_raw( $get( 'url' ) );
 		$link_mode = in_array( $get( 'link_mode' ), array( 'direct', 'regex' ), true ) ? $get( 'link_mode' ) : 'standard';
-		$slug      = 'standard' === $link_mode ? sanitize_title( $get( 'slug' ) ) : sanitize_text_field( $get( 'slug' ) );
+		$slug      = GTLM_DB::clean_slug( $get( 'slug' ), $link_mode );
 		if ( '' === $slug ) {
 			$slug = sanitize_title( $name );
 		}
@@ -538,7 +546,7 @@ class GTLM_Import {
 			'notes'             => sanitize_textarea_field( $get( 'notes' ) ),
 			'geo_mode'          => in_array( $get( 'geo_mode' ), array( 'off', 'targeted' ), true ) ? $get( 'geo_mode' ) : ( '' !== $geo_rules ? 'targeted' : 'off' ),
 			'link_mode'         => $link_mode,
-			'regex_replacement' => sanitize_text_field( $get( 'regex_replacement' ) ),
+			'regex_replacement' => GTLM_DB::clean_pattern( $get( 'regex_replacement' ) ),
 			'priority'          => '' === $get( 'priority' ) ? 10 : max( 0, (int) $get( 'priority' ) ),
 			'is_active'         => '' === $get( 'is_active' ) ? 1 : (int) in_array( strtolower( $get( 'is_active' ) ), array( '1', 'yes', 'true' ), true ),
 			'geo_rules'         => $geo_rules,
@@ -566,22 +574,6 @@ class GTLM_Import {
 				'parent_id' => 0,
 			)
 		);
-	}
-
-	private function next_available_slug( string $base_slug ): string {
-		$base_slug = sanitize_title( $base_slug );
-		if ( '' === $base_slug ) {
-			$base_slug = 'link';
-		}
-
-		$slug = $base_slug;
-		$i    = 2;
-		while ( null !== $this->db->get_link_by_slug( $slug ) ) {
-			$slug = $base_slug . '-' . $i;
-			++$i;
-		}
-
-		return $slug;
 	}
 
 	/**

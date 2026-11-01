@@ -3,7 +3,7 @@
  * Plugin Name:       GT Link Manager
  * Plugin URI:        https://gauravtiwari.org/product/gt-link-manager/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
- * Version:           1.11.0
+ * Version:           1.12.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Gaurav Tiwari
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GTLM_VERSION' ) ) {
-	define( 'GTLM_VERSION', '1.11.0' );
+	define( 'GTLM_VERSION', '1.12.0' );
 }
 
 if ( ! defined( 'GTLM_FILE' ) ) {
@@ -61,6 +61,15 @@ function gtlm_bootstrap(): void {
 	$db       = new GTLM_DB();
 
 	GTLM_Redirect::init( $db, $settings );
+	if ( $settings->novashare_enabled() ) {
+		require_once GTLM_PATH . 'includes/class-gtlm-novashare.php';
+		GTLM_Novashare::init( $db, $settings );
+	}
+	$integrations = $settings->enabled_integrations();
+	if ( $integrations ) {
+		require_once GTLM_PATH . 'includes/class-gtlm-integrations.php';
+		GTLM_Integrations::init( $integrations );
+	}
 	if ( is_admin() ) {
 		require_once GTLM_PATH . 'includes/class-gt-link-import.php';
 		require_once GTLM_PATH . 'includes/class-gt-link-admin-pages.php';

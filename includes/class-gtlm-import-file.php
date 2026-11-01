@@ -86,6 +86,21 @@ class GTLM_Import_File {
 		wp_clear_scheduled_hook( 'gtlm_import_expire', array( $token ) );
 	}
 
+	/** Uninstall: nothing else will ever run the expiry jobs for files still staged. */
+	public static function delete_all(): void {
+		wp_unschedule_hook( 'gtlm_import_expire' );
+		$dir = self::directory();
+		if ( is_wp_error( $dir ) || ! is_dir( $dir ) ) {
+			return;
+		}
+		$files = glob( $dir . DIRECTORY_SEPARATOR . '*.csv' );
+		foreach ( is_array( $files ) ? $files : array() as $file ) {
+			if ( ! is_link( $file ) ) {
+				wp_delete_file( $file );
+			}
+		}
+	}
+
 	public static function cleanup_expired(): void {
 		$dir = self::directory();
 		if ( is_wp_error( $dir ) || ! is_dir( $dir ) ) {
