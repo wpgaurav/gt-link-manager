@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-01T10:51:41+00:00\n"
+"POT-Creation-Date: 2026-11-01T13:05:08+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: gt-link-manager\n"
@@ -313,7 +313,7 @@ msgstr ""
 #: includes/class-gtlm-agent.php:299
 #: includes/class-gtlm-analytics-view.php:95
 #: includes/class-gtlm-analytics-view.php:159
-#: includes/class-gtlm-analytics-view.php:525
+#: includes/class-gtlm-analytics-view.php:528
 #: includes/class-gtlm-integrations-admin.php:119
 #: includes/class-gtlm-integrations-admin.php:193
 #: includes/icons.php:134
@@ -892,14 +892,6 @@ msgstr ""
 msgid "Previews your unsaved rules in the browser. No request is made."
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:755
-msgid "Privacy: the country comes from a header your CDN already sends, and the plugin never stores it. This site shares it with analytics services under GT Links > Integrations."
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:755
-msgid "Privacy: the country comes from a header your CDN already sends. No IP address is read, no external service is called, and the country is never stored."
-msgstr ""
-
 #: includes/class-gt-link-admin-pages.php:756
 msgid "A 404 fallback is not a security control: country headers can be forged on requests that reach your site without passing through your CDN."
 msgstr ""
@@ -960,7 +952,7 @@ msgid "Remove rule"
 msgstr ""
 
 #: includes/class-gt-link-admin-pages.php:834
-#: includes/class-gtlm-analytics-view.php:506
+#: includes/class-gtlm-analytics-view.php:509
 msgid "Remove"
 msgstr ""
 
@@ -1040,14 +1032,6 @@ msgstr ""
 msgid "Privacy"
 msgstr ""
 
-#: includes/class-gt-link-admin-pages.php:948
-msgid "Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never calls an external geolocation service and never stores the country. This site also shares visitors' IP addresses and countries with analytics services, under GT Links > Integrations."
-msgstr ""
-
-#: includes/class-gt-link-admin-pages.php:948
-msgid "Country detection reads a two-letter code from a header your CDN already added to the request. The plugin never reads the visitor's IP address, never calls an external geolocation service, and never stores or logs the country — it exists only for that one request, to pick a destination."
-msgstr ""
-
 #. translators: %s: link to the Privacy Settings screen
 #: includes/class-gt-link-admin-pages.php:951
 #, php-format
@@ -1099,6 +1083,54 @@ msgstr ""
 
 #: includes/class-gt-link-admin-pages.php:973
 msgid "Slug is a regex pattern matched against the request path. Use capture groups ($1, $2) in the destination URL."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1007
+msgid "Include countries is on under GT Links > Analytics > Settings, so each recorded click saves the country and whether a country rule matched."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1011
+msgid "Include countries is off under GT Links > Analytics > Settings, so new clicks are recorded without the country."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1014
+msgid "The plugin doesn't store or log the country."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1021
+msgid "Privacy: the country comes from a header your CDN already sends, and no geolocation service is called."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1022
+msgid "Privacy: the country comes from a header your CDN already sends. Detecting it reads no IP address and calls no geolocation service."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1027
+msgid "This site shares the country with analytics services under GT Links > Integrations."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1037
+msgid "Country detection reads a two-letter code from a header your CDN already added to the request."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1039
+msgid "It never calls an external geolocation service."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1040
+msgid "It never reads the visitor's IP address and never calls an external geolocation service."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1045
+msgid "Reports keep any countries already saved until they expire or you delete them."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1047
+msgid "It exists only for that one request, to pick a destination."
+msgstr ""
+
+#: includes/class-gt-link-admin-pages.php:1051
+msgid "This site also shares visitors' IP addresses and countries with analytics services, under GT Links > Integrations."
 msgstr ""
 
 #: includes/class-gt-link-admin.php:73
@@ -1212,7 +1244,7 @@ msgid "Request variable"
 msgstr ""
 
 #: includes/class-gt-link-admin.php:262
-#: includes/class-gtlm-analytics-view.php:263
+#: includes/class-gtlm-analytics-view.php:264
 msgid "Value"
 msgstr ""
 
@@ -1393,8 +1425,8 @@ msgstr ""
 #: includes/class-gt-link-admin.php:1362
 #: blocks/link-inserter/build/index.js:1
 #: blocks/link-inserter/src/index.js:31
-#: blocks/link-inserter/src/index.js:284
-#: blocks/link-inserter/src/index.js:337
+#: blocks/link-inserter/src/index.js:285
+#: blocks/link-inserter/src/index.js:338
 msgid "GT Link"
 msgstr ""
 
@@ -1447,7 +1479,7 @@ msgid "All rel values"
 msgstr ""
 
 #: includes/class-gt-link-import.php:111
-#: includes/class-gtlm-analytics-view.php:368
+#: includes/class-gtlm-analytics-view.php:371
 msgid "Export CSV"
 msgstr ""
 
@@ -1580,8 +1612,8 @@ msgstr ""
 #: includes/class-gt-link-list-table.php:98
 #: includes/class-gtlm-analytics-view.php:219
 #: includes/class-gtlm-analytics-view.php:232
-#: includes/class-gtlm-analytics-view.php:263
-#: includes/class-gtlm-analytics-view.php:409
+#: includes/class-gtlm-analytics-view.php:264
+#: includes/class-gtlm-analytics-view.php:412
 msgid "Clicks"
 msgstr ""
 
@@ -1675,7 +1707,7 @@ msgstr ""
 
 #: includes/class-gt-link-list-table.php:208
 #: blocks/link-inserter/build/index.js:1
-#: blocks/link-inserter/src/index.js:207
+#: blocks/link-inserter/src/index.js:208
 msgid "No links found."
 msgstr ""
 
@@ -2026,91 +2058,91 @@ msgstr ""
 msgid "Request too large."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:25
-#: includes/class-gtlm-analytics-controller.php:185
+#: includes/class-gtlm-analytics-controller.php:27
+#: includes/class-gtlm-analytics-controller.php:187
 msgid "Explicitly opt in before enabling analytics."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:32
+#: includes/class-gtlm-analytics-controller.php:34
 msgid "Confirm deletion of all analytics data."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:48
+#: includes/class-gtlm-analytics-controller.php:50
 msgid "Analytics is temporarily unavailable. Redirects remain available."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:59
+#: includes/class-gtlm-analytics-controller.php:61
 msgid "Use valid dates in YYYY-MM-DD format."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:65
+#: includes/class-gtlm-analytics-controller.php:67
 msgid "Select up to 90 days at a time in the WordPress site timezone."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:69
+#: includes/class-gtlm-analytics-controller.php:71
 msgid "Choose a supported breakdown."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:73
-#: includes/class-gtlm-analytics-controller.php:77
+#: includes/class-gtlm-analytics-controller.php:75
+#: includes/class-gtlm-analytics-controller.php:79
 msgid "Choose a valid referring page."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:92
+#: includes/class-gtlm-analytics-controller.php:94
 msgid "Choose daily or hourly trends."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:100
+#: includes/class-gtlm-analytics-controller.php:102
 msgid "Use a valid numeric link or category ID."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:106
+#: includes/class-gtlm-analytics-controller.php:108
 msgid "Choose a valid results page."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:110
+#: includes/class-gtlm-analytics-controller.php:112
 msgid "Choose 10, 20, 50 or 100 rows per page."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:118
-#: includes/class-gtlm-analytics-controller.php:151
+#: includes/class-gtlm-analytics-controller.php:120
+#: includes/class-gtlm-analytics-controller.php:153
 msgid "Enable analytics before requesting reports."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:127
-#: includes/class-gtlm-analytics-controller.php:158
+#: includes/class-gtlm-analytics-controller.php:129
+#: includes/class-gtlm-analytics-controller.php:160
 msgid "Analytics storage is not ready."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:176
+#: includes/class-gtlm-analytics-controller.php:178
 msgid "You cannot change analytics settings."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:192
+#: includes/class-gtlm-analytics-controller.php:194
 msgid "Too many campaign rows."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:196
+#: includes/class-gtlm-analytics-controller.php:198
 msgid "Invalid campaign row."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:226
+#: includes/class-gtlm-analytics-controller.php:228
 msgid "Invalid analytics action or missing confirmation."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:232
+#: includes/class-gtlm-analytics-controller.php:234
 msgid "Analytics could not complete this action. Redirects remain available."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:265
+#: includes/class-gtlm-analytics-controller.php:267
 msgid "You cannot export analytics."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:269
+#: includes/class-gtlm-analytics-controller.php:271
 msgid "Analytics is disabled."
 msgstr ""
 
-#: includes/class-gtlm-analytics-controller.php:286
+#: includes/class-gtlm-analytics-controller.php:289
 msgid "This export is too large or unavailable. Select a smaller date range or a single link."
 msgstr ""
 
@@ -2143,7 +2175,7 @@ msgid "Overview"
 msgstr ""
 
 #: includes/class-gtlm-analytics-view.php:32
-#: includes/class-gtlm-analytics-view.php:375
+#: includes/class-gtlm-analytics-view.php:378
 msgid "Clicked from"
 msgstr ""
 
@@ -2328,12 +2360,12 @@ msgid "Reports update automatically. Use this if an update is overdue."
 msgstr ""
 
 #: includes/class-gtlm-analytics-view.php:106
-#: includes/class-gtlm-analytics-view.php:318
+#: includes/class-gtlm-analytics-view.php:321
 msgid "Update reports now"
 msgstr ""
 
 #: includes/class-gtlm-analytics-view.php:108
-#: includes/class-gtlm-analytics-view.php:293
+#: includes/class-gtlm-analytics-view.php:296
 msgid "Delete old data"
 msgstr ""
 
@@ -2418,7 +2450,7 @@ msgid "Hour"
 msgstr ""
 
 #: includes/class-gtlm-analytics-view.php:180
-#: includes/class-gtlm-analytics-view.php:389
+#: includes/class-gtlm-analytics-view.php:392
 msgid "Apply"
 msgstr ""
 
@@ -2532,282 +2564,313 @@ msgstr ""
 msgid "Some older clicks have page totals but no retained breakdown details. They are shown as Details unavailable."
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:268
+#: includes/class-gtlm-analytics-view.php:269
 msgid "Direct / unknown"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:268
+#: includes/class-gtlm-analytics-view.php:269
+#: includes/class-gtlm-analytics.php:39
 msgid "Unknown / unattributed"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:270
+#: includes/class-gtlm-analytics-view.php:271
 msgid "Details unavailable"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:272
+#: includes/class-gtlm-analytics-view.php:273
 msgid "Other"
 msgstr ""
 
 #. translators: 1: analytics storage size, 2: storage warning level.
-#: includes/class-gtlm-analytics-view.php:291
+#: includes/class-gtlm-analytics-view.php:294
 #, php-format
 msgid "Analytics data is using %1$s, above your %2$s warning level."
 msgstr ""
 
 #. translators: 1: analytics storage size, 2: storage warning level.
-#: includes/class-gtlm-analytics-view.php:291
+#: includes/class-gtlm-analytics-view.php:294
 msgid "Collection continues, but the database keeps growing. Delete data you no longer need to free space."
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:299
+#: includes/class-gtlm-analytics-view.php:302
 msgid "Collection is paused because reports have not updated in the last 15 minutes. This usually means WP-Cron is not running on this site. Collection resumes after the next successful update."
 msgstr ""
 
 #. translators: %s: Time of the failed update.
-#: includes/class-gtlm-analytics-view.php:304
+#: includes/class-gtlm-analytics-view.php:307
 #, php-format
 msgid "The last report update failed (%s). Collection continues and stops if updates keep failing."
 msgstr ""
 
 #. translators: %s: Time of the oldest click waiting to be processed.
-#: includes/class-gtlm-analytics-view.php:309
+#: includes/class-gtlm-analytics-view.php:312
 #, php-format
 msgid "Reports are catching up. The oldest click waiting to be counted is from %s."
 msgstr ""
 
 #. translators: 1: number of deleted rows, 2: analytics storage size.
-#: includes/class-gtlm-analytics-view.php:325
+#: includes/class-gtlm-analytics-view.php:328
 #, php-format
 msgid "Deleted %1$s rows of old analytics data, but the tables could not be compacted, so the database may not report less space yet. Analytics data uses %2$s."
 msgstr ""
 
 #. translators: %s: analytics storage size after compacting.
-#: includes/class-gtlm-analytics-view.php:331
+#: includes/class-gtlm-analytics-view.php:334
 #, php-format
 msgid "No analytics data was older than that. The tables were compacted; analytics data now uses %s."
 msgstr ""
 
 #. translators: 1: number of deleted rows, 2: analytics storage size after deletion.
-#: includes/class-gtlm-analytics-view.php:334
+#: includes/class-gtlm-analytics-view.php:337
 #, php-format
 msgid "Deleted %1$s rows of old analytics data. Analytics data now uses %2$s."
 msgstr ""
 
 #. translators: %s: number of deleted rows.
-#: includes/class-gtlm-analytics-view.php:337
+#: includes/class-gtlm-analytics-view.php:340
 #, php-format
 msgid "Deleted %s rows of old analytics data. More old data remains; run Delete old data again to continue."
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:357
+#: includes/class-gtlm-analytics-view.php:360
 msgid "WordPress time:"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:357
+#: includes/class-gtlm-analytics-view.php:360
 msgid "Last updated:"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:368
+#: includes/class-gtlm-analytics-view.php:371
 msgid "Counts are eligible redirect requests, not unique visitors. Filters and paused collection can leave gaps. Categories reflect current membership."
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:375
+#: includes/class-gtlm-analytics-view.php:378
 msgid "Every recorded referring-page entry for this selection is available below. Browsers may share only a website or no referrer; older clicks may have no page details."
 msgstr ""
 
 #. translators: 1: first row, 2: last row, 3: total matching entries.
-#: includes/class-gtlm-analytics-view.php:378
+#: includes/class-gtlm-analytics-view.php:381
 #, php-format
 msgid "Showing %1$s–%2$s of %3$s"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:385
+#: includes/class-gtlm-analytics-view.php:388
 msgid "Rows per page"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:389
+#: includes/class-gtlm-analytics-view.php:392
 msgid "Apply rows per page"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:409
+#: includes/class-gtlm-analytics-view.php:412
 msgid "Post or URL"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:411
+#: includes/class-gtlm-analytics-view.php:414
 msgid "Referring page results"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:413
+#: includes/class-gtlm-analytics-view.php:416
 msgid "Previous"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:414
+#: includes/class-gtlm-analytics-view.php:417
 msgid "Next"
 msgstr ""
 
 #. translators: 1: current page, 2: number of result pages.
-#: includes/class-gtlm-analytics-view.php:423
+#: includes/class-gtlm-analytics-view.php:426
 #, php-format
 msgid "Page %1$s of %2$s"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:429
+#: includes/class-gtlm-analytics-view.php:432
 msgid "Go to results page"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:429
+#: includes/class-gtlm-analytics-view.php:432
 msgid "Go"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:467
-#: includes/class-gtlm-analytics-view.php:475
+#: includes/class-gtlm-analytics-view.php:470
+#: includes/class-gtlm-analytics-view.php:478
 msgid "Page unavailable"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:468
+#: includes/class-gtlm-analytics-view.php:471
 msgid "Click counted. The referring page wasn't shared or recorded."
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:472
+#: includes/class-gtlm-analytics-view.php:475
 msgid "Other pages"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:491
+#: includes/class-gtlm-analytics-view.php:494
 msgid "Reported source of a short-link click. External sites can link or redirect to your links."
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:499
+#: includes/class-gtlm-analytics-view.php:502
 msgid "Campaign source"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:500
+#: includes/class-gtlm-analytics-view.php:503
 msgid "Campaign medium"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:501
+#: includes/class-gtlm-analytics-view.php:504
 msgid "Campaign name"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:528
+#: includes/class-gtlm-analytics-view.php:531
 msgid "About this referring website"
 msgstr ""
 
-#: includes/class-gtlm-analytics-view.php:536
+#: includes/class-gtlm-analytics-view.php:539
 msgid "No data for this selection."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:40
+#. translators: %s: Campaign number.
+#: includes/class-gtlm-analytics.php:47
+#, php-format
+msgid "Campaign %s (UTM values unavailable)"
+msgstr ""
+
+#. translators: %s: UTM source value.
+#: includes/class-gtlm-analytics.php:53
+#, php-format
+msgid "Source: %s"
+msgstr ""
+
+#. translators: %s: UTM medium value.
+#: includes/class-gtlm-analytics.php:55
+#, php-format
+msgid "Medium: %s"
+msgstr ""
+
+#. translators: %s: UTM campaign value.
+#: includes/class-gtlm-analytics.php:57
+#, php-format
+msgid "Campaign: %s"
+msgstr ""
+
+#. translators: %s: A campaign's UTM values.
+#: includes/class-gtlm-analytics.php:65
+#, php-format
+msgid "%s (removed)"
+msgstr ""
+
+#: includes/class-gtlm-analytics.php:78
 msgid "Enter a positive whole number of days for individual click records."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:48
+#: includes/class-gtlm-analytics.php:86
 msgid "Choose a supported retention period."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:57
+#: includes/class-gtlm-analytics.php:95
 msgid "Enter the storage warning level as a whole number of megabytes."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:62
+#: includes/class-gtlm-analytics.php:100
 msgid "Choose a supported country header source."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:66
+#: includes/class-gtlm-analytics.php:104
 msgid "Enter a country header name, such as X-Geo-Country."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:71
+#: includes/class-gtlm-analytics.php:109
 msgid "Use a bounded list of link IDs to exclude."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:75
+#: includes/class-gtlm-analytics.php:113
 msgid "Excluded link IDs must be positive integers."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:81
+#: includes/class-gtlm-analytics.php:119
 msgid "Use at most 100 configured campaigns."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:91
+#: includes/class-gtlm-analytics.php:129
 msgid "Campaign IDs must be unique positive integers."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:99
+#: includes/class-gtlm-analytics.php:137
 msgid "Use short campaign tokens. Existing IDs cannot be reassigned to different UTM values."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:104
+#: includes/class-gtlm-analytics.php:142
 msgid "A campaign needs at least one UTM value."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:111
+#: includes/class-gtlm-analytics.php:149
 msgid "Analytics settings are too large. Reduce campaigns or exclusions."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:122
-#: includes/class-gtlm-analytics.php:151
-#: includes/class-gtlm-analytics.php:406
+#: includes/class-gtlm-analytics.php:160
+#: includes/class-gtlm-analytics.php:189
+#: includes/class-gtlm-analytics.php:444
 msgid "Analytics maintenance is busy. Try again shortly."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:127
+#: includes/class-gtlm-analytics.php:165
 msgid "Analytics storage could not be upgraded. Retry from maintenance."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:147
+#: includes/class-gtlm-analytics.php:185
 msgid "Advanced analytics currently supports single-site installations only. No analytics storage was created."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:160
+#: includes/class-gtlm-analytics.php:198
 msgid "Analytics could not initialize its InnoDB tables. Collection remains off; retry or delete the partial analytics storage."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:169
+#: includes/class-gtlm-analytics.php:207
 msgid "Process pending analytics before changing collection settings."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:193
+#: includes/class-gtlm-analytics.php:231
 msgid "Analytics maintenance could not be scheduled. Collection remains off."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:207
+#: includes/class-gtlm-analytics.php:245
 msgid "Analytics setup failed. Redirects remain available and collection is off."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:232
+#: includes/class-gtlm-analytics.php:270
 msgid "Analytics is busy. Try saving again shortly."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:248
+#: includes/class-gtlm-analytics.php:286
 msgid "Collection stopped. Maintenance is busy; retry to finish pausing."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:275
+#: includes/class-gtlm-analytics.php:313
 msgid "Collection stopped. Retry deleting after maintenance finishes."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:279
+#: includes/class-gtlm-analytics.php:317
 msgid "Analytics storage could not be removed. Collection is off."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:297
+#: includes/class-gtlm-analytics.php:335
 msgid "A maintenance process is already running."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:302
-#: includes/class-gtlm-analytics.php:411
+#: includes/class-gtlm-analytics.php:340
+#: includes/class-gtlm-analytics.php:449
 msgid "Analytics has not been initialized."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:316
+#: includes/class-gtlm-analytics.php:354
 msgid "Analytics maintenance failed. Collection continues for now and stops if updates keep failing."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:402
+#: includes/class-gtlm-analytics.php:440
 msgid "Enter a positive whole number of days."
 msgstr ""
 
-#: includes/class-gtlm-analytics.php:442
+#: includes/class-gtlm-analytics.php:480
 msgid "Old analytics data could not be deleted. Try again, or use WP-CLI for very large tables."
 msgstr ""
 
@@ -3245,7 +3308,7 @@ msgstr ""
 msgid "The service answered HTTP %1$d: %2$s"
 msgstr ""
 
-#: includes/class-gtlm-novashare.php:137
+#: includes/class-gtlm-novashare.php:141
 msgid "Created automatically when this page was shared through Novashare."
 msgstr ""
 
@@ -4259,11 +4322,11 @@ msgid "Help: GT Link (opens in a new tab)"
 msgstr ""
 
 #: blocks/link-inserter/build/index.js:1
-#: blocks/link-inserter/src/index.js:171
+#: blocks/link-inserter/src/index.js:172
 msgid "Search GT Links"
 msgstr ""
 
 #: blocks/link-inserter/build/index.js:1
-#: blocks/link-inserter/src/index.js:174
+#: blocks/link-inserter/src/index.js:175
 msgid "Type a link name or slug"
 msgstr ""
