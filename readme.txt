@@ -74,7 +74,7 @@ GT Link Manager stores links in **custom database tables**, not custom post type
 
 GT Link Manager provides a comprehensive set of hooks for customization:
 
-* `gtlm_before_redirect`, action fired before redirect (use for click tracking or logging)
+* `gtlm_before_redirect`, action fired before the redirect is sent, for custom logging. The visitor is waiting, so keep it fast, and use click counts, Advanced Analytics or Integrations for click tracking
 * `gtlm_redirect_url`, filter to modify the destination URL
 * `gtlm_redirect_code`, filter to modify the HTTP status code
 * `gtlm_rel_attributes`, filter to modify rel attribute values
@@ -592,7 +592,7 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 == Upgrade Notice ==
 
 = 1.12.0 =
-Direct links, regex links and permanent delete now require an administrator, so other roles lose that access (`gtlm_restricted_capability` restores it). Also adds 20 analytics integrations, with Plausible in beta, and Novashare short links, all off by default. No database changes.
+Direct links, regex links and permanent delete now require an administrator, so other roles lose that access (`gtlm_restricted_capability` restores it). Also adds 20 analytics integrations (Plausible in beta) and Novashare short links, all off by default. Category counts are corrected on upgrade.
 
 = 1.11.0 =
 Adds optional prefix-free links and a Random slug button. Prefix-free mode is off by default, and existing /go/ links keep working when you turn it on. No database changes.
