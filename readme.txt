@@ -347,6 +347,7 @@ The browser tags (Google Tag Manager, Fathom Analytics, Microsoft Clarity, and G
 == Changelog ==
 
 = 1.12.0 =
+* New: Help links. A circled **?** next to screens and settings opens the matching documentation page in a new tab.
 * New: Novashare short links. Turn it on under **GT Links > Integrations > Social sharing**, choose **Custom** as the link shortener in Novashare, and shared posts use your branded links with no code. Each shared URL gets one link in a Novashare category.
 * New: `gtlm_novashare_should_shorten` filter to decide which shared URLs become branded links.
 * New: Analytics integrations under **GT Links > Integrations**. Send short link clicks to Google Analytics 4, Plausible (beta), Matomo, Umami, Simple Analytics, PostHog, Mixpanel, Amplitude, Rybbit, and Clicky from your server, or to Independent Analytics, Koko Analytics, WP Statistics, Burst Statistics, SlimStat, Statify, and Matomo for WordPress on your own site, with no code. Everything is off by default.

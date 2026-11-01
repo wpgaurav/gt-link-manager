@@ -75,7 +75,7 @@ class GTLM_Integrations_Admin {
 		$config = GTLM_Integrations::config();
 		$tools  = GTLM_Integrations::tools();
 
-		echo '<div class="wrap gtlm-wrap gtlm-integrations"><h1 class="gtlm-heading-icon">' . gtlm_icon( 'chart-line', 24 ) . esc_html__( 'Integrations', 'gt-link-manager' ) . '</h1>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icon markup is static.
+		echo '<div class="wrap gtlm-wrap gtlm-integrations"><h1 class="gtlm-heading-icon">' . gtlm_icon( 'chart-line', 24 ) . esc_html__( 'Integrations', 'gt-link-manager' ) . gtlm_help_link( 'integrations', __( 'Integrations', 'gt-link-manager' ) ) . '</h1>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icon markup is static.
 		self::render_notices();
 		echo '<p class="gtlm-integrations-intro">' . esc_html__( 'Connect your short links to the tools you already use. Everything here is off until you turn it on. Analytics tools never receive bots, prefetches or logged-in link managers.', 'gt-link-manager' ) . '</p>';
 
@@ -168,7 +168,8 @@ class GTLM_Integrations_Admin {
 		} elseif ( 'plugin' === $tool['type'] ) {
 			echo '<span class="gtlm-integration-status">' . esc_html__( 'Ready', 'gt-link-manager' ) . '</span>';
 		}
-		echo '</summary><div class="gtlm-integration-body"><p>' . esc_html( (string) $tool['help'] ) . '</p>';
+		// Only tools with a docs page of their own get a link here; the page heading covers the rest.
+		echo '</summary><div class="gtlm-integration-body"><p>' . esc_html( (string) $tool['help'] ) . gtlm_help_link( 'integration_' . $key, (string) $tool['label'] ) . '</p>';
 
 		echo '<p><label><input type="checkbox" name="' . esc_attr( $name . '[enabled]' ) . '" value="1" ' . checked( $enabled, true, false ) . disabled( $available, false, false ) . ' /> ';
 		/* translators: %s: tool name. */

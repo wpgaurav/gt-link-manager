@@ -1044,6 +1044,10 @@ body.no-js .gtlm-breakdown-nav { display:none; }
 .gtlm-geo__off { font-size: 12px; }
 .gtlm-heading-icon { display: flex; align-items: center; gap: 8px; }
 .gtlm-heading-icon .gtlm-icon { color: var(--wp-admin-theme-color, #2271b1); }
+.gtlm-help-link { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; margin-inline-start: 2px; vertical-align: middle; color: #50575e; text-decoration: none; }
+.gtlm-help-link:hover, .gtlm-help-link:focus { color: var(--wp-admin-theme-color, #2271b1); }
+.gtlm-help-link .gtlm-icon, .gtlm-heading-icon .gtlm-help-link .gtlm-icon { color: inherit; }
+.gtlm-heading-icon .gtlm-help-link { margin-inline-start: -4px; }
 .gtlm-breakdown-nav .nav-tab { display: inline-flex; align-items: center; gap: 6px; }
 .gtlm-analytics-metric > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
 .gtlm-tooltip-trigger .gtlm-icon { vertical-align: middle; color: #50575e; }

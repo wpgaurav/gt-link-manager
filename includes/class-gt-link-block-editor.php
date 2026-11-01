@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/icons.php';
+
 class GTLM_Block_Editor {
 	private GTLM_Settings $settings;
 
@@ -56,6 +58,7 @@ class GTLM_Block_Editor {
 				'restPath' => '/gt-link-manager/v1/links',
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'prefix'   => $this->settings->prefix(),
+				'helpUrl'  => gtlm_help_url( 'block_editor' ),
 			)
 		);
 	}

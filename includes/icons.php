@@ -1,6 +1,6 @@
 <?php
 /**
- * Inline admin icons.
+ * Inline admin icons, and the help links built on them.
  *
  * Path data from Tabler Icons (outline), https://tabler.io/icons
  * Copyright (c) Paweł Kuna. Released under the MIT License.
@@ -53,4 +53,83 @@ function gtlm_icon( string $name, int $size = 16, string $class_name = '' ): str
 		return '';
 	}
 	return '<svg class="gtlm-icon gtlm-icon--' . esc_attr( $name ) . ( '' !== $class_name ? ' ' . esc_attr( $class_name ) : '' ) . '" xmlns="http://www.w3.org/2000/svg" width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $paths[ $name ] . '</svg>';
+}
+
+/**
+ * Docs page for each help topic, relative to the plugin's docs root. Every path lives
+ * here so a moved page is a one-line fix. A topic with no page has no entry, and no
+ * help link: `tests/help-links.php` can check these against the live docs.
+ *
+ * @return array<string, string>
+ */
+function gtlm_help_topics(): array {
+	$settings = 'configuration-features/settings-configuration/';
+	$redirect = 'configuration-features/redirect-system/';
+	$geo      = 'configuration-features/geolocation-targeting/';
+	$import   = 'configuration-features/import-export/';
+	$links    = 'getting-started/managing-links/';
+	$dev      = 'developer-reference/';
+
+	return array(
+		'links'                        => $links,
+		'trash'                        => $links . '#soft-delete-and-trash',
+		'link_new'                     => $links . '#creating-links',
+		'link_edit'                    => $links . '#editing-links',
+		'link_mode'                    => $redirect . '#three-step-redirect-resolution',
+		'regex'                        => $redirect . '#step-3-regex-pattern-match',
+		'redirect_type'                => $settings . '#default-redirect-type',
+		'rel'                          => $settings . '#link-attributes',
+		'noindex'                      => $settings . '#search-engines',
+		'categories'                   => 'getting-started/categories/',
+		'link_category'                => 'getting-started/categories/#assigning-links-to-categories',
+		'geo_rules'                    => $geo . '#building-country-rules-on-a-link',
+		'geo_settings'                 => $geo . '#enabling-geolocation',
+		'geo_detection'                => $geo . '#how-country-detection-works',
+		'geo_debug'                    => $geo . '#debugging-a-live-link',
+		'settings'                     => $settings,
+		'link_prefix'                  => $settings . '#link-prefix',
+		'click_counts'                 => $settings . '#click-counts-trash-and-ai-tools',
+		'trash_retention'              => $settings . '#click-counts-trash-and-ai-tools',
+		'ai_agents'                    => $settings . '#click-counts-trash-and-ai-tools',
+		'advanced_redirects'           => $settings . '#advanced-redirects',
+		'tools'                        => $settings . '#flush-permalinks-button',
+		'uninstall'                    => 'getting-started/installation-requirements/#deactivation-and-uninstall',
+		'diagnostics'                  => $dev . 'troubleshooting/#running-the-built-in-diagnostics',
+		'rest_api'                     => $dev . 'rest-api-reference/',
+		'import_export'                => $import,
+		'export'                       => $import . '#exporting-links',
+		'import_upload'                => $import . '#step-1-upload-and-preview',
+		'import_map'                   => $import . '#step-2-map-columns-and-run',
+		'block_editor'                 => 'configuration-features/block-editor-integration/#using-the-link-inserter',
+		'integrations'                 => $dev . 'analytics-integrations/',
+		'integration_ga4'              => $dev . 'google-analytics-4-ga4-integration/',
+		'integration_plausible'        => $dev . 'plausible-analytics-integration/',
+		'integration_matomo'           => $dev . 'matomo-piwik-integration/',
+		'integration_simple_analytics' => $dev . 'simple-analytics-integration/',
+		'integration_fathom'           => $dev . 'fathom-analytics-integration/',
+	);
+}
+
+/** The docs URL for a help topic, or '' if it has no page. */
+function gtlm_help_url( string $topic ): string {
+	$topics = gtlm_help_topics();
+
+	return isset( $topics[ $topic ] ) ? 'https://gauravtiwari.org/docs/gt-link-manager/' . $topics[ $topic ] : '';
+}
+
+/**
+ * A circled ? opening the docs for $topic in a new tab, or '' if it has no page.
+ * $label names what the page explains, for screen readers and the tooltip.
+ * Escaped by construction; listed in phpcs.xml.dist as an auto-escaped function.
+ */
+function gtlm_help_link( string $topic, string $label ): string {
+	$url = gtlm_help_url( $topic );
+	if ( '' === $url ) {
+		return '';
+	}
+
+	/* translators: %s: name of the screen or setting the docs explain. */
+	$text = sprintf( __( 'Help: %s', 'gt-link-manager' ), $label );
+
+	return '<a class="gtlm-help-link" href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer" title="' . esc_attr( $text ) . '">' . gtlm_icon( 'help-circle' ) . '<span class="screen-reader-text">' . esc_html( $text ) . ' ' . esc_html__( '(opens in a new tab)', 'gt-link-manager' ) . '</span></a>';
 }

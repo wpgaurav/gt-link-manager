@@ -188,6 +188,7 @@ Production runs on an xCloud-managed server. **The WordPress root is `/var/www/g
 - Unresolved links under the configured prefix must return a real 404. The rewrite rule claims the whole prefix namespace, so falling through renders the front page at HTTP 200 -- a soft 404 across every dead link. Only prefix matches 404; direct and regex mode inspect arbitrary paths that may be real pages.
 - `rel` input accepts commas, whitespace, or arrays. The plugin emits space-separated rel, so a comma-only parser silently drops values it produced itself.
 - Code prefix is `gtlm` (4+ chars) per wp.org plugin directory requirements
+- Help links go through `gtlm_help_link( $topic, $label )`, a circled ? opening the docs in a new tab. Every docs path lives in `gtlm_help_topics()` in `includes/icons.php`, so a moved page is a one-line fix, and a topic with no entry renders nothing. Add a topic only for a page that explains the control. `GTLM_TEST_LIVE_DOCS=1` makes `tests/help-links.php` request every page and anchor, and `integrations` will fail it until the Analytics Integrations page is published.
 
 ### Advanced analytics (1.9.0 candidate)
 

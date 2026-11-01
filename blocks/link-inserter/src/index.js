@@ -122,7 +122,52 @@ function LinkSearchPopover( { anchor, initialQuery = '', onClose, onSelect } ) {
 		},
 		h(
 			'div',
-			{ style: { padding: '12px', minWidth: '300px' } },
+			{ style: { padding: '12px', minWidth: '300px', position: 'relative' } },
+			config.helpUrl &&
+				h(
+					'a',
+					{
+						href: config.helpUrl,
+						target: '_blank',
+						rel: 'noopener noreferrer',
+						title: __( 'Help: GT Link', 'gt-link-manager' ),
+						'aria-label': __(
+							'Help: GT Link (opens in a new tab)',
+							'gt-link-manager'
+						),
+						style: {
+							position: 'absolute',
+							top: '6px',
+							right: '6px',
+							padding: '4px',
+							display: 'inline-flex',
+							color: '#50575e',
+						},
+					},
+					h(
+						'svg',
+						{
+							xmlns: 'http://www.w3.org/2000/svg',
+							width: 16,
+							height: 16,
+							viewBox: '0 0 24 24',
+							fill: 'none',
+							stroke: 'currentColor',
+							strokeWidth: 2,
+							strokeLinecap: 'round',
+							strokeLinejoin: 'round',
+							'aria-hidden': true,
+							focusable: false,
+						},
+						h( 'path', {
+							d: 'M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0',
+						} ),
+						h( 'path', { d: 'M12 16v.01' } ),
+						h( 'path', {
+							d: 'M12 13a2 2 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483',
+						} )
+					)
+				),
 			h( TextControl, {
 				label: __( 'Search GT Links', 'gt-link-manager' ),
 				value: query,

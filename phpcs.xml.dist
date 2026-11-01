@@ -18,11 +18,12 @@
 		</properties>
 	</rule>
 
-	<!-- gtlm_icon() returns fixed SVG path data with escaped attributes. -->
+	<!-- gtlm_icon() returns fixed SVG path data with escaped attributes; gtlm_help_link() wraps it in an escaped link. -->
 	<rule ref="WordPress.Security.EscapeOutput">
 		<properties>
 			<property name="customAutoEscapedFunctions" type="array">
 				<element value="gtlm_icon"/>
+				<element value="gtlm_help_link"/>
 			</property>
 		</properties>
 	</rule>

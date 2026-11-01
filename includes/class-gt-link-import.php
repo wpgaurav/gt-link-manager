@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/class-gtlm-csv.php';
 require_once __DIR__ . '/class-gtlm-import-file.php';
+require_once __DIR__ . '/icons.php';
 
 class GTLM_Import {
 	private GTLM_DB $db;
@@ -71,7 +72,7 @@ class GTLM_Import {
 		$preview = $this->get_preview_state();
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Import / Export', 'gt-link-manager' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Import / Export', 'gt-link-manager' ) . gtlm_help_link( 'import_export', __( 'Import / Export', 'gt-link-manager' ) ) . '</h1>';
 
 		$this->render_export_form();
 
@@ -91,7 +92,7 @@ class GTLM_Import {
 		$categories = $this->db->get_categories();
 
 		echo '<div class="gtlm-card">';
-		echo '<h2>' . esc_html__( 'Export', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Export', 'gt-link-manager' ) . gtlm_help_link( 'export', __( 'Export', 'gt-link-manager' ) ) . '</h2>';
 		echo '<form method="post" action="">';
 		wp_nonce_field( 'gtlm_import_export' );
 		echo '<input type="hidden" name="gtlm_import_export_action" value="export_csv" />';
@@ -114,7 +115,7 @@ class GTLM_Import {
 
 	private function render_import_upload_form(): void {
 		echo '<div class="gtlm-card">';
-		echo '<h2>' . esc_html__( 'Import (Step 1: Upload & Preview)', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Import (Step 1: Upload & Preview)', 'gt-link-manager' ) . gtlm_help_link( 'import_upload', __( 'Import (Step 1: Upload & Preview)', 'gt-link-manager' ) ) . '</h2>';
 		echo '<form method="post" action="" enctype="multipart/form-data" id="gtlm-import-form">';
 		wp_nonce_field( 'gtlm_import_export' );
 		echo '<input type="hidden" name="gtlm_import_export_action" value="preview_csv" />';
@@ -137,7 +138,7 @@ class GTLM_Import {
 		$preset = isset( $preview['preset'] ) ? sanitize_key( (string) $preview['preset'] ) : 'generic';
 
 		echo '<div class="gtlm-card">';
-		echo '<h2>' . esc_html__( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) . gtlm_help_link( 'import_map', __( 'Import (Step 2: Map Columns & Run)', 'gt-link-manager' ) ) . '</h2>';
 		echo '<p>' . esc_html__( 'Map CSV columns to GT Link fields, then import.', 'gt-link-manager' ) . '</p>';
 		if ( ! GTLM_Settings::can_manage_advanced_links() ) {
 			echo '<div class="notice notice-info inline"><p>' . esc_html__( 'Only administrators can import direct and regex links, so those rows will be skipped.', 'gt-link-manager' ) . '</p></div>';
