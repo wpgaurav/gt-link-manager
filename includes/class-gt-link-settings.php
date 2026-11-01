@@ -41,6 +41,7 @@ class GTLM_Settings {
 			'enable_click_tracking'     => 0,
 			'enable_advanced_redirects' => 0,
 			'prefix_free_links'         => 0,
+			'novashare_short_links'     => 0,
 			'enable_geo_targeting'      => 0,
 			'geo_detection_method'      => 'auto',
 			'geo_custom_header'         => '',
@@ -80,6 +81,7 @@ class GTLM_Settings {
 		$settings['enable_click_tracking']     = (int) ! empty( $settings['enable_click_tracking'] );
 		$settings['enable_advanced_redirects'] = (int) ! empty( $settings['enable_advanced_redirects'] );
 		$settings['prefix_free_links']         = (int) ! empty( $settings['prefix_free_links'] );
+		$settings['novashare_short_links']     = (int) ! empty( $settings['novashare_short_links'] );
 		$settings['enable_geo_targeting']      = (int) ! empty( $settings['enable_geo_targeting'] );
 		$settings['geo_detection_method']      = $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) );
 		$settings['geo_custom_header']         = $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) );
@@ -118,6 +120,13 @@ class GTLM_Settings {
 	 */
 	public function prefix_free(): bool {
 		return ! empty( $this->all()['prefix_free_links'] );
+	}
+
+	/**
+	 * Whether Novashare's Custom shortener should receive branded links.
+	 */
+	public function novashare_enabled(): bool {
+		return ! empty( $this->all()['novashare_short_links'] );
 	}
 
 	/**
@@ -164,6 +173,7 @@ class GTLM_Settings {
 			'enable_click_tracking'     => (int) ! empty( $settings['enable_click_tracking'] ),
 			'enable_advanced_redirects' => (int) ! empty( $settings['enable_advanced_redirects'] ),
 			'prefix_free_links'         => (int) ! empty( $settings['prefix_free_links'] ),
+			'novashare_short_links'     => (int) ! empty( $settings['novashare_short_links'] ),
 			'enable_geo_targeting'      => (int) ! empty( $settings['enable_geo_targeting'] ),
 			'geo_detection_method'      => $this->sanitize_geo_method( (string) ( $settings['geo_detection_method'] ?? 'auto' ) ),
 			'geo_custom_header'         => $this->sanitize_header_name( (string) ( $settings['geo_custom_header'] ?? '' ) ),

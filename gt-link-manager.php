@@ -61,6 +61,10 @@ function gtlm_bootstrap(): void {
 	$db       = new GTLM_DB();
 
 	GTLM_Redirect::init( $db, $settings );
+	if ( $settings->novashare_enabled() ) {
+		require_once GTLM_PATH . 'includes/class-gtlm-novashare.php';
+		GTLM_Novashare::init( $db, $settings );
+	}
 	if ( is_admin() ) {
 		require_once GTLM_PATH . 'includes/class-gt-link-import.php';
 		require_once GTLM_PATH . 'includes/class-gt-link-admin-pages.php';
